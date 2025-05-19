@@ -1,2 +1,29 @@
 ﻿  Main.cpp
+C:\Users\dk505\DirectX-Study\DirectX_Study\DirectX_Study\DrawFunc.hpp(14,14): warning C4244: '초기화 중': 'double'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  (소스 파일 'Main.cpp'을(를) 컴파일하는 중)
+  
+C:\Users\dk505\DirectX-Study\DirectX_Study\DirectX_Study\DrawFunc.hpp(24,32): warning C4244: '인수': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  (소스 파일 'Main.cpp'을(를) 컴파일하는 중)
+  
+C:\Users\dk505\DirectX-Study\DirectX_Study\DirectX_Study\DrawFunc.hpp(24,22): warning C4244: '인수': 'double'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  (소스 파일 'Main.cpp'을(를) 컴파일하는 중)
+  
+C:\Users\dk505\DirectX-Study\DirectX_Study\DirectX_Study\DrawFunc.hpp(32,32): warning C4244: '인수': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  (소스 파일 'Main.cpp'을(를) 컴파일하는 중)
+  
+C:\Users\dk505\DirectX-Study\DirectX_Study\DirectX_Study\DrawFunc.hpp(32,28): warning C4244: '인수': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  (소스 파일 'Main.cpp'을(를) 컴파일하는 중)
+  
+C:\Users\dk505\DirectX-Study\DirectX_Study\DirectX_Study\DrawFunc.hpp(32,24): warning C4244: '인수': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  (소스 파일 'Main.cpp'을(를) 컴파일하는 중)
+  
+C:\Users\dk505\DirectX-Study\DirectX_Study\DirectX_Study\DrawFunc.hpp(32,53): warning C4244: '인수': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  (소스 파일 'Main.cpp'을(를) 컴파일하는 중)
+  
+C:\Users\dk505\DirectX-Study\DirectX_Study\DirectX_Study\DrawFunc.hpp(32,49): warning C4244: '인수': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  (소스 파일 'Main.cpp'을(를) 컴파일하는 중)
+  
+C:\Users\dk505\DirectX-Study\DirectX_Study\DirectX_Study\DrawFunc.hpp(32,45): warning C4244: '인수': 'int'에서 'float'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+  (소스 파일 'Main.cpp'을(를) 컴파일하는 중)
+  
   DirectX_Study.vcxproj -> C:\Users\dk505\DirectX-Study\DirectX_Study\x64\Debug\DirectX_Study.exe

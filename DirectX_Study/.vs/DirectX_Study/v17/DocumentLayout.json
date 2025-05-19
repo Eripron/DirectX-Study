@@ -3,30 +3,87 @@
   "WorkspaceRootPath": "C:\\Users\\dk505\\DirectX-Study\\DirectX_Study\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{90AB9146-C78A-48AB-A857-E00CE36FA757}|DirectX_Study\\DirectX_Study.vcxproj|C:\\Users\\dk505\\DirectX-Study\\DirectX_Study\\DirectX_Study\\DrawFunc.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{90AB9146-C78A-48AB-A857-E00CE36FA757}|DirectX_Study\\DirectX_Study.vcxproj|solutionrelative:DirectX_Study\\DrawFunc.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{90AB9146-C78A-48AB-A857-E00CE36FA757}|DirectX_Study\\DirectX_Study.vcxproj|C:\\Users\\dk505\\DirectX-Study\\DirectX_Study\\DirectX_Study\\WndProcFunc.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{90AB9146-C78A-48AB-A857-E00CE36FA757}|DirectX_Study\\DirectX_Study.vcxproj|solutionrelative:DirectX_Study\\WndProcFunc.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{90AB9146-C78A-48AB-A857-E00CE36FA757}|DirectX_Study\\DirectX_Study.vcxproj|C:\\Users\\dk505\\DirectX-Study\\DirectX_Study\\DirectX_Study\\Common.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{90AB9146-C78A-48AB-A857-E00CE36FA757}|DirectX_Study\\DirectX_Study.vcxproj|solutionrelative:DirectX_Study\\Common.hpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{90AB9146-C78A-48AB-A857-E00CE36FA757}|DirectX_Study\\DirectX_Study.vcxproj|C:\\Users\\dk505\\DirectX-Study\\DirectX_Study\\DirectX_Study\\Main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{90AB9146-C78A-48AB-A857-E00CE36FA757}|DirectX_Study\\DirectX_Study.vcxproj|solutionrelative:DirectX_Study\\Main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     }
   ],
   "DocumentGroupContainers": [
     {
-      "Orientation": 1,
+      "Orientation": 0,
       "VerticalTabListWidth": 256,
       "DocumentGroups": [
         {
-          "DockedHeight": 200,
+          "DockedWidth": 14,
           "SelectedChildIndex": 0,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
+              "Title": "WndProcFunc.hpp",
+              "DocumentMoniker": "C:\\Users\\dk505\\DirectX-Study\\DirectX_Study\\DirectX_Study\\WndProcFunc.hpp",
+              "RelativeDocumentMoniker": "DirectX_Study\\WndProcFunc.hpp",
+              "ToolTip": "C:\\Users\\dk505\\DirectX-Study\\DirectX_Study\\DirectX_Study\\WndProcFunc.hpp",
+              "RelativeToolTip": "DirectX_Study\\WndProcFunc.hpp",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAAACUAAAAXAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-05-19T12:12:25.094Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
               "Title": "Main.cpp",
               "DocumentMoniker": "C:\\Users\\dk505\\DirectX-Study\\DirectX_Study\\DirectX_Study\\Main.cpp",
               "RelativeDocumentMoniker": "DirectX_Study\\Main.cpp",
               "ToolTip": "C:\\Users\\dk505\\DirectX-Study\\DirectX_Study\\DirectX_Study\\Main.cpp",
               "RelativeToolTip": "DirectX_Study\\Main.cpp",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAASAAAAAAAAAA==",
+              "ViewState": "AgIAABUAAAAAAAAAAAAAADIAAAACAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2025-05-19T11:58:34.539Z",
+              "EditorCaption": ""
+            }
+          ]
+        },
+        {
+          "DockedWidth": 14,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Common.hpp",
+              "DocumentMoniker": "C:\\Users\\dk505\\DirectX-Study\\DirectX_Study\\DirectX_Study\\Common.hpp",
+              "RelativeDocumentMoniker": "DirectX_Study\\Common.hpp",
+              "ToolTip": "C:\\Users\\dk505\\DirectX-Study\\DirectX_Study\\DirectX_Study\\Common.hpp",
+              "RelativeToolTip": "DirectX_Study\\Common.hpp",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAB4AAAAWAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-05-19T12:40:26.164Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "DrawFunc.hpp",
+              "DocumentMoniker": "C:\\Users\\dk505\\DirectX-Study\\DirectX_Study\\DirectX_Study\\DrawFunc.hpp",
+              "RelativeDocumentMoniker": "DirectX_Study\\DrawFunc.hpp",
+              "ToolTip": "C:\\Users\\dk505\\DirectX-Study\\DirectX_Study\\DirectX_Study\\DrawFunc.hpp",
+              "RelativeToolTip": "DirectX_Study\\DrawFunc.hpp",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAVAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-05-19T12:37:28.098Z",
               "EditorCaption": ""
             }
           ]

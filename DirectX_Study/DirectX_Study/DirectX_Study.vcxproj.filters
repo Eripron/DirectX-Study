@@ -13,10 +13,27 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="헤더 파일\Draw">
+      <UniqueIdentifier>{c8315031-a313-423a-9a10-81b42eaf6aec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Common">
+      <UniqueIdentifier>{e47d1471-ec58-4497-8ce7-121f47421296}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="WndProcFunc.hpp">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="DrawFunc.hpp">
+      <Filter>헤더 파일\Draw</Filter>
+    </ClInclude>
+    <ClInclude Include="Common.hpp">
+      <Filter>헤더 파일\Common</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
