@@ -16,24 +16,65 @@
     <Filter Include="헤더 파일\Draw">
       <UniqueIdentifier>{c8315031-a313-423a-9a10-81b42eaf6aec}</UniqueIdentifier>
     </Filter>
-    <Filter Include="헤더 파일\Common">
-      <UniqueIdentifier>{e47d1471-ec58-4497-8ce7-121f47421296}</UniqueIdentifier>
+    <Filter Include="헤더 파일\Numeric">
+      <UniqueIdentifier>{83c52461-00fd-4f95-b857-4e4bec7a8a64}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Numeric">
+      <UniqueIdentifier>{732e1826-600b-4ebb-ac0b-d07c799c9fc4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Draw">
+      <UniqueIdentifier>{d62be371-7d2c-48e1-9d4d-3ed16618af94}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\LineContainer">
+      <UniqueIdentifier>{c8a63967-5567-4459-ae40-434244ec5950}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\LineContainer">
+      <UniqueIdentifier>{2d592dd3-8203-4840-9290-afd361fb194e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="DrawOffset.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="MainWindow.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Numeric.cpp">
+      <Filter>소스 파일\Numeric</Filter>
+    </ClCompile>
+    <ClCompile Include="DrawFunc.cpp">
+      <Filter>소스 파일\Draw</Filter>
+    </ClCompile>
+    <ClCompile Include="LineContainer.cpp">
+      <Filter>소스 파일\LineContainer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="WndProcFunc.hpp">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="DrawFunc.hpp">
       <Filter>헤더 파일\Draw</Filter>
     </ClInclude>
-    <ClInclude Include="Common.hpp">
-      <Filter>헤더 파일\Common</Filter>
+    <ClInclude Include="DrawOffset.hpp">
+      <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="MainWindow.hpp">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Numeric.hpp">
+      <Filter>헤더 파일\Numeric</Filter>
+    </ClInclude>
+    <ClInclude Include="LineContainer.h">
+      <Filter>헤더 파일\LineContainer</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="DirectX_Study.rc">
+      <Filter>리소스 파일</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

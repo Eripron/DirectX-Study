@@ -1,36 +1,15 @@
-#ifndef DRAW_FUNC_HPP
-#define DRAW_FUNC_HPP
+#pragma once
 
 #include <Windows.h>
 #include <math.h>
 
-#include "Common.hpp"
+#include "Numeric.hpp"
 
-void DrawLine(HDC hdc, Vector3 p1, Vector3 p2)
+namespace Graphic
 {
-	float dx = p2.x - p1.x;
-	float dy = p2.y - p1.y;
+	void DrawLine(HDC _hdc, Numeric::Vector3 _p1, Numeric::Vector3 _p2);
+	void DrawLine(HDC _hdc, int _x1, int _y1, int _z1, int _x2, int _y2, int _z2);
 
-	float steps = max(fabs(dx), fabs(dy));
 
-	float xInc = dx / steps;
-	float yInc = dy / steps;
-
-	float x = p1.x;
-	float y = p1.y;
-
-	for (int i = 0; i <= steps; ++i)
-	{
-		SetPixel(hdc, round(x), round(y), RGB(0, 0, 0));
-		x += xInc;
-		y += yInc;
-	}
+	void DrawBitmap(HDC _hdc, int _x, int _y, HBITMAP _hBit);
 }
-
-void DrawLine(HDC hdc, int x1, int y1, int z1, int x2, int y2, int z2)
-{
-	DrawLine(hdc, Vector3(x1, y1, z1), Vector3(x2, y2, z2));
-}
-
-
-#endif

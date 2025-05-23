@@ -127,12 +127,23 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="DrawFunc.cpp" />
+    <ClCompile Include="DrawOffset.cpp" />
+    <ClCompile Include="LineContainer.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="MainWindow.cpp" />
+    <ClCompile Include="Numeric.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Common.hpp" />
     <ClInclude Include="DrawFunc.hpp" />
-    <ClInclude Include="WndProcFunc.hpp" />
+    <ClInclude Include="DrawOffset.hpp" />
+    <ClInclude Include="LineContainer.h" />
+    <ClInclude Include="MainWindow.hpp" />
+    <ClInclude Include="Numeric.hpp" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="DirectX_Study.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
