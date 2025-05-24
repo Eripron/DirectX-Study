@@ -1,36 +1,17 @@
-#ifndef COMMON_HPP
-#define COMMON_HPP
+#pragma once
 
-struct Vector2
+#include <Windows.h>
+
+void DrawBitmap(HDC hdc, int x, int y, HBITMAP hBit)
 {
-	float x;
-	float y;
+	HDC MemDC = CreateCompatibleDC(hdc);
+	HBITMAP OldBitmap = (HBITMAP)SelectObject(MemDC, hBit);
 
-	Vector2(float _x = 0, float _y = 0) : x(_x), y(_y)
-	{
-	}
+	BITMAP bit;
+	GetObject(hBit, sizeof(BITMAP), &bit);
 
-	Vector2 operator+(const Vector2& other) const
-	{
-		return Vector2(x + other.x, y + other.y);
-	}
-};
+	BitBlt(hdc, x, y, bit.bmWidth, bit.bmHeight, MemDC, 0, 0, SRCCOPY);
 
-struct Vector3
-{
-	float x;
-	float y;
-	float z;
-
-	Vector3(float _x = 0, float _y = 0, float _z = 0) : x(_x), y(_y), z(_z)
-	{
-	}
-
-	Vector3 operator+(const Vector3& other) const
-	{
-		return Vector3(x + other.x, y + other.y, z + other.z);
-	}
-
-};
-
-#endif
+	SelectObject(MemDC, OldBitmap);
+	DeleteDC(MemDC);
+}

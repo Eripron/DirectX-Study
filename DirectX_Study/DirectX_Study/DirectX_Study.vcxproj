@@ -127,6 +127,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Dialog.cpp" />
+    <ClCompile Include="DialogLineAdd.cpp" />
     <ClCompile Include="DrawFunc.cpp" />
     <ClCompile Include="DrawOffset.cpp" />
     <ClCompile Include="LineContainer.cpp" />
@@ -135,6 +137,8 @@
     <ClCompile Include="Numeric.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Dialog.h" />
+    <ClInclude Include="DialogLineAdd.h" />
     <ClInclude Include="DrawFunc.hpp" />
     <ClInclude Include="DrawOffset.hpp" />
     <ClInclude Include="LineContainer.h" />

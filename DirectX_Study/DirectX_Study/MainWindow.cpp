@@ -1,6 +1,7 @@
 #include "MainWindow.hpp"
 
-MainWindow::MainWindow() : m_hInst(NULL), m_hBackBuffer(NULL), m_DrawOffset(Numeric::Vector2())
+MainWindow::MainWindow() 
+	: m_hInst(NULL), m_hWnd(NULL), m_hBackBuffer(NULL), m_LineContainer(), m_DrawOffset(Numeric::Vector2())
 {
 }
 
@@ -102,6 +103,10 @@ LRESULT MainWindow::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 	case WM_MOUSEMOVE:
 		MouseMove(hWnd, wParam, LOWORD(lParam), HIWORD(lParam));
 		return 0;
+
+	case WM_COMMAND:
+		Command(hWnd, wParam, lParam);
+		return 0;
 	}
 
 	return DefWindowProc(hWnd, message, wParam, lParam);
@@ -109,6 +114,8 @@ LRESULT MainWindow::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 
 UINT MainWindow::Create(HWND hWnd)
 {
+	m_hWnd = hWnd;
+
 	// 출력용 비트맵 생성
 	HDC hdc = GetDC(hWnd);
 
@@ -117,6 +124,8 @@ UINT MainWindow::Create(HWND hWnd)
 	m_hBackBuffer = CreateCompatibleBitmap(hdc, rt.right, rt.bottom);
 
 	ReleaseDC(hWnd, hdc);
+
+	Draw();
 
 	return 0;
 }
@@ -128,48 +137,79 @@ void MainWindow::Destroy()
 
 void MainWindow::Paint(HWND hWnd, HDC hdc)
 {
-	RECT rt;
-	GetClientRect(hWnd, &rt);
+	Graphic::DrawBitmap(hdc, 0, 0, m_hBackBuffer);
+}
 
+void MainWindow::Draw()
+{
+	RECT rt;
+	GetClientRect(m_hWnd, &rt);
+
+	HDC hdc = GetDC(m_hWnd);
 	HDC hMemDC = CreateCompatibleDC(hdc);
 	HBITMAP hOldBit = (HBITMAP)SelectObject(hMemDC, m_hBackBuffer);
 	FillRect(hMemDC, &rt, GetSysColorBrush(COLOR_WINDOW));
 
-	// draw line
-	Numeric::Vector3 vPoint1(100, 50, 0);
-	Numeric::Vector3 vPoint2(600, 300, 0);
-
-	Numeric::Vector2 offset = m_DrawOffset.GetOffset();
-
-	vPoint1.x = (offset.x + vPoint1.x);
-	vPoint1.y = (offset.y + vPoint1.y);
-
-	vPoint2.x = (offset.x + vPoint2.x);
-	vPoint2.y = (offset.y + vPoint2.y);
-
-	Graphic::DrawLine(hMemDC, vPoint1, vPoint2);
+	// draw logic
+	{
+		DrawLine(hMemDC);
+	}
 
 	SelectObject(hMemDC, hOldBit);
+	ReleaseDC(m_hWnd, hdc);
 
-	Graphic::DrawBitmap(hdc, 0, 0, m_hBackBuffer);
+	InvalidateRect(m_hWnd, NULL, FALSE);
+}
+
+void MainWindow::DrawLine(HDC hdc)
+{
+	for (int i = 0; i < m_LineContainer.GetCount(); ++i)
+	{
+		Line line = m_LineContainer.GetLine(i);
+
+		Numeric::Vector3 p1 = line.GetPoint1();
+		p1.x += m_DrawOffset.GetOffset().x;
+		p1.y += m_DrawOffset.GetOffset().y;
+
+		Numeric::Vector3 p2 = line.GetPoint2();
+		p2.x += m_DrawOffset.GetOffset().x;
+		p2.y += m_DrawOffset.GetOffset().y;
+
+		Graphic::DrawLine(hdc, p1, p2);
+	}
 }
 
 void MainWindow::RButtonDown(HWND hWnd, WPARAM wParam, int cursorX, int cursorY)
 {
 	m_DrawOffset.StartMove(Numeric::Vector2(cursorX, cursorY));
-
 }
 
 void MainWindow::RButtonUp(HWND hWnd, WPARAM wParam, int cursorX, int cursorY)
 {
 	m_DrawOffset.EndMove();
 
-	InvalidateRect(hWnd, NULL, FALSE);
+	Draw();
 }
 
 void MainWindow::MouseMove(HWND hWnd, WPARAM wParam, int cursorX, int cursorY)
 {
 	m_DrawOffset.Moving(Numeric::Vector2(cursorX, cursorY));
 
-	InvalidateRect(hWnd, NULL, FALSE);
+	Draw();
+}
+
+void MainWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
+{
+	switch (wParam)
+	{
+	case ID_40001:
+	{
+		MainWindow* mainWindow = this;
+		DialogLineAdd dialogLineAdd(&m_LineContainer);
+		dialogLineAdd.SetEventAddLine(std::bind(&MainWindow::Draw, this));
+		dialogLineAdd.CreateModle(m_hInst, hWnd, IDD_DIALOG1);
+		break;
+	}
+
+	}
 }

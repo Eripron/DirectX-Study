@@ -31,6 +31,12 @@
     <Filter Include="헤더 파일\LineContainer">
       <UniqueIdentifier>{2d592dd3-8203-4840-9290-afd361fb194e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="헤더 파일\Dialog">
+      <UniqueIdentifier>{e6a618c5-b4a2-4beb-8853-dd97392617c5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Dialog">
+      <UniqueIdentifier>{8262d621-b73a-4b9f-b210-cca1b592a799}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -51,6 +57,12 @@
     <ClCompile Include="LineContainer.cpp">
       <Filter>소스 파일\LineContainer</Filter>
     </ClCompile>
+    <ClCompile Include="Dialog.cpp">
+      <Filter>소스 파일\Dialog</Filter>
+    </ClCompile>
+    <ClCompile Include="DialogLineAdd.cpp">
+      <Filter>소스 파일\Dialog</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DrawFunc.hpp">
@@ -70,6 +82,12 @@
     </ClInclude>
     <ClInclude Include="LineContainer.h">
       <Filter>헤더 파일\LineContainer</Filter>
+    </ClInclude>
+    <ClInclude Include="Dialog.h">
+      <Filter>헤더 파일\Dialog</Filter>
+    </ClInclude>
+    <ClInclude Include="DialogLineAdd.h">
+      <Filter>헤더 파일\Dialog</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
