@@ -1,9 +1,18 @@
-#include "DrawFunc.hpp"
+﻿#include "DrawFunc.hpp"
 
 namespace Graphic
 {
 	void DrawLine(HDC _hdc, Numeric::Vector3 _p1, Numeric::Vector3 _p2)
 	{
+		// TODO: 이차방정식으로 변경하기
+
+		/*
+		다음주 발표
+		1. 삼각함수
+		2. 행렬 
+		3. 벡터- 내적, 외적
+		*/
+
 		float dx = _p2.x - _p1.x;
 		float dy = _p2.y - _p1.y;
 
