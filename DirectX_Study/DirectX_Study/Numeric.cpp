@@ -1,4 +1,4 @@
-#include "Numeric.hpp"
+#include "Numeric.h"
 
 namespace Numeric
 {

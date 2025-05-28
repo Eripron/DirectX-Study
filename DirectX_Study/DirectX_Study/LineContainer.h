@@ -4,8 +4,8 @@
 #include <vector>
 #include <stdexcept>
 
-#include "Numeric.hpp"
-#include "DrawFunc.hpp"
+#include "Numeric.h"
+#include "GraphicUtils.h"
 
 class Line
 {

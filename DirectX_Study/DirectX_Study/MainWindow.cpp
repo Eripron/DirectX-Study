@@ -1,4 +1,4 @@
-#include "MainWindow.hpp"
+#include "MainWindow.h"
 
 MainWindow::MainWindow() 
 	: m_hInst(NULL), m_hWnd(NULL), m_hBackBuffer(NULL), m_LineContainer(), m_DrawOffset(Numeric::Vector2())
@@ -137,7 +137,7 @@ void MainWindow::Destroy()
 
 void MainWindow::Paint(HWND hWnd, HDC hdc)
 {
-	Graphic::DrawBitmap(hdc, 0, 0, m_hBackBuffer);
+	GraphicUtils::DrawBitmap(hdc, 0, 0, m_hBackBuffer);
 }
 
 void MainWindow::Draw()
@@ -175,7 +175,7 @@ void MainWindow::DrawLine(HDC hdc)
 		p2.x += m_DrawOffset.GetOffset().x;
 		p2.y += m_DrawOffset.GetOffset().y;
 
-		Graphic::DrawLine(hdc, p1, p2);
+		GraphicUtils::DrawLine(hdc, p1, p2);
 	}
 }
 

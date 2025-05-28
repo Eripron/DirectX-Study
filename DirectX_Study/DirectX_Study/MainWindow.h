@@ -4,8 +4,8 @@
 #include <functional>
 #include "resource.h"
 
-#include "DrawOffset.hpp"
-#include "DrawFunc.hpp"
+#include "DrawOffset.h"
+#include "GraphicUtils.h"
 #include "LineContainer.h"
 
 #include "DialogLineAdd.h"

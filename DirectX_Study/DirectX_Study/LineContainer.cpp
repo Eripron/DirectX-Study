@@ -57,7 +57,7 @@ void LineContainer::DrawLine(HDC _hdc, HBITMAP _hBit, Numeric::Vector2 _offset)
 		p2.x += _offset.x;
 		p2.y = _offset.y;
 
-		Graphic::DrawLine(_hdc, p1, p2);
+		GraphicUtils::DrawLine(_hdc, p1, p2);
 	}
 
 	SelectObject(_hdc, hOldBit);

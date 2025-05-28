@@ -129,21 +129,23 @@
   <ItemGroup>
     <ClCompile Include="Dialog.cpp" />
     <ClCompile Include="DialogLineAdd.cpp" />
-    <ClCompile Include="DrawFunc.cpp" />
+    <ClCompile Include="GraphicUtils.cpp" />
     <ClCompile Include="DrawOffset.cpp" />
     <ClCompile Include="LineContainer.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MainWindow.cpp" />
+    <ClCompile Include="MathUtils.cpp" />
     <ClCompile Include="Numeric.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dialog.h" />
     <ClInclude Include="DialogLineAdd.h" />
-    <ClInclude Include="DrawFunc.hpp" />
-    <ClInclude Include="DrawOffset.hpp" />
+    <ClInclude Include="GraphicUtils.h" />
+    <ClInclude Include="DrawOffset.h" />
     <ClInclude Include="LineContainer.h" />
-    <ClInclude Include="MainWindow.hpp" />
-    <ClInclude Include="Numeric.hpp" />
+    <ClInclude Include="MainWindow.h" />
+    <ClInclude Include="MathUtils.h" />
+    <ClInclude Include="Numeric.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>

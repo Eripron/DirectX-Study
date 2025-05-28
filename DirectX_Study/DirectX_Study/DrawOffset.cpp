@@ -1,4 +1,4 @@
-#include "DrawOffset.hpp"
+#include "DrawOffset.h"
 
 DrawOffset::DrawOffset(Numeric::Vector2 vCenter)
 	: m_vCenter(vCenter), m_vOffset(Numeric::Vector2(0, 0)), m_bOffsetMoving(false)

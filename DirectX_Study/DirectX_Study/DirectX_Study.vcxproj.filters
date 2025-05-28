@@ -13,17 +13,11 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="헤더 파일\Draw">
-      <UniqueIdentifier>{c8315031-a313-423a-9a10-81b42eaf6aec}</UniqueIdentifier>
-    </Filter>
     <Filter Include="헤더 파일\Numeric">
       <UniqueIdentifier>{83c52461-00fd-4f95-b857-4e4bec7a8a64}</UniqueIdentifier>
     </Filter>
     <Filter Include="소스 파일\Numeric">
       <UniqueIdentifier>{732e1826-600b-4ebb-ac0b-d07c799c9fc4}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="소스 파일\Draw">
-      <UniqueIdentifier>{d62be371-7d2c-48e1-9d4d-3ed16618af94}</UniqueIdentifier>
     </Filter>
     <Filter Include="소스 파일\LineContainer">
       <UniqueIdentifier>{c8a63967-5567-4459-ae40-434244ec5950}</UniqueIdentifier>
@@ -36,6 +30,12 @@
     </Filter>
     <Filter Include="소스 파일\Dialog">
       <UniqueIdentifier>{8262d621-b73a-4b9f-b210-cca1b592a799}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Utils">
+      <UniqueIdentifier>{8cc1434f-6b19-411d-854b-666b1506244e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Utils">
+      <UniqueIdentifier>{41eed273-9937-417b-8bcb-e10f8afb9077}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -51,9 +51,6 @@
     <ClCompile Include="Numeric.cpp">
       <Filter>소스 파일\Numeric</Filter>
     </ClCompile>
-    <ClCompile Include="DrawFunc.cpp">
-      <Filter>소스 파일\Draw</Filter>
-    </ClCompile>
     <ClCompile Include="LineContainer.cpp">
       <Filter>소스 파일\LineContainer</Filter>
     </ClCompile>
@@ -63,21 +60,24 @@
     <ClCompile Include="DialogLineAdd.cpp">
       <Filter>소스 파일\Dialog</Filter>
     </ClCompile>
+    <ClCompile Include="GraphicUtils.cpp">
+      <Filter>소스 파일\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="MathUtils.cpp">
+      <Filter>소스 파일\Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DrawFunc.hpp">
-      <Filter>헤더 파일\Draw</Filter>
-    </ClInclude>
-    <ClInclude Include="DrawOffset.hpp">
+    <ClInclude Include="DrawOffset.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="MainWindow.hpp">
+    <ClInclude Include="MainWindow.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Numeric.hpp">
+    <ClInclude Include="Numeric.h">
       <Filter>헤더 파일\Numeric</Filter>
     </ClInclude>
     <ClInclude Include="LineContainer.h">
@@ -88,6 +88,12 @@
     </ClInclude>
     <ClInclude Include="DialogLineAdd.h">
       <Filter>헤더 파일\Dialog</Filter>
+    </ClInclude>
+    <ClInclude Include="MathUtils.h">
+      <Filter>헤더 파일\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="GraphicUtils.h">
+      <Filter>헤더 파일\Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
