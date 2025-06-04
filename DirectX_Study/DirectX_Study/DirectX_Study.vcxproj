@@ -129,6 +129,7 @@
   <ItemGroup>
     <ClCompile Include="Dialog.cpp" />
     <ClCompile Include="DialogLineAdd.cpp" />
+    <ClCompile Include="Graphic.cpp" />
     <ClCompile Include="GraphicUtils.cpp" />
     <ClCompile Include="DrawOffset.cpp" />
     <ClCompile Include="LineContainer.cpp" />
@@ -140,6 +141,7 @@
   <ItemGroup>
     <ClInclude Include="Dialog.h" />
     <ClInclude Include="DialogLineAdd.h" />
+    <ClInclude Include="Graphic.h" />
     <ClInclude Include="GraphicUtils.h" />
     <ClInclude Include="DrawOffset.h" />
     <ClInclude Include="LineContainer.h" />

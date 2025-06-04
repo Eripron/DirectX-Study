@@ -4,6 +4,7 @@
 #include <functional>
 #include "resource.h"
 
+#include "Graphic.h"
 #include "DrawOffset.h"
 #include "GraphicUtils.h"
 #include "LineContainer.h"

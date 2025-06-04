@@ -1,6 +1,6 @@
 #include "GraphicUtils.h"
 
-void GraphicUtils::DrawLine(HDC _hdc, Numeric::Vector3 _p1, Numeric::Vector3 _p2)
+void GraphicUtils::DrawLine(HDC _hdc, Numeric::Vector3 _p1, Numeric::Vector3 _p2, COLORREF _color)
 {
 	float dx = _p2.x - _p1.x;
 	float dy = _p2.y - _p1.y;
@@ -8,23 +8,23 @@ void GraphicUtils::DrawLine(HDC _hdc, Numeric::Vector3 _p1, Numeric::Vector3 _p2
 	float a = dy / dx;				// 기울기
 	float b = _p1.y - a * _p1.x;	// y절편
 
-	bool bUseAxisX = a <= 1;
+	bool bUseAxisX = fabs(a) <= 1;
 
 	float step = bUseAxisX ? fabs(dx) : fabs(dy);
 	float start = bUseAxisX ? min(_p1.x, _p2.x) : min(_p1.y, _p2.y);
 
-	for (int i = start; i <= step; ++i)
+	for (int i = 0; i <= step; ++i)
 	{
-		int x = bUseAxisX ? i : MathUtils::GetLinearX(a, b, i) + 0.5f;
-		int y = bUseAxisX ? MathUtils::GetLinearY(a, b, i) + 0.5f : i;
+		int x = bUseAxisX ? start + i : MathUtils::GetLinearX(a, b, start + i) + 0.5f;
+		int y = bUseAxisX ? MathUtils::GetLinearY(a, b, start + i) + 0.5f : start + i;
 
-		SetPixel(_hdc, x, y, RGB(0, 0, 0));
+		SetPixel(_hdc, x, y, _color);
 	}
 }
 
-void GraphicUtils::DrawLine(HDC _hdc, float _x1, float _y1, float _z1, float _x2, float _y2, float _z2)
+void GraphicUtils::DrawLine(HDC _hdc, float _x1, float _y1, float _z1, float _x2, float _y2, float _z2, COLORREF _color)
 {
-	DrawLine(_hdc, Numeric::Vector3(_x1, _y1, _z1), Numeric::Vector3(_x2, _y2, _z2));
+	DrawLine(_hdc, Numeric::Vector3(_x1, _y1, _z1), Numeric::Vector3(_x2, _y2, _z2), _color);
 }
 
 void GraphicUtils::DrawBitmap(HDC _hdc, int _x, int _y, HBITMAP _hBit)

@@ -48,6 +48,7 @@ namespace Numeric
 
 #pragma endregion
 
+#pragma region Vector3
 
     struct Vector3
 	{
@@ -87,5 +88,15 @@ namespace Numeric
     };
 
     Vector3 operator*(float _value, const Vector3 _other);
+
+#pragma endregion
+
+#pragma region Matrix3
+
+
+#pragma endregion
+
+#pragma region Matrix4
+#pragma endregion
 
 }

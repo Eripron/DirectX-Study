@@ -163,6 +163,12 @@ void MainWindow::Draw()
 
 void MainWindow::DrawLine(HDC hdc)
 {
+	Graphic::Triangle triangle(Graphic::Dot(100.0f, 100.0f, 0.0f), 
+							   Graphic::Dot(50.0f, 200.0f, 0.0f), 
+							   Graphic::Dot(150.0f, 200.0f, 0.0f));
+
+	triangle.Draw(hdc, RGB(0, 0, 255));
+
 	for (int i = 0; i < m_LineContainer.GetCount(); ++i)
 	{
 		Line line = m_LineContainer.GetLine(i);
@@ -175,7 +181,7 @@ void MainWindow::DrawLine(HDC hdc)
 		p2.x += m_DrawOffset.GetOffset().x;
 		p2.y += m_DrawOffset.GetOffset().y;
 
-		GraphicUtils::DrawLine(hdc, p1, p2);
+		GraphicUtils::DrawLine(hdc, p1, p2, RGB(0, 0, 0));
 	}
 }
 

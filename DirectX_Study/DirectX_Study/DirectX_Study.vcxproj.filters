@@ -37,6 +37,12 @@
     <Filter Include="헤더 파일\Utils">
       <UniqueIdentifier>{41eed273-9937-417b-8bcb-e10f8afb9077}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\Graphic">
+      <UniqueIdentifier>{25eb343d-182f-4d4b-ba24-fd5b040782dc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Graphic">
+      <UniqueIdentifier>{16c9940c-df8f-474c-98eb-a4b8d1608651}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -66,6 +72,9 @@
     <ClCompile Include="MathUtils.cpp">
       <Filter>소스 파일\Utils</Filter>
     </ClCompile>
+    <ClCompile Include="Graphic.cpp">
+      <Filter>소스 파일\Graphic</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DrawOffset.h">
@@ -94,6 +103,9 @@
     </ClInclude>
     <ClInclude Include="GraphicUtils.h">
       <Filter>헤더 파일\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphic.h">
+      <Filter>헤더 파일\Graphic</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
