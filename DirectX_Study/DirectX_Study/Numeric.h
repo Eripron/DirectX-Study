@@ -93,10 +93,94 @@ namespace Numeric
 
 #pragma region Matrix3
 
+    struct Matrix33
+    {
+        union Element33
+        {
+            struct
+            {
+                float m11;
+                float m12;
+                float m13;
+
+                float m21;
+                float m22;
+                float m23;
+
+                float m31;
+                float m32;
+                float m33;
+            };
+
+            float m[3][3];
+        } element33;
+
+        Matrix33();
+
+        Matrix33 operator+(const Matrix33& _other) const;
+        Matrix33& operator+=(const Matrix33& _other);
+
+        Matrix33 operator-(const Matrix33& _other) const;
+        Matrix33& operator-=(const Matrix33& _other);
+
+        Matrix33 operator*(float _value) const;
+        Matrix33 operator*(const Matrix33& _other) const;
+        Matrix33& operator*=(const Matrix33& _other);
+
+    };
+
+    Matrix33 operator*(float _value, const Matrix33& _other);
 
 #pragma endregion
 
 #pragma region Matrix4
+
+    struct Matrix44
+    {
+        union Element44
+        {
+            struct
+            {
+                float m11;
+                float m12;
+                float m13;
+                float m14;
+
+                float m21;
+                float m22;
+                float m23;
+                float m24;
+
+                float m31;
+                float m32;
+                float m33;
+                float m34;
+
+                float m41;
+                float m42;
+                float m43;
+                float m44;
+            };
+
+            float m[4][4];
+        } element44;
+
+        Matrix44();
+
+        Matrix44 operator+(const Matrix44& _other) const;
+        Matrix44& operator+=(const Matrix44& _other);
+
+        Matrix44 operator-(const Matrix44& _other) const;
+        Matrix44& operator-=(const Matrix44& _other);
+
+        Matrix44 operator*(float _value) const;
+        Matrix44 operator*(const Matrix44& _other) const;
+        Matrix44& operator*=(const Matrix44& _other);
+    };
+
+    Matrix44 operator*(float _value, const Matrix44& _other);
+
+
 #pragma endregion
 
 }

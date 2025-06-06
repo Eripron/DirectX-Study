@@ -230,8 +230,263 @@ namespace Numeric
 		return _other * _value;
 	}
 
+	
+
 #pragma endregion
 
 #pragma endregion
+
+
+#pragma region Matrix33
+
+	Matrix33::Matrix33()
+	{
+		for (int row = 0; row < 3; ++row)
+		{
+			for (int col = 0; col < 3; ++col)
+				element33.m[row][col] = 0;
+		}
+	}
+
+	Matrix33 Matrix33::operator+(const Matrix33& _other) const
+	{
+		Matrix33 ret;
+
+		for (int row = 0; row < 3; ++row)
+		{
+			for (int col = 0; col < 3; ++col)
+			{
+				ret.element33.m[row][col] = element33.m[row][col] + _other.element33.m[row][col];
+			}
+		}
+
+		return ret;
+	}
+
+	Matrix33& Matrix33::operator+=(const Matrix33& _other)
+	{
+		for (int row = 0; row < 3; ++row)
+		{
+			for (int col = 0; col < 3; ++col)
+			{
+				element33.m[row][col] +=_other.element33.m[row][col];
+			}
+		}
+
+		return *this;
+	}
+
+	Matrix33 Matrix33::operator-(const Matrix33& _other) const
+	{
+		Matrix33 ret;
+
+		for (int row = 0; row < 3; ++row)
+		{
+			for (int col = 0; col < 3; ++col)
+			{
+				ret.element33.m[row][col] = element33.m[row][col] - _other.element33.m[row][col];
+			}
+		}
+
+		return ret;
+	}
+
+	Matrix33& Matrix33::operator-=(const Matrix33& _other)
+	{
+		for (int row = 0; row < 3; ++row)
+		{
+			for (int col = 0; col < 3; ++col)
+			{
+				element33.m[row][col] -= _other.element33.m[row][col];
+			}
+		}
+
+		return *this;
+	}
+
+	Matrix33 Matrix33::operator*(float _value) const
+	{
+		Matrix33 ret;
+
+		for (int row = 0; row < 3; ++row)
+		{
+			for (int col = 0; col < 3; ++col)
+			{
+				ret.element33.m[row][col] = element33.m[row][col] * _value;
+			}
+		}
+
+		return ret;
+	}
+
+	Matrix33 Matrix33::operator*(const Matrix33& _other) const
+	{
+		Matrix33 ret;
+
+		for (int row = 0; row < 3; ++row)
+		{
+			for (int col = 0; col < 3; ++col)
+			{
+				for (int k = 0; k < 3; ++k)
+				{
+					ret.element33.m[row][col] += element33.m[row][k] * _other.element33.m[k][col];
+				}
+			}
+		}
+
+		return ret;
+	}
+
+	Matrix33& Matrix33::operator*=(const Matrix33& _other)
+	{
+		Matrix33 ret;
+
+		for (int row = 0; row < 3; ++row)
+		{
+			for (int col = 0; col < 3; ++col)
+			{
+				for (int k = 0; k < 3; ++k)
+				{
+					ret.element33.m[row][col] += element33.m[row][k] * _other.element33.m[k][col];
+				}
+			}
+		}
+
+		*this = ret;
+
+		return *this;
+	}
+
+	Matrix33 operator*(float _value, const Matrix33& _other)
+	{
+		return _other * _value;
+	}
+
+#pragma endregion
+
+	Matrix44::Matrix44()
+	{
+		for (int row = 0; row < 4; ++row)
+		{
+			for (int col = 0; col < 4; ++col)
+			{
+				element44.m[row][col] = 0;
+			}
+		}
+	}
+
+	Matrix44 Matrix44::operator+(const Matrix44& _other) const
+	{
+		Matrix44 ret;
+
+		for (int row = 0; row < 4; ++row)
+		{
+			for (int col = 0; col < 4; ++col)
+			{
+				ret.element44.m[row][col] = element44.m[row][col] + _other.element44.m[row][col];
+			}
+		}
+
+		return ret;
+	}
+
+	Matrix44& Matrix44::operator+=(const Matrix44& _other)
+	{
+		for (int row = 0; row < 4; ++row)
+		{
+			for (int col = 0; col < 4; ++col)
+			{
+				element44.m[row][col] += _other.element44.m[row][col];
+			}
+		}
+
+		return *this;
+	}
+
+	Matrix44 Matrix44::operator-(const Matrix44& _other) const
+	{
+		Matrix44 ret;
+
+		for (int row = 0; row < 4; ++row)
+		{
+			for (int col = 0; col < 4; ++col)
+			{
+				ret.element44.m[row][col] = element44.m[row][col] - _other.element44.m[row][col];
+			}
+		}
+
+		return ret;
+	}
+
+	Matrix44& Matrix44::operator-=(const Matrix44& _other)
+	{
+		for (int row = 0; row < 4; ++row)
+		{
+			for (int col = 0; col < 4; ++col)
+			{
+				element44.m[row][col] -= _other.element44.m[row][col];
+			}
+		}
+
+		return *this;
+	}
+
+	Matrix44 Matrix44::operator*(float _value) const
+	{
+		Matrix44 ret;
+
+		for (int row = 0; row < 4; ++row)
+		{
+			for (int col = 0; col < 4; ++col)
+			{
+				ret.element44.m[row][col] = element44.m[row][col] * _value;
+			}
+		}
+
+		return ret;
+	}
+
+	Matrix44 Matrix44::operator*(const Matrix44& _other) const
+	{
+		Matrix44 ret;
+
+		for (int row = 0; row < 4; ++row)
+		{
+			for (int col = 0; col < 4; ++col)
+			{
+				for (int k = 0; k < 4; ++k)
+				{
+					ret.element44.m[row][col] += element44.m[row][k] * _other.element44.m[k][col];
+				}
+			}
+		}
+
+		return ret;
+	}
+
+	Matrix44& Matrix44::operator*=(const Matrix44& _other)
+	{
+		Matrix44 ret;
+
+		for (int row = 0; row < 4; ++row)
+		{
+			for (int col = 0; col < 4; ++col)
+			{
+				for (int k = 0; k < 4; ++k)
+				{
+					ret.element44.m[row][col] += element44.m[row][k] * _other.element44.m[k][col];
+				}
+			}
+		}
+
+		*this = ret;
+
+		return *this;
+	}
+
+	Matrix44 operator*(float _value, const Matrix44& _other)
+	{
+		return _other * _value;
+	}
 
 }
