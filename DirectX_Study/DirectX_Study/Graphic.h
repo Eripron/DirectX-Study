@@ -1,39 +1,43 @@
 #pragma once
 
 #include <Windows.h>
+#include <math.h>
 
-#include "Numeric.h"
-#include "MathUtils.h"
 #include "GraphicUtils.h"
+#include "MathUtils.h"
+#include "Numeric.h"
 
-using namespace Numeric;
-
-namespace Graphic
+namespace DK
 {
+	//struct Vector2;
+	//struct Vector3;
+
 	class Graphic
 	{
 	public:
-		Graphic();
+		Graphic() = default;
 		virtual ~Graphic();
 
-		virtual void Draw(HDC _hdc, COLORREF _color) = 0;
-		// TODO: move, rotate, scale
+		/*virtual void Move(float x, float y, float z) = 0;
+		virtual void Move(Vector3 move) = 0;
+
+		virtual void Rotate(float degree) = 0;
+		virtual void Scale(float scale) = 0;*/
 	};
 
 	class Dot : public Graphic
 	{
-	protected:
-		Vector3 m_vPos;
-
 	public:
-		Dot(float _x = 0, float _y = 0, float _z = 0);
-		Dot(Vector2 _vPos);
-		Dot(Vector3 _vPos);
+		Dot(float x = 0, float y = 0, float z = 0);
+		Dot(Vector2 vPos);
+		Dot(Vector3 vPos);
 		~Dot();
 
-		void Draw(HDC _hdc, COLORREF _color) override;
-
 		Vector3 GetPos();
+
+	protected:
+		Vector3 _vPos;
+
 	};
 
 	class Triangle : public Graphic
@@ -47,7 +51,6 @@ namespace Graphic
 		Triangle(Dot _dot1, Dot _dot2, Dot _dot3);
 		~Triangle();
 
-		void Draw(HDC _hdc, COLORREF _color) override;
 	};
 
 	class Circle : public Graphic
@@ -62,7 +65,6 @@ namespace Graphic
 		Circle(float _lbx = 0, float _lby = 0, float _rux = 0, float _ruy = 0);
 		~Circle();
 
-		void Draw(HDC _hdc, COLORREF _color) override;
 	};
 
 }

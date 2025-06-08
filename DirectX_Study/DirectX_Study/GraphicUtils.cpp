@@ -1,42 +1,45 @@
-#include "GraphicUtils.h"
+#include "Graphic.h"
 
-void GraphicUtils::DrawLine(HDC _hdc, Numeric::Vector3 _p1, Numeric::Vector3 _p2, COLORREF _color)
+namespace DK
 {
-	float dx = _p2.x - _p1.x;
-	float dy = _p2.y - _p1.y;
-
-	float a = dy / dx;				// 기울기
-	float b = _p1.y - a * _p1.x;	// y절편
-
-	bool bUseAxisX = fabs(a) <= 1;
-
-	float step = bUseAxisX ? fabs(dx) : fabs(dy);
-	float start = bUseAxisX ? min(_p1.x, _p2.x) : min(_p1.y, _p2.y);
-
-	for (int i = 0; i <= step; ++i)
+	void GraphicUtils::DrawLine(HDC hdc, Vector3 p1, Vector3 p2, COLORREF color)
 	{
-		int x = bUseAxisX ? start + i : MathUtils::GetLinearX(a, b, start + i) + 0.5f;
-		int y = bUseAxisX ? MathUtils::GetLinearY(a, b, start + i) + 0.5f : start + i;
+		float dx = p2.x - p1.x;
+		float dy = p2.y - p1.y;
 
-		SetPixel(_hdc, x, y, _color);
+		float a = dy / dx;				// 기울기
+		float b = p1.y - a * p1.x;	// y절편
+
+		bool bUseAxisX = fabs(a) <= 1;
+
+		float step = bUseAxisX ? fabs(dx) : fabs(dy);
+		float start = bUseAxisX ? min(p1.x, p2.x) : min(p1.y, p2.y);
+
+		for (int i = 0; i <= step; ++i)
+		{
+			int x = bUseAxisX ? start + i : MathUtils::GetLinearX(a, b, start + i) + 0.5f;
+			int y = bUseAxisX ? MathUtils::GetLinearY(a, b, start + i) + 0.5f : start + i;
+
+			SetPixel(hdc, x, y, color);
+		}
 	}
-}
 
-void GraphicUtils::DrawLine(HDC _hdc, float _x1, float _y1, float _z1, float _x2, float _y2, float _z2, COLORREF _color)
-{
-	DrawLine(_hdc, Numeric::Vector3(_x1, _y1, _z1), Numeric::Vector3(_x2, _y2, _z2), _color);
-}
+	void GraphicUtils::DrawLine(HDC hdc, float x1, float y1, float z1, float x2, float y2, float z2, COLORREF color)
+	{
+		DrawLine(hdc, Vector3(x1, y1, z1), Vector3(x2, y2, z2), color);
+	}
 
-void GraphicUtils::DrawBitmap(HDC _hdc, int _x, int _y, HBITMAP _hBit)
-{
-	HDC MemDC = CreateCompatibleDC(_hdc);
-	HBITMAP OldBitmap = (HBITMAP)SelectObject(MemDC, _hBit);
+	void GraphicUtils::DrawBitmap(HDC hdc, int x, int y, HBITMAP hBit)
+	{
+		HDC MemDC = CreateCompatibleDC(hdc);
+		HBITMAP OldBitmap = (HBITMAP)SelectObject(MemDC, hBit);
 
-	BITMAP bit;
-	GetObject(_hBit, sizeof(BITMAP), &bit);
+		BITMAP bit;
+		GetObject(hBit, sizeof(BITMAP), &bit);
 
-	BitBlt(_hdc, _x, _y, bit.bmWidth, bit.bmHeight, MemDC, 0, 0, SRCCOPY);
+		BitBlt(hdc, x, y, bit.bmWidth, bit.bmHeight, MemDC, 0, 0, SRCCOPY);
 
-	SelectObject(MemDC, OldBitmap);
-	DeleteDC(MemDC);
+		SelectObject(MemDC, OldBitmap);
+		DeleteDC(MemDC);
+	}
 }

@@ -1,62 +1,54 @@
+#include <Windows.h>
+
+#include "Numeric.h" 
 #include "Graphic.h"
+#include "MathUtils.h"
 
-namespace Graphic
+namespace DK
 {
+	Graphic::~Graphic()
+	{
+	}
 
-#pragma region Graphic
-
-Graphic::Graphic()	{}
-Graphic::~Graphic()	{}
-
-#pragma endregion
 
 #pragma region Dot
 
-Dot::Dot(float _x, float _y, float _z) : m_vPos(Vector3(_x, _y, _z))
-{
-}
+	Dot::Dot(float x, float y, float z) : _vPos(Vector3(x, y, z))
+	{
+	}
 
-Dot::Dot(Vector2 _vPos) : m_vPos(Vector3(_vPos.x, _vPos.y, 0))
-{
-}
+	Dot::Dot(Vector2 vPos) : _vPos(Vector3(vPos.x, vPos.y, 0))
+	{
+	}
 
-Dot::Dot(Vector3 _vPos) : m_vPos(_vPos)
-{
-}
+	Dot::Dot(Vector3 vPos) : _vPos(vPos)
+	{
+	}
 
-Dot::~Dot() 
-{
-}
+	Dot::~Dot()
+	{
+	}
 
-void Dot::Draw(HDC _hdc, COLORREF _color)
-{
-	SetPixel(_hdc, m_vPos.x, m_vPos.y, _color);
-}
-
-Vector3 Dot::GetPos()
-{
-	return m_vPos;
-}
+	Vector3 Dot::GetPos()
+	{
+		return _vPos;
+	}
 
 #pragma endregion
 
+
+
+
 #pragma region Triangle
 
-Triangle::Triangle(Dot _dot1, Dot _dot2, Dot _dot3) 
-	: m_dot1(_dot1), m_dot2(_dot2), m_dot3(_dot3)
-{
-}
+	Triangle::Triangle(Dot _dot1, Dot _dot2, Dot _dot3)
+		: m_dot1(_dot1), m_dot2(_dot2), m_dot3(_dot3)
+	{
+	}
 
-Triangle::~Triangle()
-{
-}
-
-void Triangle::Draw(HDC _hdc, COLORREF _color)
-{
-	GraphicUtils::DrawLine(_hdc, m_dot1.GetPos(), m_dot2.GetPos(), _color);
-	GraphicUtils::DrawLine(_hdc, m_dot2.GetPos(), m_dot3.GetPos(), _color);
-	GraphicUtils::DrawLine(_hdc, m_dot3.GetPos(), m_dot1.GetPos(), _color);
-}
+	Triangle::~Triangle()
+	{
+	}
 
 #pragma endregion
 

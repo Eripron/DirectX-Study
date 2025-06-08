@@ -1,16 +1,16 @@
 #pragma once
 
-#include <Windows.h>
-#include <math.h>
-
-#include "Numeric.h"
-#include "MathUtils.h"
-
-class GraphicUtils
+namespace DK
 {
-public:
-	static void DrawLine(HDC _hdc, Numeric::Vector3 _p1, Numeric::Vector3 _p2, COLORREF _color);
-	static void DrawLine(HDC _hdc, float _x1, float _y1, float _z1, float _x2, float _y2, float _z2, COLORREF _color);
+	struct Vector2;
+	struct Vector3;
 
-	static void DrawBitmap(HDC _hdc, int _x, int _y, HBITMAP _hBit);
-};
+	class GraphicUtils
+	{
+	public:
+		static void DrawLine(HDC hdc, Vector3 p1, Vector3 p2, COLORREF color);
+		static void DrawLine(HDC hdc, float x1, float y1, float z1, float x2, float y2, float z2, COLORREF color);
+
+		static void DrawBitmap(HDC hdc, int x, int y, HBITMAP hBit);
+	};
+}

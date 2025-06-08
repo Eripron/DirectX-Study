@@ -25,11 +25,27 @@ float MathUtils::Rad2Deg(float radian)
 
 float MathUtils::SinF(float degree)
 {
+	float normalized = fmodf(degree, 360.0f);
+	if (normalized < 0.0f)
+		normalized += 360.0f;
+
+	const float tolerance = 1e-4f;
+	if (fabsf(normalized - 0.0f) < tolerance || fabsf(normalized - 180.0f) < tolerance || fabsf(normalized - 360.0f) < tolerance) 
+		return 0.0f;
+
 	return sinf(Deg2Rad(degree));
 }
 
 float MathUtils::CosF(float degree)
 {
+	float normalized = fmodf(degree, 360.0f);
+	if (normalized < 0.0f)
+		normalized += 360.0f;
+
+	const float tolerance = 1e-4f;
+	if (fabsf(normalized - 90.0f) < tolerance || fabsf(normalized - 270.0f) < tolerance) 
+		return 0.0f;
+
 	return cosf(Deg2Rad(degree));
 }
 

@@ -6,7 +6,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstace, LPSTR lpszCmdP
 {
 	LPCTSTR strClassName = TEXT("Graphic");
 
-	MainWindow mainWindow;
+	DK::MainWindow mainWindow;
 	if (mainWindow.Create(hInstance, strClassName, strClassName, nCmdShow) == false)
 		return 0;
 
