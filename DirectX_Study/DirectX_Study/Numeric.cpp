@@ -264,13 +264,20 @@ namespace DK
 		}
 	}
 
-	Matrix33 Matrix33::MoveMatrix33(float xMove, float yMove)
+	Matrix33 Matrix33::Identity()
 	{
 		Matrix33 matrix;
 
 		matrix.element33.m11 = 1.0f;
 		matrix.element33.m22 = 1.0f;
 		matrix.element33.m33 = 1.0f;
+
+		return matrix;
+	}
+
+	Matrix33 Matrix33::MoveMatrix33(float xMove, float yMove)
+	{
+		Matrix33 matrix = Identity();
 
 		matrix.element33.m13 = xMove;
 		matrix.element33.m23 = yMove;
@@ -498,7 +505,7 @@ namespace DK
 		}
 	}
 
-	Matrix44 Matrix44::MoveMatrix44(float xMove, float yMove, float zMove)
+	Matrix44 Matrix44::Identity()
 	{
 		Matrix44 matrix;
 
@@ -506,6 +513,13 @@ namespace DK
 		matrix.element44.m22 = 1.0f;
 		matrix.element44.m33 = 1.0f;
 		matrix.element44.m44 = 1.0f;
+
+		return matrix;
+	}
+
+	Matrix44 Matrix44::MoveMatrix44(float xMove, float yMove, float zMove)
+	{
+		Matrix44 matrix = Identity();
 
 		matrix.element44.m14 = xMove;
 		matrix.element44.m24 = yMove;

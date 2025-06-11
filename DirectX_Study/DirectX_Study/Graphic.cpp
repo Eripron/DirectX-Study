@@ -29,13 +29,19 @@ namespace DK
 		return _vPos;
 	}
 
+	void Dot::SetPos(Vector3 vPos)
+	{
+		_vPos = vPos;
+	}
+
 	void Dot::ApplyTransform(Matrix44 matrix)
 	{
-		_vPos = matrix * _vPos;
+		SetPos(matrix * _vPos);
 	}
 
 	void Dot::Draw(Renderer* rederer)
 	{
+		rederer->DrawPixel(_vPos);
 	}
 
 #pragma endregion
@@ -64,9 +70,18 @@ namespace DK
 
 	void Triangle::ApplyTransform(Matrix44 matrix)
 	{
-		_dot1.ApplyTransform(matrix);
-		_dot2.ApplyTransform(matrix);
-		_dot3.ApplyTransform(matrix);
+		Vector3 p1 = _dot1.GetPos();
+		Vector3 p2 = _dot2.GetPos();
+		Vector3 p3 = _dot3.GetPos();
+
+		Vector3 center = (p1 + p2 + p3) / 3.0f;
+		p1 = matrix * (p1 - center) + center;
+		p2 = matrix * (p2 - center) + center;
+		p3 = matrix * (p3 - center) + center;
+
+		_dot1.SetPos(p1);
+		_dot2.SetPos(p2);
+		_dot3.SetPos(p3);
 	}
 
 	void Triangle::Draw(Renderer* rederer)
@@ -78,7 +93,7 @@ namespace DK
 
 #pragma endregion
 
-#pragma region Circle
+#pragma region Square
 
 #pragma endregion
 

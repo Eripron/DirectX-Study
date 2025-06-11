@@ -14,6 +14,13 @@ namespace DK
 		void Run();
 
 	private:
+		void Render(Renderer* pRender);
+
+		float GetXAxisInput();
+		float GetYAxisInput();
+		float GetRotateInput();
+		float GetScaleInput();
+
 
 	private:
 		Renderer _render;

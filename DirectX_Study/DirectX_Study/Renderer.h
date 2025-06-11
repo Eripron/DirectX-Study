@@ -16,11 +16,8 @@ namespace DK
 		void PreUpdate();
 		void LastUpdate();
 
-		void DrawLine(Vector3 a, Vector3 b);
-
-
-	private:
-		void Render();	// del
+		void DrawPixel(Vector3 point);
+		void DrawLine(Vector3 p1, Vector3 p2);
 
 	private:
 		HWND _hWnd;
@@ -28,5 +25,8 @@ namespace DK
 		HDC _memDC;
 		HBITMAP _hBitmap;
 		HBITMAP _hOldBitmap;
+
+		RECT _rtScreen;
+		Vector2 _vScreenSize;
 	};
 }

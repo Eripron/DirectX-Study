@@ -119,6 +119,7 @@ namespace DK
 
         Matrix33();
 
+        static Matrix33 Identity();
         static Matrix33 MoveMatrix33(float xMove, float yMove);
         static Matrix33 RotateXMatrix33(float degree);
         static Matrix33 RotateYMatrix33(float degree);
@@ -177,6 +178,7 @@ namespace DK
 
         Matrix44();
 
+        static Matrix44 Identity();
         static Matrix44 MoveMatrix44(float xMove, float yMove, float zMove);
         static Matrix44 RotateXMatrix44(float degree);
         static Matrix44 RotateYMatrix44(float degree);

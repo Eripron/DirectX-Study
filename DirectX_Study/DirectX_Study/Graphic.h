@@ -30,6 +30,7 @@ namespace DK
 		void Draw(Renderer* rederer) override;
 
 		Vector3 GetPos();
+		void SetPos(Vector3 vPos);
 
 	protected:
 		Vector3 _vPos;
@@ -52,5 +53,6 @@ namespace DK
 		Dot _dot2;
 		Dot _dot3;
 	};
+
 
 }

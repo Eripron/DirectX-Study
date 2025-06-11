@@ -19,7 +19,7 @@ namespace DK
 		}
 		else
 		{
-			float a = dy / dx;				// 기울기
+			float a = dy / dx;			// 기울기
 			float b = p1.y - a * p1.x;	// y절편
 
 			bool bUseAxisX = fabs(a) <= 1;
