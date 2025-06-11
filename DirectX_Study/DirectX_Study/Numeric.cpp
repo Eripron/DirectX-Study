@@ -12,12 +12,22 @@ namespace DK
 
 	Vector2 Vector2::Zero()
 	{
-		return Vector2(0, 0);
+		return Vector2(0.0f, 0.0f);
 	}
 
 	Vector2 Vector2::One()
 	{
-		return Vector2(1, 1);
+		return Vector2(1.0f, 1.0f);
+	}
+
+	Vector2 Vector2::Right()
+	{
+		return Vector2(1.0f, 0.0f);
+	}
+
+	Vector2 Vector2::Up()
+	{
+		return Vector2(0.0f, 1.0f);
 	}
 
 	float Vector2::Distance(const Vector2& a, const Vector2& b)
@@ -122,12 +132,27 @@ namespace DK
 
 	Vector3 Vector3::Zero()
 	{
-		return Vector3(0, 0, 0);
+		return Vector3(0.0f, 0.0f, 0.0f);
 	}
 
 	Vector3 Vector3::One()
 	{
-		return Vector3(1, 1, 1);
+		return Vector3(1.0f, 1.0f, 1.0f);
+	}
+
+	Vector3 Vector3::Right()
+	{
+		return Vector3(1.0f, 0.0f, 0.0f);
+	}
+
+	Vector3 Vector3::Up()
+	{
+		return Vector3(0.0f, 1.0f, 0.0f);
+	}
+
+	Vector3 Vector3::Forward()
+	{
+		return Vector3(0.0f, 0.0f, 1.0f);
 	}
 
 	float Vector3::Distance(const Vector3& a, const Vector3& b)
@@ -386,6 +411,19 @@ namespace DK
 		return ret;
 	}
 
+	Vector2 Matrix33::operator*(Vector2 v) const
+	{
+		float value[2];
+		for (int row = 0; row < 2; ++row)
+		{
+			value[row] = element33.m[row][0] * v.x + element33.m[row][1] * v.y + element33.m[row][2];
+		}
+
+		Vector2 ret(value[0], value[1]);
+
+		return ret;
+	}
+
 	Matrix33 Matrix33::operator*(const Matrix33& other) const
 	{
 		Matrix33 ret;
@@ -609,6 +647,19 @@ namespace DK
 				ret.element44.m[row][col] = element44.m[row][col] * value;
 			}
 		}
+
+		return ret;
+	}
+
+	Vector3 Matrix44::operator*(Vector3 v) const
+	{
+		float value[3];
+		for (int row = 0; row < 3; ++row)
+		{
+			value[row] = element44.m[row][0] * v.x + element44.m[row][1] * v.y + element44.m[row][2] * v.z + element44.m[row][3];
+		}
+
+		Vector3 ret(value[0], value[1], value[2]);
 
 		return ret;
 	}

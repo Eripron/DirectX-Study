@@ -1,15 +1,10 @@
-#include <Windows.h>
-
-#include "Numeric.h" 
 #include "Graphic.h"
-#include "MathUtils.h"
 
 namespace DK
 {
 	Graphic::~Graphic()
 	{
 	}
-
 
 #pragma region Dot
 
@@ -34,20 +29,51 @@ namespace DK
 		return _vPos;
 	}
 
+	void Dot::ApplyTransform(Matrix44 matrix)
+	{
+		_vPos = matrix * _vPos;
+	}
+
+	void Dot::Draw(Renderer* rederer)
+	{
+	}
+
 #pragma endregion
-
-
 
 
 #pragma region Triangle
 
-	Triangle::Triangle(Dot _dot1, Dot _dot2, Dot _dot3)
-		: m_dot1(_dot1), m_dot2(_dot2), m_dot3(_dot3)
+	Triangle::Triangle(Vector2 p1, Vector2 p2, Vector2 p3)
+		: _dot1(Dot(p1)), _dot2(Dot(p2)), _dot3(Dot(p3))
+	{
+	}
+
+	Triangle::Triangle(Vector3 p1, Vector3 p2, Vector3 p3)
+		: _dot1(Dot(p1)), _dot2(Dot(p2)), _dot3(Dot(p3))
+	{
+	}
+
+	Triangle::Triangle(Dot dot1, Dot dot2, Dot dot3)
+		: _dot1(dot1), _dot2(dot2), _dot3(dot3)
 	{
 	}
 
 	Triangle::~Triangle()
 	{
+	}
+
+	void Triangle::ApplyTransform(Matrix44 matrix)
+	{
+		_dot1.ApplyTransform(matrix);
+		_dot2.ApplyTransform(matrix);
+		_dot3.ApplyTransform(matrix);
+	}
+
+	void Triangle::Draw(Renderer* rederer)
+	{
+		rederer->DrawLine(_dot1.GetPos(), _dot2.GetPos());
+		rederer->DrawLine(_dot2.GetPos(), _dot3.GetPos());
+		rederer->DrawLine(_dot3.GetPos(), _dot1.GetPos());
 	}
 
 #pragma endregion

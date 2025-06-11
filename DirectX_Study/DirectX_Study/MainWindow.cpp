@@ -1,58 +1,79 @@
 #include <Windows.h>
+#include "resource.h"
+
 #include <functional>
 
 #include "MainWindow.h"
-#include "resource.h"
 #include "Graphic.h"
 #include "GraphicUtils.h"
 
 namespace DK
 {
-	MainWindow::MainWindow()
-		: m_hInst(NULL), m_hWnd(NULL), m_hBackBuffer(NULL)
-	{
-	}
-
 	MainWindow::~MainWindow()
 	{
 	}
 
 	bool MainWindow::Create(HINSTANCE hInstance, LPCTSTR strClassName, LPCTSTR strWindowTitle, int nCmdShow)
 	{
-		m_hInst = hInstance;
+		_hInst = hInstance;
 
-		WNDCLASS WndClass;
-		WndClass.cbClsExtra = 0;
-		WndClass.cbWndExtra = 0;
-		WndClass.hbrBackground = (HBRUSH)GetStockObject(RGB(0, 0, 0));
-		WndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
-		WndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-		WndClass.hInstance = hInstance;
-		WndClass.lpfnWndProc = WndProc;
-		WndClass.lpszClassName = strClassName;
-		WndClass.lpszMenuName = MAKEINTRESOURCE(IDR_MENU1);
-		WndClass.style = CS_HREDRAW | CS_VREDRAW;
-		RegisterClass(&WndClass);
-
-		HWND hWnd = CreateWindow(strClassName, strWindowTitle, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, (HMENU)NULL, hInstance, this);
-		if (hWnd == NULL)
+		WNDCLASSEX wndClassEx;
+		wndClassEx.cbSize = sizeof(WNDCLASSEX);
+		wndClassEx.style = CS_HREDRAW | CS_VREDRAW;
+		wndClassEx.lpfnWndProc = WndProc;
+		wndClassEx.cbClsExtra = 0;
+		wndClassEx.cbWndExtra = 0;
+		wndClassEx.hInstance = hInstance;
+		wndClassEx.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+		wndClassEx.hCursor = LoadCursor(NULL, IDC_ARROW);
+		wndClassEx.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+		wndClassEx.lpszMenuName = NULL;
+		wndClassEx.lpszClassName = strClassName;
+		wndClassEx.hIconSm = NULL;
+		
+		// fail register window class
+		if (!RegisterClassEx(&wndClassEx))
+		{
 			return false;
+		}
 
-		ShowWindow(hWnd, nCmdShow);
+		_hWnd = CreateWindow(strClassName, strWindowTitle, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, (HMENU)NULL, hInstance, this);
+		// fail create window
+		if (!_hWnd)
+		{
+			return false;
+		}
+
+		ShowWindow(_hWnd, nCmdShow);
 
 		return true;
 	}
 
-	int MainWindow::Run()
+	bool MainWindow::Run()
 	{
-		MSG Message;
-		while (GetMessage(&Message, NULL, 0, 0))
+		MSG msg;
+		ZeroMemory(&msg, sizeof(msg));
+
+		while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
 		{
-			TranslateMessage(&Message);
-			DispatchMessage(&Message);
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+
+			if (msg.message == WM_QUIT)
+				return false;
 		}
 
-		return (int)Message.wParam;
+		return true;
+	}
+
+	void MainWindow::Destroy()
+	{
+		DestroyWindow(_hWnd);
+	}
+
+	HWND MainWindow::GetHandle()
+	{
+		return _hWnd;
 	}
 
 	LRESULT MainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -85,101 +106,22 @@ namespace DK
 		switch (message)
 		{
 		case WM_CREATE:
-			return Create(hWnd);
+			return 0;
 
 		case WM_DESTROY:
-			Destroy();
+			PostQuitMessage(0);
 			return 0;
 
 		case WM_PAINT:
 		{
 			PAINTSTRUCT ps;
 			HDC hdc = BeginPaint(hWnd, &ps);
-			Paint(hWnd, hdc);
 			EndPaint(hWnd, &ps);
 			return 0;
 		}
-
-		case WM_RBUTTONDOWN:
-			return 0;
-
-		case WM_RBUTTONUP:
-			return 0;
-
-		case WM_MOUSEMOVE:
-			return 0;
-
-		case WM_COMMAND:
-			Command(hWnd, wParam, lParam);
-			return 0;
 		}
 
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 
-	UINT MainWindow::Create(HWND hWnd)
-	{
-		m_hWnd = hWnd;
-
-		// 출력용 비트맵 생성
-		HDC hdc = GetDC(hWnd);
-
-		RECT rt;
-		GetClientRect(hWnd, &rt);
-		m_hBackBuffer = CreateCompatibleBitmap(hdc, rt.right, rt.bottom);
-
-		ReleaseDC(hWnd, hdc);
-
-		Draw();
-
-		return 0;
-	}
-
-	void MainWindow::Destroy()
-	{
-		PostQuitMessage(0);
-	}
-
-	void MainWindow::Paint(HWND hWnd, HDC hdc)
-	{
-		GraphicUtils::DrawBitmap(hdc, 0, 0, m_hBackBuffer);
-	}
-
-	void MainWindow::Draw()
-	{
-		RECT rt;
-		GetClientRect(m_hWnd, &rt);
-
-		HDC hdc = GetDC(m_hWnd);
-		HDC hMemDC = CreateCompatibleDC(hdc);
-		HBITMAP hOldBit = (HBITMAP)SelectObject(hMemDC, m_hBackBuffer);
-		FillRect(hMemDC, &rt, GetSysColorBrush(COLOR_WINDOW));
-
-		// draw logic
-		{
-			DrawLine(hMemDC);
-		}
-
-		SelectObject(hMemDC, hOldBit);
-		ReleaseDC(m_hWnd, hdc);
-
-		InvalidateRect(m_hWnd, NULL, FALSE);
-	}
-
-	void MainWindow::DrawLine(HDC hdc)
-	{
-	}
-
-	void MainWindow::Command(HWND hWnd, WPARAM wParam, LPARAM lParam)
-	{
-		switch (wParam)
-		{
-		case ID_40001:
-		{
-			MainWindow* mainWindow = this;
-			break;
-		}
-
-		}
-	}
 }

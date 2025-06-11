@@ -1,14 +1,26 @@
 #include <Windows.h>
 
 #include "MainWindow.h"
+#include "GraphicEngine.h"
+
+using namespace DK;
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstace, LPSTR lpszCmdParam, int nCmdShow)
 {
 	LPCTSTR strClassName = TEXT("Graphic");
-
-	DK::MainWindow mainWindow;
+	MainWindow mainWindow;
 	if (mainWindow.Create(hInstance, strClassName, strClassName, nCmdShow) == false)
-		return 0;
+	{
+		return -1;
+	}
 
-	return mainWindow.Run();
+	GraphicEngine engine(mainWindow.GetHandle());
+
+	while (mainWindow.Run())
+	{
+		engine.Run();
+	}
+
+	mainWindow.Destroy();
+	return 0;
 }

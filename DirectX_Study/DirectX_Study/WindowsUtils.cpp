@@ -19,7 +19,7 @@ void DK::WindowsUtils::GetWindowSize(HWND hWnd, float* width, float* height)
 void WindowsUtils::GetScreenSize(HWND hWnd, float* width, float* height)
 {
 	RECT rt;
-	GetWindowRect(hWnd, &rt);
+	GetClientRect(hWnd, &rt);
 
 	*width = static_cast<float>(rt.right - rt.left);
 	*height = static_cast<float>(rt.bottom - rt.top);

@@ -13,6 +13,8 @@ namespace DK
 
         static Vector2 Zero();
         static Vector2 One();
+        static Vector2 Right();
+        static Vector2 Up();
 
         static float Distance(const Vector2& a, const Vector2& b);
         static float DistanceSquared(const Vector2& a, const Vector2& b);
@@ -57,6 +59,9 @@ namespace DK
 
         static Vector3 Zero();
         static Vector3 One();
+        static Vector3 Right();
+        static Vector3 Up();
+        static Vector3 Forward();
 
         static float Distance(const Vector3& a, const Vector3& b);
         static float DistanceSquared(const Vector3& a, const Vector3& b);
@@ -127,6 +132,7 @@ namespace DK
         Matrix33& operator-=(const Matrix33& other);
 
         Matrix33 operator*(float value) const;
+        Vector2 operator*(Vector2 v) const;
         Matrix33 operator*(const Matrix33& other) const;
         Matrix33& operator*=(const Matrix33& other);
 
@@ -184,6 +190,7 @@ namespace DK
         Matrix44& operator-=(const Matrix44& other);
 
         Matrix44 operator*(float value) const;
+        Vector3 operator*(Vector3 v) const;
         Matrix44 operator*(const Matrix44& other) const;
         Matrix44& operator*=(const Matrix44& other);
 
