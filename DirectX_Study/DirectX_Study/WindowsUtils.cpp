@@ -1,4 +1,5 @@
 #include <Windows.h>
+#include <math.h>
 #include "WindowsUtils.h"
 
 using namespace DK;
@@ -23,6 +24,11 @@ void WindowsUtils::GetScreenSize(HWND hWnd, float* width, float* height)
 
 	*width = static_cast<float>(rt.right - rt.left);
 	*height = static_cast<float>(rt.bottom - rt.top);
+}
+
+Vector2 DK::WindowsUtils::ToScreenPoint(float x, float y)
+{
+	return Vector2(floorf(x), floorf(y));
 }
 
 

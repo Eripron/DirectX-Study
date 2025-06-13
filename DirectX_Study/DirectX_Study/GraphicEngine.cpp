@@ -23,7 +23,7 @@ namespace DK
 	}
 
 	Triangle triangle = GraphicUtils::CreateTriangle(Vector3(300, 300, 0), 100);
-	Triangle triangle2 = GraphicUtils::CreateTriangle(Vector3(500, 600, 0), 80);
+	Square square = GraphicUtils::CreateSquare(Vector3(600, 500, 0), 100);
 
 	void GraphicEngine::Render(Renderer* pRender)
 	{
@@ -35,9 +35,9 @@ namespace DK
 
 		// rotate
 		float rotate = GetRotateInput();
-		transform *= Matrix44::RotateZMatrix44(rotate);
+		transform *= Matrix44::RotateZMatrix44(-rotate);
 
-		// move
+		// move 
 		float xInput = GetXAxisInput();
 		if (xInput != 0.0f)
 			transform *= Matrix44::MoveMatrix44(xInput, 0, 0);
@@ -46,10 +46,12 @@ namespace DK
 			transform *= Matrix44::MoveMatrix44(0, -yInput, 0);
 
 		triangle.ApplyTransform(transform);
+		triangle.Fill(pRender, RGB(255, 0, 0));
 		triangle.Draw(pRender);
 
-		triangle2.ApplyTransform(transform);
-		triangle2.Draw(pRender);
+		square.ApplyTransform(transform);
+		//square.Fill(pRender, RGB(0, 0, 255));
+		square.Draw(pRender);
 	}
 
 	float GraphicEngine::GetXAxisInput()

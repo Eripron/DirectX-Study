@@ -20,6 +20,7 @@ namespace DK
         static float DistanceSquared(const Vector2& a, const Vector2& b);
         float Magnitude();
         Vector2 Normalize();
+        float Dot(const Vector2& v) const;
 
         // addition vector
         Vector2 operator+(const Vector2& other) const;
@@ -67,6 +68,7 @@ namespace DK
         static float DistanceSquared(const Vector3& a, const Vector3& b);
         float Magnitude();
         Vector3 Normalize();
+        float Dot(const Vector3& v) const;
 
         // addition vector
         Vector3 operator+(const Vector3& other) const;

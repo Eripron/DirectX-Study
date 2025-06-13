@@ -16,8 +16,8 @@ namespace DK
 		void PreUpdate();
 		void LastUpdate();
 
-		void DrawPixel(Vector3 point);
-		void DrawLine(Vector3 p1, Vector3 p2);
+		void DrawPixel(Vector3 point, COLORREF color = RGB(0, 0, 0));
+		void DrawLine(Vector3 p1, Vector3 p2, COLORREF color = RGB(0, 0, 0));
 
 	private:
 		HWND _hWnd;

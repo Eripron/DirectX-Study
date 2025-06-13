@@ -53,6 +53,11 @@ namespace DK
 		return Vector2(x, y) / Magnitude();
 	}
 
+	float Vector2::Dot(const Vector2& v) const
+	{
+		return x * v.x + y * v.y;
+	}
+
 	Vector2 Vector2::operator+(const Vector2& other) const
 	{
 		return Vector2(x + other.x, y + other.y);
@@ -177,6 +182,11 @@ namespace DK
 	Vector3 Vector3::Normalize()
 	{
 		return Vector3(x, y, z) / Magnitude();
+	}
+
+	float Vector3::Dot(const Vector3& v) const
+	{
+		return x * v.x + y * v.y + z * v.z;
 	}
 
 	Vector3 Vector3::operator+(const Vector3& other) const

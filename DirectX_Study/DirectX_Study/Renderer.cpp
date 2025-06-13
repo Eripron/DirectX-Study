@@ -34,12 +34,12 @@ void DK::Renderer::LastUpdate()
 	BitBlt(_hdc, 0, 0, _vScreenSize.x, _vScreenSize.y, _memDC, 0, 0, SRCCOPY);
 }
 
-void DK::Renderer::DrawPixel(Vector3 point)
+void DK::Renderer::DrawPixel(Vector3 point, COLORREF color)
 {
-	SetPixel(_memDC, point.x, point.y, RGB(0, 0, 0));
+	SetPixel(_memDC, point.x, point.y, color);
 }
 
-void DK::Renderer::DrawLine(Vector3 p1, Vector3 p2)
+void DK::Renderer::DrawLine(Vector3 p1, Vector3 p2, COLORREF color)
 {
-	GraphicUtils::DrawLine(_memDC, p1, p2, RGB(0, 0, 0));
+	GraphicUtils::DrawLine(_memDC, p1, p2, color);
 }

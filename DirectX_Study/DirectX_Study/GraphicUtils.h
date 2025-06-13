@@ -18,5 +18,6 @@ namespace DK
 		static void DrawBitmap(HDC hdc, int x, int y, HBITMAP hBit);
 
 		static Triangle CreateTriangle(Vector3 point, float r);
+		static Square CreateSquare(Vector3 point, float r);
 	};
 }
