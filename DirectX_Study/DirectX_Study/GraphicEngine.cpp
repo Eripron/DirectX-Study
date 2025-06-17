@@ -13,6 +13,14 @@ namespace DK
 	{
 	}
 
+	BITMAP bmp;
+	void GraphicEngine::Start()
+	{
+		LPCTSTR path = L"Image/mario.bmp";
+		if (LoadBitmapData(path, bmp) == false)
+			return;
+	}
+
 	void GraphicEngine::Run()
 	{
 		_render.PreUpdate();
@@ -22,11 +30,13 @@ namespace DK
 		_render.LastUpdate();
 	}
 
-	Triangle triangle = GraphicUtils::CreateTriangle(Vector3(300, 300, 0), 100);
-	Square square = GraphicUtils::CreateSquare(Vector3(600, 500, 0), 100);
+	Triangle triangle = GraphicUtils::CreateTriangle(Vector3(100, 100, 0), 40);
 
 	void GraphicEngine::Render(Renderer* pRender)
 	{
+		pRender->DrawAxisX(0);
+		pRender->DrawAxisY(0);
+
 		Matrix44 transform = Matrix44::Identity();
 
 		// scale
@@ -35,7 +45,7 @@ namespace DK
 
 		// rotate
 		float rotate = GetRotateInput();
-		transform *= Matrix44::RotateZMatrix44(-rotate);
+		transform *= Matrix44::RotateZMatrix44(rotate);
 
 		// move 
 		float xInput = GetXAxisInput();
@@ -43,15 +53,35 @@ namespace DK
 			transform *= Matrix44::MoveMatrix44(xInput, 0, 0);
 		float yInput = GetYAxisInput();
 		if (yInput != 0.0f)
-			transform *= Matrix44::MoveMatrix44(0, -yInput, 0);
+			transform *= Matrix44::MoveMatrix44(0, yInput, 0);
 
-		triangle.ApplyTransform(transform);
-		triangle.Fill(pRender, RGB(255, 0, 0));
-		triangle.Draw(pRender);
+		/*int x = 0, y = 0;
+		for (int i = 0; i < bmp.bmHeight; ++i)
+		{
+			BYTE* ptr = (BYTE*)bmp.bmBits + bmp.bmWidthBytes * (bmp.bmHeight - 1 - i);
+			int bitPixel = bmp.bmBitsPixel / 8;
 
-		square.ApplyTransform(transform);
-		//square.Fill(pRender, RGB(0, 0, 255));
-		square.Draw(pRender);
+			for (int j = 0; j < bmp.bmWidth; ++j)
+			{
+				BYTE b = ptr[j * bitPixel];
+				BYTE g = ptr[j * bitPixel + 1];
+				BYTE r = ptr[j * bitPixel + 2];
+				BYTE a = ptr[j * bitPixel + 3];
+				if (a == 0)
+				{
+					r = 255;
+					g = 255;
+					b = 255;
+				}
+				BYTE gray = static_cast<BYTE>((299 * r + 587 * g + 114 * b) / 1000);
+
+				COLORREF color = RGB(r, g, b);
+				COLORREF grayColor = RGB(gray, gray, gray);
+
+				pRender->DrawPixel(Vector3(x + j, y + i, 0), color);
+				pRender->DrawPixel(Vector3(x + j + bmp.bmWidth, y + i, 0), grayColor);
+			}
+		}*/
 	}
 
 	float GraphicEngine::GetXAxisInput()
@@ -96,6 +126,55 @@ namespace DK
 			return bDown ? -0.01f : 0.01f;
 		}
 		return 0.0f;
+	}
+
+	bool GraphicEngine::LoadBitmapData(LPCTSTR path, BITMAP& bitmap)
+	{
+		// open file
+		HANDLE hFile = CreateFile(path, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+		if (hFile == INVALID_HANDLE_VALUE)
+			return false;
+
+		// read bmp file header
+		DWORD byteRead;
+		BITMAPFILEHEADER bmpFileHeader;
+		if (ReadFile(hFile, &bmpFileHeader, sizeof(BITMAPFILEHEADER), &byteRead, NULL) == 0 ||
+			bmpFileHeader.bfType != 0x4d42)
+		{
+			CloseHandle(hFile);
+			return false;
+		}
+
+		// read bmp info header
+		BITMAPINFOHEADER bmpInfoHeader;
+		if (ReadFile(hFile, &bmpInfoHeader, sizeof(BITMAPINFOHEADER), &byteRead, NULL) == 0)
+		{
+			CloseHandle(hFile);
+			return false;
+		}
+
+		SetFilePointer(hFile, bmpFileHeader.bfOffBits, NULL, FILE_BEGIN);
+
+		DWORD pixelDataSize = bmpFileHeader.bfSize - bmpFileHeader.bfOffBits;
+		BYTE* data = (BYTE*)malloc(pixelDataSize);
+		if (ReadFile(hFile, data, pixelDataSize, &byteRead, NULL) == 0)
+		{
+			free(data);
+			CloseHandle(hFile);
+			return false;
+		}
+
+		bitmap.bmType = 0;
+		bitmap.bmWidth = bmpInfoHeader.biWidth;
+		bitmap.bmHeight = bmpInfoHeader.biHeight;
+		bitmap.bmWidthBytes = (((bmpInfoHeader.biWidth * bmpInfoHeader.biBitCount) + 31) / 32) * 4;
+		bitmap.bmPlanes = bmpInfoHeader.biPlanes;
+		bitmap.bmBitsPixel = bmpInfoHeader.biBitCount;
+		bitmap.bmBits = data;
+
+		CloseHandle(hFile);
+
+		return true;
 	}
 
 }

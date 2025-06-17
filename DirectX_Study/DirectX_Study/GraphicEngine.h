@@ -11,7 +11,10 @@ namespace DK
 		GraphicEngine(HWND hWnd);
 		~GraphicEngine();
 
+		void Start();
 		void Run();
+
+		void ScreenChanged(Vector2 screenSize);
 
 	private:
 		void Render(Renderer* pRender);
@@ -21,9 +24,11 @@ namespace DK
 		float GetRotateInput();
 		float GetScaleInput();
 
+		bool LoadBitmapData(LPCTSTR path, BITMAP& bitmap);
 
 	private:
 		Renderer _render;
+		Vector2 _vScreenSize;
 
 	};
 }

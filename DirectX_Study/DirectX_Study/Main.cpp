@@ -16,6 +16,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstace, LPSTR lpszCmdP
 
 	GraphicEngine engine(mainWindow.GetHandle());
 
+	engine.Start();
+
 	while (mainWindow.Run())
 	{
 		engine.Run();

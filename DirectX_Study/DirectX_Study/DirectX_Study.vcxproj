@@ -136,6 +136,7 @@
     <ClCompile Include="MathUtils.cpp" />
     <ClCompile Include="Numeric.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="Transform.cpp" />
     <ClCompile Include="WindowsUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -148,6 +149,7 @@
     <ClInclude Include="Numeric.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="Transform.h" />
     <ClInclude Include="WindowsUtils.h" />
   </ItemGroup>
   <ItemGroup>

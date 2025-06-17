@@ -26,9 +26,3 @@ void WindowsUtils::GetScreenSize(HWND hWnd, float* width, float* height)
 	*height = static_cast<float>(rt.bottom - rt.top);
 }
 
-Vector2 DK::WindowsUtils::ToScreenPoint(float x, float y)
-{
-	return Vector2(floorf(x), floorf(y));
-}
-
-

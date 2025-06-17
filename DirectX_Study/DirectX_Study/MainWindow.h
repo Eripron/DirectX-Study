@@ -6,7 +6,6 @@ namespace DK
     {
     public:
         MainWindow() = default;
-        ~MainWindow();
 
         bool Create(HINSTANCE hInstance, LPCTSTR strClassName, LPCTSTR strWindowTitle, int nCmdShow);
         bool Run();

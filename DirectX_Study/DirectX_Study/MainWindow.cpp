@@ -1,18 +1,11 @@
 #include <Windows.h>
+#include <functional>
 #include "resource.h"
 
-#include <functional>
-
 #include "MainWindow.h"
-#include "Graphic.h"
-#include "GraphicUtils.h"
 
 namespace DK
 {
-	MainWindow::~MainWindow()
-	{
-	}
-
 	bool MainWindow::Create(HINSTANCE hInstance, LPCTSTR strClassName, LPCTSTR strWindowTitle, int nCmdShow)
 	{
 		_hInst = hInstance;
@@ -110,6 +103,9 @@ namespace DK
 
 		case WM_DESTROY:
 			PostQuitMessage(0);
+			return 0;
+
+		case WM_SIZE:
 			return 0;
 
 		case WM_PAINT:

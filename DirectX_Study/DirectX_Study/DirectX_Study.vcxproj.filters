@@ -37,6 +37,12 @@
     <Filter Include="헤더 파일\Graphic">
       <UniqueIdentifier>{16c9940c-df8f-474c-98eb-a4b8d1608651}</UniqueIdentifier>
     </Filter>
+    <Filter Include="헤더 파일\Engine">
+      <UniqueIdentifier>{ebad5ea3-2b04-48f9-aad1-7084048f62b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Engine">
+      <UniqueIdentifier>{8ac72ca1-e71d-4a18-8b33-bd5b4ebe5750}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -67,7 +73,10 @@
       <Filter>소스 파일\Utils</Filter>
     </ClCompile>
     <ClCompile Include="GraphicEngine.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>소스 파일\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Transform.cpp">
+      <Filter>소스 파일\Engine</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -99,7 +108,10 @@
       <Filter>헤더 파일\Utils</Filter>
     </ClInclude>
     <ClInclude Include="GraphicEngine.h">
-      <Filter>헤더 파일</Filter>
+      <Filter>헤더 파일\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Transform.h">
+      <Filter>헤더 파일\Engine</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

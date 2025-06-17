@@ -12,7 +12,6 @@ namespace DK
 
 		static void GetWindowSize(HWND hWnd, float* width, float* height);
 		static void GetScreenSize(HWND hWnd, float* width, float* height);
-		static Vector2 ToScreenPoint(float x, float y);
 
 	};
 }
