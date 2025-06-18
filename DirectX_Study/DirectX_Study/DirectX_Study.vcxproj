@@ -131,11 +131,13 @@
     <ClCompile Include="GraphicEngine.cpp" />
     <ClCompile Include="Graphic.cpp" />
     <ClCompile Include="GraphicUtils.cpp" />
+    <ClCompile Include="HSVColor.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MainWindow.cpp" />
     <ClCompile Include="MathUtils.cpp" />
     <ClCompile Include="Numeric.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="RGBColor.cpp" />
     <ClCompile Include="Transform.cpp" />
     <ClCompile Include="WindowsUtils.cpp" />
   </ItemGroup>
@@ -144,11 +146,13 @@
     <ClInclude Include="GraphicEngine.h" />
     <ClInclude Include="Graphic.h" />
     <ClInclude Include="GraphicUtils.h" />
+    <ClInclude Include="HSVColor.h" />
     <ClInclude Include="MainWindow.h" />
     <ClInclude Include="MathUtils.h" />
     <ClInclude Include="Numeric.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="RGBColor.h" />
     <ClInclude Include="Transform.h" />
     <ClInclude Include="WindowsUtils.h" />
   </ItemGroup>

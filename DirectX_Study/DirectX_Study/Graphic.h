@@ -2,9 +2,8 @@
 
 #include <Windows.h>
 #include <math.h>
-
+#include <vector>
 #include "Numeric.h"
-#include "Renderer.h"
 
 namespace DK
 {
@@ -16,8 +15,6 @@ namespace DK
 
 		virtual void ApplyTransform(Matrix44 matrix) = 0;
 		virtual void ApplyTransform(Matrix44 matrix, Vector3 center);
-		virtual void Draw(Renderer* rederer) = 0;
-		virtual void Fill(Renderer* rederer, COLORREF color);
 
 	};
 
@@ -31,9 +28,9 @@ namespace DK
 
 		void ApplyTransform(Matrix44 matrix) override;
 		void ApplyTransform(Matrix44 matrix, Vector3 center) override;
-		void Draw(Renderer* rederer) override;
 
 		Vector3 GetPos();
+		Vector2 GetUV();
 
 		void SetPos(Vector3 vPos);
 		void SetUV(Vector2 vUV);
@@ -53,10 +50,9 @@ namespace DK
 
 		void ApplyTransform(Matrix44 matrix) override;
 		virtual void ApplyTransform(Matrix44 matrix, Vector3 center);
-		void Draw(Renderer* rederer) override;
-		void Fill(Renderer* rederer, COLORREF color) override;
 
 		Dot GetDot(int index);
+		void SetUV(Vector2 uv1, Vector2 uv2, Vector2 uv3);
 
 	protected:
 		Dot _dot1;
@@ -67,18 +63,21 @@ namespace DK
 	class Square : Graphic
 	{
 	public:
+		Square() = default;
 		Square(Vector3 p1, Vector3 p2, Vector3 p3, Vector3 p4);
 		~Square();
 
 		void ApplyTransform(Matrix44 matrix) override;
 		virtual void ApplyTransform(Matrix44 matrix, Vector3 center);
-		void Draw(Renderer* rederer) override;
 
 		Dot GetDot(int index);
+		std::vector<Triangle> GetTriangles();
+		void SetUV(Vector2 uv1, Vector2 uv2, Vector2 uv3, Vector2 uv4);
 
 	private:
 		Triangle _triangle1;
 		Triangle _triangle2;
+
 	};
 
 }

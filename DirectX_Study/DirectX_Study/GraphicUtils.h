@@ -10,6 +10,8 @@ namespace DK
 	{
 	public:
 		static Triangle CreateTriangle(Vector3 point, float r);
+
 		static Square CreateSquare(Vector3 point, float r);
+		static Square CreateSquare(float width, float height);
 	};
 }

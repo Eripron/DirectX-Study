@@ -20,5 +20,18 @@ namespace DK
 
 		return Square(p1, p2, p3, p4);
 	}
+
+	Square GraphicUtils::CreateSquare(float width, float height)
+	{
+		float halfWidth = width / 2;
+		float halfHeight = height / 2;
+
+		Vector3 p1 = Vector3(-halfWidth, halfHeight, 0);
+		Vector3 p2 = Vector3(halfWidth, halfHeight, 0);
+		Vector3 p3 = Vector3(halfWidth, -halfHeight, 0);
+		Vector3 p4 = Vector3(-halfWidth, -halfHeight, 0);
+
+		return Square(p1, p2, p3, p4);
+	}
 	
 }

@@ -1,5 +1,6 @@
 #include "Renderer.h"
 
+#include <math.h>
 #include "GraphicUtils.h"
 #include "WindowsUtils.h"
 
@@ -68,6 +69,68 @@ namespace DK
 		DrawLine(_memDC, Vector3(screen.x, 0, 0), Vector3(screen.x, _vScreenSize.y, 0), RGB(255, 0, 0));
 	}
 
+	void Renderer::DrawSquare(Square square, BITMAP* bmp)
+	{
+		std::vector<Triangle> triangles = square.GetTriangles();
+		int count = triangles.size();
+
+		for (int i = 0; i < count; ++i)
+		{
+			DrawTriangle(triangles[i], bmp);
+		}
+	}
+
+	void Renderer::DrawTriangle(Triangle triangle, BITMAP* bmp)
+	{
+		Dot dot0 = triangle.GetDot(0);
+		Dot dot1 = triangle.GetDot(1);
+		Dot dot2 = triangle.GetDot(2);
+
+		Vector2 minPos;
+		minPos.x = fminf(fminf(dot0.GetPos().x, dot1.GetPos().x), dot2.GetPos().x);
+		minPos.y = fminf(fminf(dot0.GetPos().y, dot1.GetPos().y), dot2.GetPos().y);
+
+		Vector2 maxPos;
+		maxPos.x = fmaxf(fmaxf(dot0.GetPos().x, dot1.GetPos().x), dot2.GetPos().x);
+		maxPos.y = fmaxf(fmaxf(dot0.GetPos().y, dot1.GetPos().y), dot2.GetPos().y);
+
+		Vector2 u = Vector2((dot1.GetPos() - dot0.GetPos()).x, (dot1.GetPos() - dot0.GetPos()).y);
+		Vector2 v = Vector2((dot2.GetPos() - dot0.GetPos()).x, (dot2.GetPos() - dot0.GetPos()).y);
+
+		float vv = v.Dot(v);
+		float uu = u.Dot(u);
+		float uv = u.Dot(v);
+		float denominator = uv * uv - uu * vv;
+
+		// 직선인 경우
+		if (denominator == 0)
+			return;
+
+		Vector2 minSP = ToScreenPoint(minPos.x, minPos.y);
+		Vector2 maxSP = ToScreenPoint(maxPos.x, maxPos.y);
+		Vector2 sp1 = ToScreenPoint(dot0.GetPos().x, dot0.GetPos().y);
+
+		for (int x = minSP.x; x <= maxSP.x; ++x)
+		{
+			for (int y = minSP.y; y <= maxSP.y; ++y)
+			{
+				Vector2 w = Vector2(x, y) - sp1;
+				float wu = w.Dot(u);
+				float wv = w.Dot(v);
+
+				float s = (wv * uv - wu * vv) / denominator;
+				float t = (wu * uv - wv * uu) / denominator;
+				float oneMinusST = 1.f - s - t;
+
+				if (((s >= 0.f) && (s <= 1.f)) && ((t >= 0.f) && (t <= 1.f)) && ((oneMinusST >= 0.f) && (oneMinusST <= 1.f)))
+				{
+					Vector2 UV = dot0.GetUV() * oneMinusST + dot1.GetUV() * s + dot2.GetUV() * t;
+					DrawPixel(Vector3(x, y, 0), GetColor(*bmp, UV));
+				}
+			}
+		}
+	}
+
 	void Renderer::Clear()
 	{
 		RECT rtScreen;
@@ -126,6 +189,23 @@ namespace DK
 	void Renderer::DrawLine(HDC hdc, Vector3 p1, Vector3 p2, COLORREF color)
 	{
 		DrawLine(hdc, Vector2(p1.x, p1.y), Vector2(p2.x, p2.y), color);
+	}
+
+	COLORREF Renderer::GetColor(BITMAP& bitmap, Vector2 uv)
+	{
+		int bytePixel = bitmap.bmBitsPixel / 8;
+		int width = bitmap.bmWidthBytes / bytePixel;
+
+		int x = static_cast<int>(floorf(uv.x * (width - 1)));
+		int y = static_cast<int>(floorf(uv.y * (bitmap.bmHeight - 1)));
+		int index = bitmap.bmWidthBytes * y + bytePixel * x;
+
+		BYTE* bits = (BYTE*)bitmap.bmBits;
+
+		BYTE b = bits[index];
+		BYTE g = bits[index + 1];
+		BYTE r = bits[index + 2];
+		return RGB(r, g, b);
 	}
 
 

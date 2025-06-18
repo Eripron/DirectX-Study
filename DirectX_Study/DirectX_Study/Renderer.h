@@ -2,6 +2,7 @@
 
 #include "Windows.h"
 #include "Numeric.h"
+#include "Graphic.h"
 
 namespace DK
 {
@@ -22,6 +23,9 @@ namespace DK
 		void DrawAxisX(int y);
 		void DrawAxisY(int x);
 
+		void DrawSquare(Square square, BITMAP* bmp);
+		void DrawTriangle(Triangle triangle, BITMAP* bmp);
+
 	private:
 		void Clear();
 
@@ -31,6 +35,8 @@ namespace DK
 
 		void DrawLine(HDC hdc, Vector2 p1, Vector2 p2, COLORREF color);
 		void DrawLine(HDC hdc, Vector3 p1, Vector3 p2, COLORREF color);
+
+		COLORREF GetColor(BITMAP& bitmap, Vector2 uv);
 
 	private:
 		HWND _hWnd;

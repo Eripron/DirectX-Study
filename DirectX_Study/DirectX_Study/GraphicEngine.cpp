@@ -14,11 +14,16 @@ namespace DK
 	}
 
 	BITMAP bmp;
+	Square square;
+
 	void GraphicEngine::Start()
 	{
 		LPCTSTR path = L"Image/mario.bmp";
-		if (LoadBitmapData(path, bmp) == false)
-			return;
+		if (LoadBitmapData(path, bmp))
+		{
+			square = GraphicUtils::CreateSquare(40, 40);
+			square.SetUV(Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0));
+		}
 	}
 
 	void GraphicEngine::Run()
@@ -29,8 +34,6 @@ namespace DK
 
 		_render.LastUpdate();
 	}
-
-	Triangle triangle = GraphicUtils::CreateTriangle(Vector3(100, 100, 0), 40);
 
 	void GraphicEngine::Render(Renderer* pRender)
 	{
@@ -55,33 +58,8 @@ namespace DK
 		if (yInput != 0.0f)
 			transform *= Matrix44::MoveMatrix44(0, yInput, 0);
 
-		/*int x = 0, y = 0;
-		for (int i = 0; i < bmp.bmHeight; ++i)
-		{
-			BYTE* ptr = (BYTE*)bmp.bmBits + bmp.bmWidthBytes * (bmp.bmHeight - 1 - i);
-			int bitPixel = bmp.bmBitsPixel / 8;
-
-			for (int j = 0; j < bmp.bmWidth; ++j)
-			{
-				BYTE b = ptr[j * bitPixel];
-				BYTE g = ptr[j * bitPixel + 1];
-				BYTE r = ptr[j * bitPixel + 2];
-				BYTE a = ptr[j * bitPixel + 3];
-				if (a == 0)
-				{
-					r = 255;
-					g = 255;
-					b = 255;
-				}
-				BYTE gray = static_cast<BYTE>((299 * r + 587 * g + 114 * b) / 1000);
-
-				COLORREF color = RGB(r, g, b);
-				COLORREF grayColor = RGB(gray, gray, gray);
-
-				pRender->DrawPixel(Vector3(x + j, y + i, 0), color);
-				pRender->DrawPixel(Vector3(x + j + bmp.bmWidth, y + i, 0), grayColor);
-			}
-		}*/
+		square.ApplyTransform(transform);
+		pRender->DrawSquare(square, &bmp);
 	}
 
 	float GraphicEngine::GetXAxisInput()
