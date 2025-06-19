@@ -3,6 +3,8 @@
 #include <math.h>
 #include "GraphicUtils.h"
 #include "WindowsUtils.h"
+#include "HSVColor.h"
+#include "RGBColor.h"
 
 namespace DK
 {
@@ -69,18 +71,18 @@ namespace DK
 		DrawLine(_memDC, Vector3(screen.x, 0, 0), Vector3(screen.x, _vScreenSize.y, 0), RGB(255, 0, 0));
 	}
 
-	void Renderer::DrawSquare(Square square, BITMAP* bmp)
+	void Renderer::DrawSquare(Square square, BITMAP* bmp, float S, float V)
 	{
 		std::vector<Triangle> triangles = square.GetTriangles();
 		int count = triangles.size();
 
 		for (int i = 0; i < count; ++i)
 		{
-			DrawTriangle(triangles[i], bmp);
+			DrawTriangle(triangles[i], bmp, S, V);
 		}
 	}
 
-	void Renderer::DrawTriangle(Triangle triangle, BITMAP* bmp)
+	void Renderer::DrawTriangle(Triangle triangle, BITMAP* bmp, float S, float V)
 	{
 		Dot dot0 = triangle.GetDot(0);
 		Dot dot1 = triangle.GetDot(1);
@@ -125,10 +127,23 @@ namespace DK
 				if (((s >= 0.f) && (s <= 1.f)) && ((t >= 0.f) && (t <= 1.f)) && ((oneMinusST >= 0.f) && (oneMinusST <= 1.f)))
 				{
 					Vector2 UV = dot0.GetUV() * oneMinusST + dot1.GetUV() * s + dot2.GetUV() * t;
-					DrawPixel(Vector3(x, y, 0), GetColor(*bmp, UV));
+
+					RGBColor rgbColor = GetColor(*bmp, UV);
+					HSVColor hsvColor = rgbColor.ConvertToHSV();
+
+					hsvColor.S *= S;
+					hsvColor.V *= V;
+					rgbColor = hsvColor.ConvertToRGB();
+
+					DrawPixel(Vector3(x, y, 0), RGB(rgbColor.R, rgbColor.G, rgbColor.B));
 				}
 			}
 		}
+	}
+
+	void Renderer::DrawTextIn(LPCTSTR str, int x, int y)
+	{
+		TextOut(_memDC, x, y, str, lstrlen(str));
 	}
 
 	void Renderer::Clear()
@@ -191,7 +206,7 @@ namespace DK
 		DrawLine(hdc, Vector2(p1.x, p1.y), Vector2(p2.x, p2.y), color);
 	}
 
-	COLORREF Renderer::GetColor(BITMAP& bitmap, Vector2 uv)
+	RGBColor Renderer::GetColor(BITMAP& bitmap, Vector2 uv)
 	{
 		int bytePixel = bitmap.bmBitsPixel / 8;
 		int width = bitmap.bmWidthBytes / bytePixel;
@@ -205,7 +220,7 @@ namespace DK
 		BYTE b = bits[index];
 		BYTE g = bits[index + 1];
 		BYTE r = bits[index + 2];
-		return RGB(r, g, b);
+		return RGBColor(r, g, b);
 	}
 
 

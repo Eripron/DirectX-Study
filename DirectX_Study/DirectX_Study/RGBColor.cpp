@@ -21,13 +21,24 @@ namespace DK
 		float h = 0.f, s = 0.f, v = 0.f;
 
 		if (delta == 0)
+		{
 			h = 0.0;
+		}
 		else if (max == r)
-			h = fmodf((g - b) / delta, 6.0f) * 60;
+		{
+			h = fmodf((g - b) / delta, 6.0f);
+			if (h < 0) 
+				h += 6.0f;
+			h *= 60.0f;
+		}
 		else if (max == g)
+		{
 			h = (((b - r) / delta) + 2) * 60;
+		}
 		else if (max == b)
+		{
 			h = (((r - g) / delta) + 4) * 60;
+		}
 
 		s = (max == 0) ? 0 : (delta / max);
 		v = max;

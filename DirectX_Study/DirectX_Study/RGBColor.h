@@ -4,6 +4,8 @@
 
 namespace DK
 {
+	class HSVColor;
+
 	class RGBColor
 	{
 	public:

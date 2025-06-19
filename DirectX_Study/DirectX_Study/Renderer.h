@@ -6,6 +6,8 @@
 
 namespace DK
 {
+	class RGBColor;
+
 	class Renderer
 	{
 	public:
@@ -23,8 +25,10 @@ namespace DK
 		void DrawAxisX(int y);
 		void DrawAxisY(int x);
 
-		void DrawSquare(Square square, BITMAP* bmp);
-		void DrawTriangle(Triangle triangle, BITMAP* bmp);
+		void DrawSquare(Square square, BITMAP* bmp, float S, float V);
+		void DrawTriangle(Triangle triangle, BITMAP* bmp, float S, float V);
+
+		void DrawTextIn(LPCTSTR str, int x, int y);
 
 	private:
 		void Clear();
@@ -36,7 +40,7 @@ namespace DK
 		void DrawLine(HDC hdc, Vector2 p1, Vector2 p2, COLORREF color);
 		void DrawLine(HDC hdc, Vector3 p1, Vector3 p2, COLORREF color);
 
-		COLORREF GetColor(BITMAP& bitmap, Vector2 uv);
+		RGBColor GetColor(BITMAP& bitmap, Vector2 uv);
 
 	private:
 		HWND _hWnd;

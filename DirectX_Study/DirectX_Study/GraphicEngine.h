@@ -15,6 +15,7 @@ namespace DK
 		void Run();
 
 		void ScreenChanged(Vector2 screenSize);
+		void BarValueChanged(float s, float v);
 
 	private:
 		void Render(Renderer* pRender);
@@ -29,6 +30,9 @@ namespace DK
 	private:
 		Renderer _render;
 		Vector2 _vScreenSize;
+
+		float S = 1.f;
+		float V = 1.f;
 
 	};
 }

@@ -21,7 +21,8 @@ namespace DK
 		LPCTSTR path = L"Image/mario.bmp";
 		if (LoadBitmapData(path, bmp))
 		{
-			square = GraphicUtils::CreateSquare(40, 40);
+			float n = 3;
+			square = GraphicUtils::CreateSquare(bmp.bmWidth / n, bmp.bmHeight / n);
 			square.SetUV(Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0));
 		}
 	}
@@ -33,6 +34,12 @@ namespace DK
 		Render(&_render);
 
 		_render.LastUpdate();
+	}
+
+	void GraphicEngine::BarValueChanged(float s, float v)
+	{
+		S = s;
+		V = v;
 	}
 
 	void GraphicEngine::Render(Renderer* pRender)
@@ -58,8 +65,11 @@ namespace DK
 		if (yInput != 0.0f)
 			transform *= Matrix44::MoveMatrix44(0, yInput, 0);
 
+		pRender->DrawTextIn(TEXT("채도(S)"), 220, 20);
+		pRender->DrawTextIn(TEXT("명도(V)"), 220, 60);
+
 		square.ApplyTransform(transform);
-		pRender->DrawSquare(square, &bmp);
+		pRender->DrawSquare(square, &bmp, S, V);
 	}
 
 	float GraphicEngine::GetXAxisInput()
@@ -86,8 +96,8 @@ namespace DK
 
 	float GraphicEngine::GetRotateInput()
 	{
-		bool bDown = GetAsyncKeyState(VK_END);
-		bool bUp = GetAsyncKeyState(VK_HOME);
+		bool bDown = GetAsyncKeyState(0x41);	// a
+		bool bUp = GetAsyncKeyState(0x51);		// q
 		if (bDown ^ bUp)
 		{
 			return bDown ? -1.0f : 1.0f;
@@ -97,8 +107,8 @@ namespace DK
 
 	float GraphicEngine::GetScaleInput()
 	{
-		bool bDown = GetAsyncKeyState(VK_NEXT);
-		bool bUp = GetAsyncKeyState(VK_PRIOR);
+		bool bDown = GetAsyncKeyState(0x53);	// s 
+		bool bUp = GetAsyncKeyState(0x57);		// w
 		if (bDown ^ bUp)
 		{
 			return bDown ? -0.01f : 0.01f;

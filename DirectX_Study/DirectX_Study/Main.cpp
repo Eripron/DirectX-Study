@@ -16,11 +16,15 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstace, LPSTR lpszCmdP
 
 	GraphicEngine engine(mainWindow.GetHandle());
 
-	engine.Start();
+	mainWindow.BarValueChanged = [&engine](float s, float v) {
+			engine.BarValueChanged(s, v);
+		};
 
+	engine.Start();
 	while (mainWindow.Run())
 	{
 		engine.Run();
+		mainWindow.Render();
 	}
 
 	mainWindow.Destroy();
