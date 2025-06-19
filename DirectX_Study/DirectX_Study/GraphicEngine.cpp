@@ -1,4 +1,4 @@
-#include "GraphicEngine.h"
+Ôªø#include "GraphicEngine.h"
 
 #include "GraphicUtils.h"
 
@@ -50,7 +50,7 @@ namespace DK
 		Matrix44 transform = Matrix44::Identity();
 
 		// scale
-		float scale = 1.0f + GetScaleInput();  // +0.01 ∂«¥¬ -0.01 ∞∞¿∫ ∞™
+		float scale = 1.0f + GetScaleInput();  // +0.01 ÎòêÎäî -0.01 Í∞ôÏùÄ Í∞í
 		transform *= Matrix44::ScaleMatrix44(scale, scale, scale);
 
 		// rotate
@@ -65,11 +65,14 @@ namespace DK
 		if (yInput != 0.0f)
 			transform *= Matrix44::MoveMatrix44(0, yInput, 0);
 
-		pRender->DrawTextIn(TEXT("√§µµ(S)"), 220, 20);
-		pRender->DrawTextIn(TEXT("∏Ìµµ(V)"), 220, 60);
-
 		square.ApplyTransform(transform);
 		pRender->DrawSquare(square, &bmp, S, V);
+
+		pRender->DrawTextIn(TEXT("Ï±ÑÎèÑ(S)"), 220, 20);
+		pRender->DrawTextIn(TEXT("Î™ÖÎèÑ(V)"), 220, 60);
+		pRender->DrawTextIn(TEXT("Ïù¥Îèô: ÌôîÏÇ¥Ìëú Î∞©Ìñ•ÌÇ§"), 10, 150);
+		pRender->DrawTextIn(TEXT("ÌöåÏ†Ñ: Q(+), A(-)"), 10, 180);
+		pRender->DrawTextIn(TEXT("ÌÅ¨Í∏∞: W(+), S(-)"), 10, 210);
 	}
 
 	float GraphicEngine::GetXAxisInput()
