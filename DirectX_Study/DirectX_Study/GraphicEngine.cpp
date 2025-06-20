@@ -15,13 +15,13 @@ namespace DK
 
 	BITMAP bmp;
 	Square square;
-
+	
 	void GraphicEngine::Start()
 	{
 		LPCTSTR path = L"Image/mario.bmp";
 		if (LoadBitmapData(path, bmp))
 		{
-			float n = 3;
+			float n = 1;
 			square = GraphicUtils::CreateSquare(bmp.bmWidth / n, bmp.bmHeight / n);
 			square.SetUV(Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0));
 		}
@@ -67,6 +67,7 @@ namespace DK
 
 		square.ApplyTransform(transform);
 		pRender->DrawSquare(square, &bmp, S, V);
+
 
 		pRender->DrawTextIn(TEXT("채도(S)"), 220, 20);
 		pRender->DrawTextIn(TEXT("명도(V)"), 220, 60);

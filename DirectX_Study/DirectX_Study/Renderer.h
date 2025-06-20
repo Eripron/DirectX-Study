@@ -41,6 +41,8 @@ namespace DK
 		void DrawLine(HDC hdc, Vector3 p1, Vector3 p2, COLORREF color);
 
 		RGBColor GetColor(BITMAP& bitmap, Vector2 uv);
+		RGBColor GetColorLerp(BITMAP& bitmap, Vector2 uv);
+		RGBColor GetColor(BITMAP& bitmap, int x, int y);
 
 	private:
 		HWND _hWnd;

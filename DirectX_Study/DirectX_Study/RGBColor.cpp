@@ -4,7 +4,7 @@
 
 namespace DK
 {
-	RGBColor::RGBColor(BYTE r, BYTE g, BYTE b) : R(r), G(g), B(b)
+	RGBColor::RGBColor(BYTE r, BYTE g, BYTE b, BYTE a) : R(r), G(g), B(b), A(a)
 	{
 	}
 
@@ -44,5 +44,15 @@ namespace DK
 		v = max;
 
 		return HSVColor(h, s, v);
+	}
+
+	RGBColor RGBColor::LerpColor(RGBColor color1, RGBColor color2, float t)
+	{
+		BYTE R = color1.R * (1.0f - t) + color2.R * t;
+		BYTE G = color1.G * (1.0f - t) + color2.G * t;
+		BYTE B = color1.B * (1.0f - t) + color2.B * t;
+		BYTE A = color1.A * (1.0f - t) + color2.A * t;
+
+		return RGBColor(R, G, B, A);
 	}
 }

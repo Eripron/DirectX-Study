@@ -88,56 +88,78 @@ namespace DK
 		Dot dot1 = triangle.GetDot(1);
 		Dot dot2 = triangle.GetDot(2);
 
-		Vector2 minPos;
-		minPos.x = fminf(fminf(dot0.GetPos().x, dot1.GetPos().x), dot2.GetPos().x);
-		minPos.y = fminf(fminf(dot0.GetPos().y, dot1.GetPos().y), dot2.GetPos().y);
-
-		Vector2 maxPos;
-		maxPos.x = fmaxf(fmaxf(dot0.GetPos().x, dot1.GetPos().x), dot2.GetPos().x);
-		maxPos.y = fmaxf(fmaxf(dot0.GetPos().y, dot1.GetPos().y), dot2.GetPos().y);
-
-		Vector2 u = Vector2((dot1.GetPos() - dot0.GetPos()).x, (dot1.GetPos() - dot0.GetPos()).y);
-		Vector2 v = Vector2((dot2.GetPos() - dot0.GetPos()).x, (dot2.GetPos() - dot0.GetPos()).y);
-
-		float vv = v.Dot(v);
-		float uu = u.Dot(u);
-		float uv = u.Dot(v);
-		float denominator = uv * uv - uu * vv;
-
-		// 직선인 경우
-		if (denominator == 0)
-			return;
-
-		Vector2 minSP = ToScreenPoint(minPos.x, minPos.y);
-		Vector2 maxSP = ToScreenPoint(maxPos.x, maxPos.y);
-		Vector2 sp1 = ToScreenPoint(dot0.GetPos().x, dot0.GetPos().y);
-
-		for (int x = minSP.x; x <= maxSP.x; ++x)
+		if (bmp != nullptr)
 		{
-			for (int y = minSP.y; y <= maxSP.y; ++y)
+			Vector2 minPos;
+			minPos.x = fminf(fminf(dot0.GetPos().x, dot1.GetPos().x), dot2.GetPos().x);
+			minPos.y = fminf(fminf(dot0.GetPos().y, dot1.GetPos().y), dot2.GetPos().y);
+
+			Vector2 maxPos;
+			maxPos.x = fmaxf(fmaxf(dot0.GetPos().x, dot1.GetPos().x), dot2.GetPos().x);
+			maxPos.y = fmaxf(fmaxf(dot0.GetPos().y, dot1.GetPos().y), dot2.GetPos().y);
+
+			Vector2 u = Vector2((dot1.GetPos() - dot0.GetPos()).x, (dot1.GetPos() - dot0.GetPos()).y);
+			Vector2 v = Vector2((dot2.GetPos() - dot0.GetPos()).x, (dot2.GetPos() - dot0.GetPos()).y);
+
+			float vv = v.Dot(v);
+			float uu = u.Dot(u);
+			float uv = u.Dot(v);
+			float denominator = uv * uv - uu * vv;
+
+			// 직선인 경우
+			if (denominator == 0)
+				return;
+
+			Vector2 minSP = ToScreenPoint(minPos.x, minPos.y);
+			Vector2 maxSP = ToScreenPoint(maxPos.x, maxPos.y);
+			Vector2 sp1 = ToScreenPoint(dot0.GetPos().x, dot0.GetPos().y);
+
+			for (int x = minSP.x; x <= maxSP.x; ++x)
 			{
-				Vector2 w = Vector2(x, y) - sp1;
-				float wu = w.Dot(u);
-				float wv = w.Dot(v);
-
-				float s = (wv * uv - wu * vv) / denominator;
-				float t = (wu * uv - wv * uu) / denominator;
-				float oneMinusST = 1.f - s - t;
-
-				if (((s >= 0.f) && (s <= 1.f)) && ((t >= 0.f) && (t <= 1.f)) && ((oneMinusST >= 0.f) && (oneMinusST <= 1.f)))
+				for (int y = minSP.y; y <= maxSP.y; ++y)
 				{
-					Vector2 UV = dot0.GetUV() * oneMinusST + dot1.GetUV() * s + dot2.GetUV() * t;
+					Vector2 w = Vector2(x, y) - sp1;
+					float wu = w.Dot(u);
+					float wv = w.Dot(v);
 
-					RGBColor rgbColor = GetColor(*bmp, UV);
-					HSVColor hsvColor = rgbColor.ConvertToHSV();
+					float s = (wv * uv - wu * vv) / denominator;
+					float t = (wu * uv - wv * uu) / denominator;
+					float oneMinusST = 1.f - s - t;
 
-					hsvColor.S *= S;
-					hsvColor.V *= V;
-					rgbColor = hsvColor.ConvertToRGB();
+					if (((s >= 0.f) && (s <= 1.f)) && ((t >= 0.f) && (t <= 1.f)) && ((oneMinusST >= 0.f) && (oneMinusST <= 1.f)))
+					{
+						Vector2 UV = dot0.GetUV() * oneMinusST + dot1.GetUV() * s + dot2.GetUV() * t;
 
-					DrawPixel(Vector3(x, y, 0), RGB(rgbColor.R, rgbColor.G, rgbColor.B));
+						RGBColor rgbColor = GetColorLerp(*bmp, UV);
+						RGBColor grayColor = GetColor(*bmp, UV);
+
+						BYTE gray = static_cast<BYTE>((299 * grayColor.R + 587 * grayColor.G + 114 * grayColor.B) / 1000);
+
+						if (rgbColor.A == 0)
+						{
+							rgbColor.R = 255;
+							rgbColor.G = 255;
+							rgbColor.B = 255;
+							gray = 255;
+						}
+
+						HSVColor hsvColor = rgbColor.ConvertToHSV();
+
+						hsvColor.S *= S;
+						hsvColor.V *= V;
+						rgbColor = hsvColor.ConvertToRGB();
+
+						DrawPixel(Vector3(x - 300, y, 0), RGB(rgbColor.R, rgbColor.G, rgbColor.B));
+						DrawPixel(Vector3(x + 300, y, 0), RGB(gray, gray, gray));
+					}
 				}
 			}
+		}
+		else
+		{
+			DrawLine(dot0.GetPos(), dot1.GetPos());
+			DrawLine(dot1.GetPos(), dot2.GetPos());
+			DrawLine(dot2.GetPos(), dot0.GetPos());
 		}
 	}
 
@@ -213,6 +235,39 @@ namespace DK
 
 		int x = static_cast<int>(floorf(uv.x * (width - 1)));
 		int y = static_cast<int>(floorf(uv.y * (bitmap.bmHeight - 1)));
+
+		return GetColor(bitmap, x, y);
+	}
+
+	RGBColor Renderer::GetColorLerp(BITMAP& bitmap, Vector2 uv)
+	{
+		int bytePixel = bitmap.bmBitsPixel / 8;
+		int width = bitmap.bmWidthBytes / bytePixel;
+
+		float fx = uv.x * (width - 1);
+		float fy = uv.y * (bitmap.bmHeight - 1);
+
+		int x0 = static_cast<int>(floorf(uv.x * (width - 1)));
+		int y0 = static_cast<int>(floorf(uv.y * (bitmap.bmHeight - 1)));
+
+		int x1 = min(x0 + 1, width - 1);
+		int y1 = min(y0 + 1, bitmap.bmHeight - 1);
+
+		RGBColor c00 = GetColor(bitmap, x0, y0);
+		RGBColor c10 = GetColor(bitmap, x1, y0);
+		RGBColor c01 = GetColor(bitmap, x0, y1);
+		RGBColor c11 = GetColor(bitmap, x1, y1);
+
+		RGBColor cx0 = RGBColor::LerpColor(c00, c10, fx - x0);
+		RGBColor cx1 = RGBColor::LerpColor(c01, c11, fx - x0);
+		RGBColor c = RGBColor::LerpColor(cx0, cx1, fy - y0);
+
+		return c;
+	}
+
+	RGBColor Renderer::GetColor(BITMAP& bitmap, int x, int y)
+	{
+		int bytePixel = bitmap.bmBitsPixel / 8;
 		int index = bitmap.bmWidthBytes * y + bytePixel * x;
 
 		BYTE* bits = (BYTE*)bitmap.bmBits;
@@ -220,8 +275,11 @@ namespace DK
 		BYTE b = bits[index];
 		BYTE g = bits[index + 1];
 		BYTE r = bits[index + 2];
-		return RGBColor(r, g, b);
-	}
+		BYTE a = 255;
+		if (bytePixel >= 4)
+			a = bits[index + 3];
 
+		return RGBColor(r, g, b, a);
+	}
 
 }
