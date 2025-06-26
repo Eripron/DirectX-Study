@@ -128,6 +128,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Dialog.cpp" />
+    <ClCompile Include="GameTimer.cpp" />
     <ClCompile Include="GraphicEngine.cpp" />
     <ClCompile Include="Graphic.cpp" />
     <ClCompile Include="GraphicUtils.cpp" />
@@ -143,6 +144,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dialog.h" />
+    <ClInclude Include="GameTimer.h" />
     <ClInclude Include="GraphicEngine.h" />
     <ClInclude Include="Graphic.h" />
     <ClInclude Include="GraphicUtils.h" />

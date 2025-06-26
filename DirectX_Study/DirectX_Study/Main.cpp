@@ -20,11 +20,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstace, LPSTR lpszCmdP
 			engine.BarValueChanged(s, v);
 		};
 
-	engine.Start();
+
+	engine.Init();
 	while (mainWindow.Run())
 	{
 		engine.Run();
-		mainWindow.Render();
 	}
 
 	mainWindow.Destroy();
