@@ -34,8 +34,8 @@ namespace DK
 		GraphicEngine(HWND hWnd);
 		~GraphicEngine();
 
-		HWND      MainWnd() const;
-		float     AspectRatio() const;
+		HWND MainWnd() const;
+		float AspectRatio() const;
 
 		bool Get4xMassState() const;
 		void Set4xMassState(bool state);
@@ -82,6 +82,7 @@ namespace DK
 
 	private:
 		HWND mhWnd;
+		std::wstring mWndTitle;
 		int mClientWidth;
 		int mClientHeight;
 		bool mAppPaused = false;		// is the application paused?

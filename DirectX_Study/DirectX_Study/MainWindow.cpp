@@ -1,9 +1,10 @@
 #include <Windows.h>
+#include <CommCtrl.h>
+
 #include "resource.h"
 #include "MainWindow.h"
 #include "WindowsUtils.h"
 
-#include <CommCtrl.h>
 #pragma comment(lib, "comctl32.lib")
 
 namespace DK
@@ -26,16 +27,18 @@ namespace DK
 		wndClassEx.lpszClassName = strClassName;
 		wndClassEx.hIconSm = NULL;
 		
-		// fail register window class
 		if (!RegisterClassEx(&wndClassEx))
 		{
+			// fail register window
+			MessageBox(0, L"Register Window Failed", L"Error", 0);
 			return false;
 		}
 
 		_hWnd = CreateWindow(strClassName, strWindowTitle, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, (HMENU)NULL, hInstance, this);
-		// fail create window
 		if (!_hWnd)
 		{
+			// fail create window
+			MessageBox(0, L"Create Window Failed", L"Error", 0);
 			return false;
 		}
 
@@ -63,10 +66,10 @@ namespace DK
 
 	void MainWindow::Render()
 	{
-		if (_sValueBar != NULL)
+	/*	if (_sValueBar != NULL)
 			RedrawWindow(_sValueBar, NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW);
 		if (_vValueBar != NULL)
-			RedrawWindow(_vValueBar, NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW);
+			RedrawWindow(_vValueBar, NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW);*/
 	}
 
 	void MainWindow::Destroy()
@@ -119,7 +122,7 @@ namespace DK
 		case WM_SIZE:
 			return 0;
 
-		case WM_HSCROLL:
+		/*case WM_HSCROLL:
 		{
 			float s, v;
 
@@ -131,15 +134,14 @@ namespace DK
 
 			if(BarValueChanged)
 				BarValueChanged(s, v);
-		}
-
-		case WM_PAINT:
+		}*/
+		/*case WM_PAINT:
 		{
 			PAINTSTRUCT ps;
 			HDC hdc = BeginPaint(hWnd, &ps);
 			EndPaint(hWnd, &ps);
 			return 0;
-		}
+		}*/
 		}
 
 		return DefWindowProc(hWnd, message, wParam, lParam);
@@ -148,26 +150,26 @@ namespace DK
 	void MainWindow::Create(HWND hWnd)
 	{
 		// load control window
-		INITCOMMONCONTROLSEX icex;
-		icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
-		icex.dwICC = ICC_BAR_CLASSES;	// load control bit flag
-		if (InitCommonControlsEx(&icex))
-		{
-			// success load control
-			_sValueBar = CreateWindowEx(0, TRACKBAR_CLASS, NULL, WS_CHILD | WS_VISIBLE | TBS_NOTICKS, 10, 10, 200, 40, hWnd, (HMENU)0, _hInst, NULL);
-			if (_sValueBar != NULL)
-			{
-				SendMessage(_sValueBar, TBM_SETRANGE, FALSE, MAKELPARAM(0, 1000));
-				SendMessage(_sValueBar, TBM_SETPOS, TRUE, 1000);
-			}
+		//INITCOMMONCONTROLSEX icex;
+		//icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
+		//icex.dwICC = ICC_BAR_CLASSES;	// load control bit flag
+		//if (InitCommonControlsEx(&icex))
+		//{
+		//	// success load control
+		//	_sValueBar = CreateWindowEx(0, TRACKBAR_CLASS, NULL, WS_CHILD | WS_VISIBLE | TBS_NOTICKS, 10, 10, 200, 40, hWnd, (HMENU)0, _hInst, NULL);
+		//	if (_sValueBar != NULL)
+		//	{
+		//		SendMessage(_sValueBar, TBM_SETRANGE, FALSE, MAKELPARAM(0, 1000));
+		//		SendMessage(_sValueBar, TBM_SETPOS, TRUE, 1000);
+		//	}
 
-			_vValueBar = CreateWindowEx(0, TRACKBAR_CLASS, NULL, WS_CHILD | WS_VISIBLE | TBS_NOTICKS, 10, 60, 200, 40, hWnd, (HMENU)1, _hInst, NULL);
-			if (_vValueBar != NULL)
-			{
-				SendMessage(_vValueBar, TBM_SETRANGE, FALSE, MAKELPARAM(0, 1000));
-				SendMessage(_vValueBar, TBM_SETPOS, TRUE, 1000);
-			}
-		}
+		//	_vValueBar = CreateWindowEx(0, TRACKBAR_CLASS, NULL, WS_CHILD | WS_VISIBLE | TBS_NOTICKS, 10, 60, 200, 40, hWnd, (HMENU)1, _hInst, NULL);
+		//	if (_vValueBar != NULL)
+		//	{
+		//		SendMessage(_vValueBar, TBM_SETRANGE, FALSE, MAKELPARAM(0, 1000));
+		//		SendMessage(_vValueBar, TBM_SETPOS, TRUE, 1000);
+		//	}
+		//}
 	}
 
 }

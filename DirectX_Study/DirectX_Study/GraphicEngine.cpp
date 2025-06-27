@@ -7,15 +7,15 @@ namespace DK
 	{
 		mhWnd = hWnd;
 
-		RECT rt;
-		GetClientRect(mhWnd, &rt);
-		mClientWidth = rt.right - rt.left;
-		mClientHeight = rt.bottom - rt.top;
+		size_t lenText = GetWindowTextLength(MainWnd()) + 1;
+		mWndTitle = std::wstring(L"\0", lenText);
+		GetWindowText(MainWnd(), &mWndTitle[0], lenText);
+		mWndTitle.pop_back();
 	}
 
 	GraphicEngine::~GraphicEngine()
 	{
-		// todo: 함수 호출 이유 - 
+		// ** GPU가 아직 명령을 처리하는 중 일수 있으니 한번 비운다.
 		if (md3dDevice != nullptr)
 			FlushCommandQueue();
 	}
@@ -48,23 +48,15 @@ namespace DK
 		}
 	}
 
-	BITMAP bmp;
-	Square square;
-	
 	bool GraphicEngine::Init()
 	{
-		/*LPCTSTR path = L"Image/mario.bmp";
-		if (LoadBitmapData(path, bmp))
-		{
-			float n = 1;
-			square = GraphicUtils::CreateSquare(bmp.bmWidth / n, bmp.bmHeight / n);
-			square.SetUV(Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0));
-		}*/
-
 		if (InitDirect3D() == false)
 			return false;
 
-		OnResize(mClientWidth, mClientHeight);
+		RECT rt;
+		GetClientRect(MainWnd(), &rt);
+		OnResize(rt.right - rt.left, rt.bottom - rt.top);
+
 		mTimer.Reset();
 
 		return true;
@@ -80,6 +72,7 @@ namespace DK
 			Update();
 			Render();
 		}
+		else
 		{
 			Sleep(100);
 		}
@@ -98,39 +91,40 @@ namespace DK
 		assert(mSwapChain);
 		assert(mDirectCmdListAlloc);
 
-		// Flush before changing any resources.
+		// 리소스 사용중일수 있으니 GPU작업 끝나기를 기다린다.
 		FlushCommandQueue();
 
 		// todo: 이유
 		ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
 
+		// 버퍼 참조 해제
+		for (int i = 0; i < SwapChainBufferCount; ++i)
+			mSwapChainBuffer[i].Reset();
+		mDepthStencilBuffer.Reset();
+
 		// Swap Chain 사이즈 수정
 		ThrowIfFailed(mSwapChain->ResizeBuffers(
 			SwapChainBufferCount,
-			mClientWidth, mClientHeight,
+			mClientWidth, 
+			mClientHeight,
 			mBackBufferFormat,
 			DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH));
 
 		mCurrBackBuffer = 0;
 
-		// 수정된 버퍼 사이즈에 맞춰서 Resource 다시 생성
-		for (int i = 0; i < SwapChainBufferCount; ++i)
-			mSwapChainBuffer[i].Reset();
-		mDepthStencilBuffer.Reset();
-
 		// RTV Buffer 리소스 생성
 		D3D12_CPU_DESCRIPTOR_HANDLE handleRTV = mRtvHeap->GetCPUDescriptorHandleForHeapStart();
-		for (UINT i = 0; i < SwapChainBufferCount; i++)
+		for (UINT i = 0; i < SwapChainBufferCount; ++i)
 		{
 			ThrowIfFailed(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mSwapChainBuffer[i])));
 			md3dDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, handleRTV);
-			handleRTV.ptr += (i * mRtvDescriptorSize);
+			handleRTV.ptr += mRtvDescriptorSize;	// 한칸씩 이동
 		}
 
 		// 스탠실.뎁스 버퍼 리소스 및 뷰 생성
 		D3D12_RESOURCE_DESC depthStencilDesc;
 		depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-		depthStencilDesc.Alignment = 0;
+		depthStencilDesc.Alignment = 0;	// 정렬 기준(0 기본값)
 		depthStencilDesc.Width = mClientWidth;
 		depthStencilDesc.Height = mClientHeight;
 		depthStencilDesc.DepthOrArraySize = 1;
@@ -152,13 +146,21 @@ namespace DK
 		optClear.Format = mDepthStencilFormat;
 		optClear.DepthStencil.Depth = 1.0f;
 		optClear.DepthStencil.Stencil = 0;
-		/*ThrowIfFailed(md3dDevice->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+
+		D3D12_HEAP_PROPERTIES heapPropertis;
+		heapPropertis.Type = D3D12_HEAP_TYPE_DEFAULT;
+		heapPropertis.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+		heapPropertis.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+		heapPropertis.CreationNodeMask = 1;
+		heapPropertis.VisibleNodeMask = 1;
+
+		ThrowIfFailed(md3dDevice->CreateCommittedResource(
+			&heapPropertis,
 			D3D12_HEAP_FLAG_NONE,
 			&depthStencilDesc,
 			D3D12_RESOURCE_STATE_COMMON,
 			&optClear,
-			IID_PPV_ARGS(mDepthStencilBuffer.GetAddressOf())));*/
+			IID_PPV_ARGS(&mDepthStencilBuffer)));
 
 		// Create descriptor to mip level 0 of entire resource using the format of the resource.
 		D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc;
@@ -169,8 +171,15 @@ namespace DK
 		md3dDevice->CreateDepthStencilView(mDepthStencilBuffer.Get(), &dsvDesc, DepthStencilView());
 
 		// Transition the resource from its initial state to be used as a depth buffer.
-		/*mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mDepthStencilBuffer.Get(),
-			D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_DEPTH_WRITE));*/
+		D3D12_RESOURCE_BARRIER barrier;
+		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		barrier.Transition.pResource = mDepthStencilBuffer.Get();
+		barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+		barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+		barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+		mCommandList->ResourceBarrier(1, &barrier);
 
 		// Execute the resize commands.
 		ThrowIfFailed(mCommandList->Close());
@@ -180,7 +189,7 @@ namespace DK
 		// Wait until resize is complete.
 		FlushCommandQueue();
 
-		// Update the viewport transform to cover the client area.
+		// 뷰포트와 Rect 수정
 		mScreenViewport.TopLeftX = 0;
 		mScreenViewport.TopLeftY = 0;
 		mScreenViewport.Width = static_cast<float>(mClientWidth);
@@ -376,6 +385,7 @@ namespace DK
 
 	void GraphicEngine::CalculateFrameStats()
 	{
+#if defined(DEBUG) || defined(_DEBUG)
 		static int frameCount = 0;
 		static float elafasedTime = 0.0f;
 
@@ -386,16 +396,16 @@ namespace DK
 			float fps = (float)frameCount;
 			float mspf = 1000.0f / fps;
 
-			std::wstring strFps = std::to_wstring(fps);
+			std::wstring strFps = std::to_wstring((int)fps);
 			std::wstring strMspf = std::to_wstring(mspf);
+			std::wstring text = mWndTitle + L"  (fps: " + strFps + L", mspf: " + strMspf + L")";
 
-			std::wstring text = L"fps: " + strFps + L"  mspf: " + strMspf;
-
-			OutputDebugString(text.c_str());
+			SetWindowText(MainWnd(), text.c_str());
 
 			frameCount = 0;
 			elafasedTime += 1.0f;
 		}
+#endif
 	}
 
 	void GraphicEngine::LogAdapters()
@@ -446,21 +456,39 @@ namespace DK
 		// Command List는 초기화하면 Alloc의 연결도 해제되므로 다시 연결
 		ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
 
-		//mCommandList->ResourceBarrier(1, );
+		// 백버퍼 상태 전환 (Present -> Render Target)
+		D3D12_RESOURCE_BARRIER barrier = {};
+		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		barrier.Transition.pResource = CurrentBackBuffer();
+		barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+		barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+		barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		mCommandList->ResourceBarrier(1, &barrier);
 
 		// Set the viewport and scissor rect.  This needs to be reset whenever the command list is reset.
 		mCommandList->RSSetViewports(1, &mScreenViewport);
 		mCommandList->RSSetScissorRects(1, &mScissorRect);
 
 		// 백버퍼, 스탠실.뎁스 버퍼 초기화
-		const float clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+		const float clearColor[] = { 255.0f, 255.0f, 255.0f, 1.0f };
 		mCommandList->ClearRenderTargetView(CurrentBackBufferView(), clearColor, 0, nullptr);
 		mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
-		// Output Manager에서 렌더 버퍼와 스탠실.뎁스 버퍼 등록
-		mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
+		// Output Merger에서 렌더 버퍼와 스탠실.뎁스 버퍼 등록
+		D3D12_CPU_DESCRIPTOR_HANDLE backBufferView = CurrentBackBufferView();
+		D3D12_CPU_DESCRIPTOR_HANDLE depthStencilView = DepthStencilView();
+		mCommandList->OMSetRenderTargets(1, &backBufferView, true, &depthStencilView);
 
-		//mCommandList->ResourceBarrier()
+		// 백버퍼 상태 전환 (Render Target -> Present)
+		D3D12_RESOURCE_BARRIER barrier1 = {};
+		barrier1.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		barrier1.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		barrier1.Transition.pResource = CurrentBackBuffer();
+		barrier1.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+		barrier1.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+		barrier1.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		mCommandList->ResourceBarrier(1, &barrier1);
 
 		// Command 기록이 끝나면
 		ThrowIfFailed(mCommandList->Close());
