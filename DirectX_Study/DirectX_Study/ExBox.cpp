@@ -45,6 +45,13 @@ namespace DK
 
 	void ExBox::Update()
 	{
+		mTheta += GetXAxisInput() * 0.001f;
+		mPhi += GetYAxisInput() * 0.001f;
+		if (mPhi < 0.1f)
+			mPhi = 0.1f;
+		else if (mPhi > DirectX::XM_PI - 0.1f)
+			mPhi = DirectX::XM_PI - 0.1f;
+
 		// Convert Spherical to Cartesian coordinates.
 		float x = mRadius * sinf(mPhi) * cosf(mTheta);
 		float z = mRadius * sinf(mPhi) * sinf(mTheta);
@@ -75,7 +82,8 @@ namespace DK
 		THROW_IF_FAILED(mCommandList->Reset(mDirectCmdListAlloc.Get(), mPSO.Get()));
 
 		// view 설정
-		// todo - 어떤 내용인지 다시 확인하기
+		// RSSetViewports: 화면으로 출력할 영역(viewport) 설정
+		// RSSetScissorRects: 출력 시 제외할 영역(rect) 설정
 		mCommandList->RSSetViewports(1, &mScreenViewport);
 		mCommandList->RSSetScissorRects(1, &mScissorRect);
 
@@ -87,7 +95,7 @@ namespace DK
 		mCommandList->ClearRenderTargetView(CurrentBackBufferView(), DirectX::Colors::LightSteelBlue, 0, nullptr);
 		mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
-		// Specify the buffers we are going to render to.
+		// output merge 단계에서 사용할 render, depth.stencil buffer binding
 		D3D12_CPU_DESCRIPTOR_HANDLE back = CurrentBackBufferView();
 		D3D12_CPU_DESCRIPTOR_HANDLE handle = DepthStencilView();
 		mCommandList->OMSetRenderTargets(1, &back, true, &handle);
@@ -97,14 +105,13 @@ namespace DK
 		mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 		// 셰이더에서 사용할 root signature를 바인딩
 		mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
+		mCommandList->SetGraphicsRootDescriptorTable(0, mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 
 		D3D12_VERTEX_BUFFER_VIEW bufferView = mBoxGeo->VertexBufferView();
 		mCommandList->IASetVertexBuffers(0, 1, &bufferView);
 		D3D12_INDEX_BUFFER_VIEW inxBufferView = mBoxGeo->IndexBufferView();
 		mCommandList->IASetIndexBuffer(&inxBufferView);
 		mCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-		mCommandList->SetGraphicsRootDescriptorTable(0, mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 
 		mCommandList->DrawIndexedInstanced(
 			mBoxGeo->DrawArgs["box"].IndexCount,
