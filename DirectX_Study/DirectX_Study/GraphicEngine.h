@@ -1,30 +1,11 @@
 #pragma once
 
-#include <Windows.h>
-#include "Renderer.h"
-
-// directX
-#include <d3d12.h>
-#include <wrl.h>
-#include <DirectXMath.h>
-#include <dxgi1_4.h>
-#include <intsafe.h>
-#include <string>
-#include <comdef.h>
-#include <synchapi.h>
-
+#include "D3DUtils.h"
 #include "GameTimer.h"
 
 #pragma comment(lib,"d3dcompiler.lib")
 #pragma comment(lib, "D3D12.lib")
 #pragma comment(lib, "dxgi.lib")
-
-#define ThrowIfFailed(x)                                              \
-{                                                                     \
-    HRESULT hr__ = (x);                                               \
-    std::wstring wfn = AnsiToWString(__FILE__);                       \
-    if(FAILED(hr__)) { throw DxException(hr__, L#x, wfn, __LINE__); } \
-}
 
 namespace DK
 {
@@ -32,7 +13,7 @@ namespace DK
 	{
 	public:
 		GraphicEngine(HWND hWnd);
-		~GraphicEngine();
+		virtual ~GraphicEngine();
 
 		HWND MainWnd() const;
 		float AspectRatio() const;
@@ -40,15 +21,13 @@ namespace DK
 		bool Get4xMassState() const;
 		void Set4xMassState(bool state);
 
-		bool Init();
+		virtual bool Init();
 		void Run();
-		void BarValueChanged(float s, float v);
 
-	private:
-
-		void OnResize(int width, int height);
-		void Update();
-		void Render();
+	protected:
+		virtual void OnResize(int width, int height);
+		virtual void Update();
+		virtual void Render();
 
 		bool InitDirect3D();
 		void CreateCommandObjects();
@@ -74,13 +53,7 @@ namespace DK
 
 		bool LoadBitmapData(LPCTSTR path, BITMAP& bitmap);
 
-	private:
-		Renderer _render;
-
-		float S = 1.f;
-		float V = 1.f;
-
-	private:
+	protected:
 		HWND mhWnd;
 		std::wstring mWndTitle;
 		int mClientWidth;
@@ -127,25 +100,6 @@ namespace DK
 		DXGI_FORMAT mDepthStencilFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	};
 
-	class DxException
-	{
-	public:
-		DxException() = default;
-		DxException(HRESULT hr, const std::wstring& functionName, const std::wstring& fileName, int lineNumber);
-
-		std::wstring ToString() const;
-
-		HRESULT ErrorCode = S_OK;
-		std::wstring FunctionName;
-		std::wstring FileName;
-		int LineNumber = -1;
-	};
-
-	inline std::wstring AnsiToWString(const std::string& str)
-	{
-		WCHAR buffer[512];
-		MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, buffer, 512);
-		return std::wstring(buffer);
-	}
+	
 
 }

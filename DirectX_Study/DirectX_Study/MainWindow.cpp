@@ -66,10 +66,6 @@ namespace DK
 
 	void MainWindow::Render()
 	{
-	/*	if (_sValueBar != NULL)
-			RedrawWindow(_sValueBar, NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW);
-		if (_vValueBar != NULL)
-			RedrawWindow(_vValueBar, NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW);*/
 	}
 
 	void MainWindow::Destroy()
@@ -121,27 +117,6 @@ namespace DK
 
 		case WM_SIZE:
 			return 0;
-
-		/*case WM_HSCROLL:
-		{
-			float s, v;
-
-			int value = (int)SendMessage(_sValueBar, TBM_GETPOS, 0, 0);
-			s = value / 1000.0f;
-
-			value = (int)SendMessage(_vValueBar, TBM_GETPOS, 0, 0);
-			v = value / 1000.0f;
-
-			if(BarValueChanged)
-				BarValueChanged(s, v);
-		}*/
-		/*case WM_PAINT:
-		{
-			PAINTSTRUCT ps;
-			HDC hdc = BeginPaint(hWnd, &ps);
-			EndPaint(hWnd, &ps);
-			return 0;
-		}*/
 		}
 
 		return DefWindowProc(hWnd, message, wParam, lParam);
@@ -149,27 +124,6 @@ namespace DK
 
 	void MainWindow::Create(HWND hWnd)
 	{
-		// load control window
-		//INITCOMMONCONTROLSEX icex;
-		//icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
-		//icex.dwICC = ICC_BAR_CLASSES;	// load control bit flag
-		//if (InitCommonControlsEx(&icex))
-		//{
-		//	// success load control
-		//	_sValueBar = CreateWindowEx(0, TRACKBAR_CLASS, NULL, WS_CHILD | WS_VISIBLE | TBS_NOTICKS, 10, 10, 200, 40, hWnd, (HMENU)0, _hInst, NULL);
-		//	if (_sValueBar != NULL)
-		//	{
-		//		SendMessage(_sValueBar, TBM_SETRANGE, FALSE, MAKELPARAM(0, 1000));
-		//		SendMessage(_sValueBar, TBM_SETPOS, TRUE, 1000);
-		//	}
-
-		//	_vValueBar = CreateWindowEx(0, TRACKBAR_CLASS, NULL, WS_CHILD | WS_VISIBLE | TBS_NOTICKS, 10, 60, 200, 40, hWnd, (HMENU)1, _hInst, NULL);
-		//	if (_vValueBar != NULL)
-		//	{
-		//		SendMessage(_vValueBar, TBM_SETRANGE, FALSE, MAKELPARAM(0, 1000));
-		//		SendMessage(_vValueBar, TBM_SETPOS, TRUE, 1000);
-		//	}
-		//}
 	}
 
 }

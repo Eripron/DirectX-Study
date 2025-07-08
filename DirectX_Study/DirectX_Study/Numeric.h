@@ -1,5 +1,7 @@
 #pragma once
 
+#include <DirectXMath.h>
+
 namespace DK
 {
 #pragma region Vector2
@@ -204,4 +206,15 @@ namespace DK
     Matrix44 operator*(float value, const Matrix44& other);
 
 #pragma endregion
+
+#pragma region Vertex
+
+    struct Vertex
+    {
+        DirectX::XMFLOAT3 Pos;      // 정점 위치
+        DirectX::XMFLOAT4 Color;    // 정점 색상
+    };
+
+#pragma endregion
+
 }

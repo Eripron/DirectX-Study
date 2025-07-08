@@ -127,7 +127,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="D3DUtils.cpp" />
     <ClCompile Include="Dialog.cpp" />
+    <ClCompile Include="ExBox.cpp" />
     <ClCompile Include="GameTimer.cpp" />
     <ClCompile Include="GraphicEngine.cpp" />
     <ClCompile Include="Graphic.cpp" />
@@ -143,7 +145,10 @@
     <ClCompile Include="WindowsUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\Downloads\d3dx12.h" />
+    <ClInclude Include="D3DUtils.h" />
     <ClInclude Include="Dialog.h" />
+    <ClInclude Include="ExBox.h" />
     <ClInclude Include="GameTimer.h" />
     <ClInclude Include="GraphicEngine.h" />
     <ClInclude Include="Graphic.h" />
@@ -156,6 +161,7 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="RGBColor.h" />
     <ClInclude Include="Transform.h" />
+    <ClInclude Include="UploadBuffer.h" />
     <ClInclude Include="WindowsUtils.h" />
   </ItemGroup>
   <ItemGroup>

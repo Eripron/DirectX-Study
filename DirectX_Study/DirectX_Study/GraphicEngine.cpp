@@ -86,7 +86,6 @@ namespace DK
 		mClientWidth = width;
 		mClientHeight = height;
 
-		// todo: 이유
 		assert(md3dDevice);
 		assert(mSwapChain);
 		assert(mDirectCmdListAlloc);
@@ -94,8 +93,7 @@ namespace DK
 		// 리소스 사용중일수 있으니 GPU작업 끝나기를 기다린다.
 		FlushCommandQueue();
 
-		// todo: 이유
-		ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
+		THROW_IF_FAILED(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
 
 		// 버퍼 참조 해제
 		for (int i = 0; i < SwapChainBufferCount; ++i)
@@ -103,7 +101,7 @@ namespace DK
 		mDepthStencilBuffer.Reset();
 
 		// Swap Chain 사이즈 수정
-		ThrowIfFailed(mSwapChain->ResizeBuffers(
+		THROW_IF_FAILED(mSwapChain->ResizeBuffers(
 			SwapChainBufferCount,
 			mClientWidth, 
 			mClientHeight,
@@ -116,7 +114,7 @@ namespace DK
 		D3D12_CPU_DESCRIPTOR_HANDLE handleRTV = mRtvHeap->GetCPUDescriptorHandleForHeapStart();
 		for (UINT i = 0; i < SwapChainBufferCount; ++i)
 		{
-			ThrowIfFailed(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mSwapChainBuffer[i])));
+			THROW_IF_FAILED(mSwapChain->GetBuffer(i, IID_PPV_ARGS(&mSwapChainBuffer[i])));
 			md3dDevice->CreateRenderTargetView(mSwapChainBuffer[i].Get(), nullptr, handleRTV);
 			handleRTV.ptr += mRtvDescriptorSize;	// 한칸씩 이동
 		}
@@ -154,7 +152,7 @@ namespace DK
 		heapPropertis.CreationNodeMask = 1;
 		heapPropertis.VisibleNodeMask = 1;
 
-		ThrowIfFailed(md3dDevice->CreateCommittedResource(
+		THROW_IF_FAILED(md3dDevice->CreateCommittedResource(
 			&heapPropertis,
 			D3D12_HEAP_FLAG_NONE,
 			&depthStencilDesc,
@@ -182,7 +180,7 @@ namespace DK
 		mCommandList->ResourceBarrier(1, &barrier);
 
 		// Execute the resize commands.
-		ThrowIfFailed(mCommandList->Close());
+		THROW_IF_FAILED(mCommandList->Close());
 		ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
 		mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
 
@@ -209,12 +207,12 @@ namespace DK
 		// todo: debuf 매크로 설정에 대해서, 해당 기능에 대한 이유와 무엇인지
 #if defined(DEBUG) || defined(_DEBUG)
 		Microsoft::WRL::ComPtr<ID3D12Debug> debugController;
-		ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
+		THROW_IF_FAILED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
 		debugController->EnableDebugLayer();
 #endif
 
 		// dxgi factory 생성
-		ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&mdxgiFactory)));
+		THROW_IF_FAILED(CreateDXGIFactory1(IID_PPV_ARGS(&mdxgiFactory)));
 
 		// adapter 생성
 		HRESULT hResultDevice = D3D12CreateDevice(
@@ -237,7 +235,7 @@ namespace DK
 		}
 
 		// Fence와 서술사(뷰) 크기 가져오기
-		ThrowIfFailed(md3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
+		THROW_IF_FAILED(md3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
 
 		mRtvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 		mDsvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
@@ -249,7 +247,7 @@ namespace DK
 		msQualityLevels.SampleCount = 4;
 		msQualityLevels.Flags = D3D12_MULTISAMPLE_QUALITY_LEVELS_FLAG_NONE;
 		msQualityLevels.NumQualityLevels = 0;
-		ThrowIfFailed(md3dDevice->CheckFeatureSupport(
+		THROW_IF_FAILED(md3dDevice->CheckFeatureSupport(
 			D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS,
 			&msQualityLevels,
 			sizeof(msQualityLevels)));
@@ -276,13 +274,13 @@ namespace DK
 		D3D12_COMMAND_QUEUE_DESC queueDesc = {};
 		queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 		queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-		ThrowIfFailed(md3dDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue)));
+		THROW_IF_FAILED(md3dDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue)));
 
-		ThrowIfFailed(md3dDevice->CreateCommandAllocator(
+		THROW_IF_FAILED(md3dDevice->CreateCommandAllocator(
 			D3D12_COMMAND_LIST_TYPE_DIRECT,
 			IID_PPV_ARGS(&mDirectCmdListAlloc)));
 
-		ThrowIfFailed(md3dDevice->CreateCommandList(
+		THROW_IF_FAILED(md3dDevice->CreateCommandList(
 			0,
 			D3D12_COMMAND_LIST_TYPE_DIRECT,
 			mDirectCmdListAlloc.Get(),
@@ -320,7 +318,7 @@ namespace DK
 		sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;	// 전체화면에서 여러 해상도 모드 변경 가능
 
 		// Note: Swap chain uses queue to perform flush.
-		ThrowIfFailed(mdxgiFactory->CreateSwapChain(
+		THROW_IF_FAILED(mdxgiFactory->CreateSwapChain(
 			mCommandQueue.Get(),
 			&sd,
 			&mSwapChain));
@@ -333,7 +331,7 @@ namespace DK
 		rtvHeapDesc.NumDescriptors = SwapChainBufferCount;	// 뷰를 2개 생성
 		rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 		rtvHeapDesc.NodeMask = 0;
-		ThrowIfFailed(md3dDevice->CreateDescriptorHeap(
+		THROW_IF_FAILED(md3dDevice->CreateDescriptorHeap(
 			&rtvHeapDesc,
 			IID_PPV_ARGS(&mRtvHeap)));
 
@@ -342,7 +340,7 @@ namespace DK
 		dsvHeapDesc.NumDescriptors = 1;
 		dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 		dsvHeapDesc.NodeMask = 0;
-		ThrowIfFailed(md3dDevice->CreateDescriptorHeap(
+		THROW_IF_FAILED(md3dDevice->CreateDescriptorHeap(
 			&dsvHeapDesc,
 			IID_PPV_ARGS(&mDsvHeap)));
 	}
@@ -353,13 +351,13 @@ namespace DK
 		mCurrentFence += 1;
 
 		// gpu가 쌓인 CommandList를 실행하고 모두 완료 후 Fence에 해당 값을 설정한다.
-		ThrowIfFailed(mCommandQueue->Signal(mFence.Get(), mCurrentFence));
+		THROW_IF_FAILED(mCommandQueue->Signal(mFence.Get(), mCurrentFence));
 
 		if (mFence->GetCompletedValue() < mCurrentFence)
 		{
 			HANDLE eventHandle = CreateEventEx(nullptr, nullptr, 0, EVENT_ALL_ACCESS);
 
-			ThrowIfFailed(mFence->SetEventOnCompletion(mCurrentFence, eventHandle));
+			THROW_IF_FAILED(mFence->SetEventOnCompletion(mCurrentFence, eventHandle));
 
 			WaitForSingleObject(eventHandle, INFINITE);
 			CloseHandle(eventHandle);
@@ -449,12 +447,12 @@ namespace DK
 		// Reuse the memory associated with command recording.
 		// We can only reset when the associated command lists have finished execution on the GPU.
 		// GPU가 모든 명령 실행하면 모든 명령을 초기화하고 다시 기록하기 위해서 reset
-		ThrowIfFailed(mDirectCmdListAlloc->Reset());
+		THROW_IF_FAILED(mDirectCmdListAlloc->Reset());
 
 		// A command list can be reset after it has been added to the command queue via ExecuteCommandList.
 		// Reusing the command list reuses memory.
 		// Command List는 초기화하면 Alloc의 연결도 해제되므로 다시 연결
-		ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
+		THROW_IF_FAILED(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
 
 		// 백버퍼 상태 전환 (Present -> Render Target)
 		D3D12_RESOURCE_BARRIER barrier = {};
@@ -471,7 +469,7 @@ namespace DK
 		mCommandList->RSSetScissorRects(1, &mScissorRect);
 
 		// 백버퍼, 스탠실.뎁스 버퍼 초기화
-		const float clearColor[] = { 255.0f, 255.0f, 255.0f, 1.0f };
+		const float clearColor[] = { 255.0f, 0.0f, 255.0f, 1.0f };
 		mCommandList->ClearRenderTargetView(CurrentBackBufferView(), clearColor, 0, nullptr);
 		mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
@@ -491,25 +489,19 @@ namespace DK
 		mCommandList->ResourceBarrier(1, &barrier1);
 
 		// Command 기록이 끝나면
-		ThrowIfFailed(mCommandList->Close());
+		THROW_IF_FAILED(mCommandList->Close());
 
 		// Add the command list to the queue for execution.
 		ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
 		mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
 
-		ThrowIfFailed(mSwapChain->Present(0, 0));
+		THROW_IF_FAILED(mSwapChain->Present(0, 0));
 		mCurrBackBuffer = (mCurrBackBuffer + 1) % SwapChainBufferCount;
 
 		// Wait until frame commands are complete.  This waiting is inefficient and is
 		// done for simplicity.  Later we will show how to organize our rendering code
 		// so we do not have to wait per frame.
 		FlushCommandQueue();
-	}
-
-	void GraphicEngine::BarValueChanged(float s, float v)
-	{
-		S = s;
-		V = v;
 	}
 
 	float GraphicEngine::GetXAxisInput()
@@ -603,19 +595,6 @@ namespace DK
 		CloseHandle(hFile);
 
 		return true;
-	}
-
-	DxException::DxException(HRESULT hr, const std::wstring& functionName, const std::wstring& fileName, int lineNumber)
-		: ErrorCode(hr), FunctionName(functionName), FileName(fileName), LineNumber(lineNumber)
-	{
-	}
-
-	std::wstring DxException::ToString() const
-	{
-		_com_error err(ErrorCode);
-		std::wstring msg = err.ErrorMessage();
-
-		return FunctionName + L" failed in " + FileName + L"; line " + std::to_wstring(LineNumber) + L"; error: " + msg;
 	}
 
 }

@@ -43,6 +43,18 @@
     <Filter Include="소스 파일\Engine">
       <UniqueIdentifier>{8ac72ca1-e71d-4a18-8b33-bd5b4ebe5750}</UniqueIdentifier>
     </Filter>
+    <Filter Include="헤더 파일\Engine\Ex">
+      <UniqueIdentifier>{d498e381-bb91-4561-9cf8-d6dbd6e3697f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Engine\Ex">
+      <UniqueIdentifier>{01e31620-5438-43ec-bc80-ef0aa8dc766f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\DirectX">
+      <UniqueIdentifier>{6f44fae0-0328-4de0-b07f-f9df3a119742}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\DirectX">
+      <UniqueIdentifier>{95844a29-ff33-4717-b8ca-6156d630fb69}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -87,6 +99,12 @@
     <ClCompile Include="GameTimer.cpp">
       <Filter>소스 파일\Utils</Filter>
     </ClCompile>
+    <ClCompile Include="D3DUtils.cpp">
+      <Filter>소스 파일\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="ExBox.cpp">
+      <Filter>소스 파일\Engine\Ex</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
@@ -130,6 +148,18 @@
     </ClInclude>
     <ClInclude Include="GameTimer.h">
       <Filter>헤더 파일\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="D3DUtils.h">
+      <Filter>헤더 파일\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="ExBox.h">
+      <Filter>헤더 파일\Engine\Ex</Filter>
+    </ClInclude>
+    <ClInclude Include="UploadBuffer.h">
+      <Filter>헤더 파일\DirectX</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Downloads\d3dx12.h">
+      <Filter>헤더 파일\DirectX</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

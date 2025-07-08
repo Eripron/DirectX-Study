@@ -53,3 +53,12 @@ float MathUtils::TanF(float degree)
 {
 	return tanf(Deg2Rad(degree));
 }
+
+DirectX::XMFLOAT4X4 MathUtils::Identity4x4()
+{
+	return DirectX::XMFLOAT4X4(
+		1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f);
+}

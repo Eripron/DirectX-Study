@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <DirectXMath.h>
 
 class MathUtils
 {
@@ -20,4 +21,5 @@ public:
 	static float CosF(float degree);
 	static float TanF(float degree);
 
+	static DirectX::XMFLOAT4X4 Identity4x4();
 };
