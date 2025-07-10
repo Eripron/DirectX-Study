@@ -157,17 +157,22 @@ namespace DK
 		  주로 셰이더 코드, 컴파일된 데이터, 에러 메시지 등을 담을 때 사용됩니다.
 		*/
 		Microsoft::WRL::ComPtr<ID3DBlob> VertexBufferCPU = nullptr;
+		Microsoft::WRL::ComPtr<ID3DBlob> ColorBufferCPU = nullptr;
 		Microsoft::WRL::ComPtr<ID3DBlob> IndexBufferCPU = nullptr;
 
 		Microsoft::WRL::ComPtr<ID3D12Resource> VertexBufferGPU = nullptr;
+		Microsoft::WRL::ComPtr<ID3D12Resource> ColorBufferGPU = nullptr;
 		Microsoft::WRL::ComPtr<ID3D12Resource> IndexBufferGPU = nullptr;
 
 		Microsoft::WRL::ComPtr<ID3D12Resource> VertexBufferUploader = nullptr;
+		Microsoft::WRL::ComPtr<ID3D12Resource> ColorBufferUploader = nullptr;
 		Microsoft::WRL::ComPtr<ID3D12Resource> IndexBufferUploader = nullptr;
 
 		// Data about the buffers.
 		UINT VertexByteStride = 0;
+		UINT ColorByteStride = 0;
 		UINT VertexBufferByteSize = 0;
+		UINT ColorBufferByteSize = 0;
 		DXGI_FORMAT IndexFormat = DXGI_FORMAT_R16_UINT;
 		UINT IndexBufferByteSize = 0;
 
@@ -186,6 +191,16 @@ namespace DK
 			return vbv;
 		}
 
+		D3D12_VERTEX_BUFFER_VIEW ColorBufferView() const
+		{
+			D3D12_VERTEX_BUFFER_VIEW rbv;
+			rbv.BufferLocation = ColorBufferGPU->GetGPUVirtualAddress();
+			rbv.StrideInBytes = ColorByteStride;
+			rbv.SizeInBytes = ColorBufferByteSize;
+
+			return rbv;
+		}
+
 		D3D12_INDEX_BUFFER_VIEW IndexBufferView()const
 		{
 			D3D12_INDEX_BUFFER_VIEW ibv;
@@ -200,6 +215,7 @@ namespace DK
 		void DisposeUploaders()
 		{
 			VertexBufferUploader = nullptr;
+			ColorBufferUploader = nullptr;
 			IndexBufferUploader = nullptr;
 		}
 	};

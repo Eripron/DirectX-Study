@@ -1,6 +1,7 @@
 #pragma once
 
 #include <DirectXMath.h>
+#include <DirectXPackedVector.h>
 
 namespace DK
 {
@@ -213,6 +214,19 @@ namespace DK
     {
         DirectX::XMFLOAT3 Pos;      // 정점 위치
         DirectX::XMFLOAT4 Color;    // 정점 색상
+    };
+
+    // slot 0
+    struct VPosData
+    {
+        DirectX::XMFLOAT3 Pos;      // 정점 위치
+    };
+
+    // slot 1
+    struct VColorData
+    {
+        DirectX::PackedVector::XMCOLOR Color;
+        //DirectX::XMFLOAT4 Color;    // 정점 색상
     };
 
 #pragma endregion

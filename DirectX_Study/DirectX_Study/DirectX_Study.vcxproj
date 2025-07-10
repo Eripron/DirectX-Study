@@ -131,6 +131,7 @@
     <ClCompile Include="Dialog.cpp" />
     <ClCompile Include="ExBox.cpp" />
     <ClCompile Include="GameTimer.cpp" />
+    <ClCompile Include="GeometryGenerator.cpp" />
     <ClCompile Include="GraphicEngine.cpp" />
     <ClCompile Include="Graphic.cpp" />
     <ClCompile Include="GraphicUtils.cpp" />
@@ -150,6 +151,7 @@
     <ClInclude Include="Dialog.h" />
     <ClInclude Include="ExBox.h" />
     <ClInclude Include="GameTimer.h" />
+    <ClInclude Include="GeometryGenerator.h" />
     <ClInclude Include="GraphicEngine.h" />
     <ClInclude Include="Graphic.h" />
     <ClInclude Include="GraphicUtils.h" />

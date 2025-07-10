@@ -1,4 +1,5 @@
 #include "ExBox.h"
+#include <DirectXPackedVector.h>
 
 namespace DK
 {
@@ -72,7 +73,10 @@ namespace DK
 		// Update the constant buffer with the latest worldViewProj matrix.
 		ObjectConstants objConstants;
 		XMStoreFloat4x4(&objConstants.WorldViewProj, XMMatrixTranspose(worldViewProj));
-		mObjectCB->CopyData(0, objConstants);
+		XMStoreFloat4x4(&wvp.WorldViewProj, XMMatrixTranspose(worldViewProj));
+		wvp.Color = DirectX::XMFLOAT4(DirectX::Colors::White);
+		wvp.time = mTimer.DeltaTimef();
+		//mObjectCB->CopyData(0, objConstants);
 	}
 
 	void ExBox::Render()
@@ -109,13 +113,25 @@ namespace DK
 
 		D3D12_VERTEX_BUFFER_VIEW bufferView = mBoxGeo->VertexBufferView();
 		mCommandList->IASetVertexBuffers(0, 1, &bufferView);
+		D3D12_VERTEX_BUFFER_VIEW colorView = mBoxGeo->ColorBufferView();
+		mCommandList->IASetVertexBuffers(1, 1, &colorView);
+
 		D3D12_INDEX_BUFFER_VIEW inxBufferView = mBoxGeo->IndexBufferView();
 		mCommandList->IASetIndexBuffer(&inxBufferView);
 		mCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-		mCommandList->DrawIndexedInstanced(
-			mBoxGeo->DrawArgs["box"].IndexCount,
-			1, 0, 0, 0);
+		XMStoreFloat4x4(&mWorld, DirectX::XMMatrixTranslation(-2, 0, 0));
+		Update();
+		mObjectCB->CopyData(0, wvp);
+		mCommandList->DrawIndexedInstanced(36, 1, 0, 0, 0);
+
+		XMStoreFloat4x4(&mWorld, DirectX::XMMatrixTranslation(2, 0, 0));
+		Update();
+		mObjectCB->CopyData(1, wvp);
+		D3D12_GPU_DESCRIPTOR_HANDLE han = mCbvHeap->GetGPUDescriptorHandleForHeapStart();
+		han.ptr += mCbvSrvUavDescriptorSize;
+		mCommandList->SetGraphicsRootDescriptorTable(0, han);
+		mCommandList->DrawIndexedInstanced(18, 1, 36, 8, 0);
 
 		// Indicate a state transition on the resource usage.
 		D3D12_RESOURCE_BARRIER backBufferTransition = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
@@ -143,7 +159,7 @@ namespace DK
 	{
 		// Const Buffer 리소스에 대한 서술자(Descriptor)를 저장할 Heap을 할당한다.
 		D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
-		cbvHeapDesc.NumDescriptors = 1;
+		cbvHeapDesc.NumDescriptors = 2;
 		cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 		/*
 		* D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
@@ -159,7 +175,7 @@ namespace DK
 	void ExBox::BuildConstantBuffers()
 	{
 		// const buffer 생성
-		mObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(md3dDevice.Get(), 1, true);
+		mObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(md3dDevice.Get(), 2, true);
 
 		UINT objCBByteSize = D3DUtils::CalcConstantBufferByteSize(sizeof(ObjectConstants));
 
@@ -167,14 +183,21 @@ namespace DK
 
 		// upload buffer를 개별로 만드는 것이 아니라 데이터를 연속적으로 저장하므로
 		// 여러 object 저장 시 직접 위치 이동해야한다.
-		int boxCBufIndex = 0;
-		cbAddress += (boxCBufIndex * objCBByteSize);
 
-		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-		cbvDesc.BufferLocation = cbAddress;
-		cbvDesc.SizeInBytes = objCBByteSize;
+		D3D12_CPU_DESCRIPTOR_HANDLE handle = mCbvHeap->GetCPUDescriptorHandleForHeapStart();
 
-		md3dDevice->CreateConstantBufferView(&cbvDesc, mCbvHeap->GetCPUDescriptorHandleForHeapStart());
+		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc[2];
+		for (int i = 0; i < 2; ++i)
+		{
+			int boxCBufIndex = i;
+			cbAddress += (boxCBufIndex * objCBByteSize);
+
+			cbvDesc[i].BufferLocation = cbAddress;
+			cbvDesc[i].SizeInBytes = objCBByteSize;
+
+			md3dDevice->CreateConstantBufferView(&cbvDesc[i], handle);
+			handle.ptr += mCbvSrvUavDescriptorSize;
+		}
 	}
 
 	void ExBox::BuildRootSignature()
@@ -186,7 +209,7 @@ namespace DK
 
 		D3D12_DESCRIPTOR_RANGE descriptorRange;
 		descriptorRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-		descriptorRange.NumDescriptors = 1;
+		descriptorRange.NumDescriptors = 2;
 		descriptorRange.BaseShaderRegister = 0;
 		descriptorRange.RegisterSpace = 0;
 		descriptorRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
@@ -230,29 +253,39 @@ namespace DK
 		mInputLayout = 
 		{
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+			{ "COLOR", 0, DXGI_FORMAT_B8G8R8A8_UNORM, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 		};
 	}
 
 	void ExBox::BuildBoxGeometry()
 	{
 		// 정육면체의 vertex 배열 생성
-		array<Vertex, 8> vertices
+		array<VPosData, 8> boxVer
 		{
-			Vertex({ DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f), DirectX::XMFLOAT4(DirectX::Colors::White) }),
-			Vertex({ DirectX::XMFLOAT3(-1.0f, +1.0f, -1.0f), DirectX::XMFLOAT4(DirectX::Colors::Black) }),
-			Vertex({ DirectX::XMFLOAT3(+1.0f, +1.0f, -1.0f), DirectX::XMFLOAT4(DirectX::Colors::Red) }),
-			Vertex({ DirectX::XMFLOAT3(+1.0f, -1.0f, -1.0f), DirectX::XMFLOAT4(DirectX::Colors::Green) }),
-			Vertex({ DirectX::XMFLOAT3(-1.0f, -1.0f, +1.0f), DirectX::XMFLOAT4(DirectX::Colors::Blue) }),
-			Vertex({ DirectX::XMFLOAT3(-1.0f, +1.0f, +1.0f), DirectX::XMFLOAT4(DirectX::Colors::Yellow) }),
-			Vertex({ DirectX::XMFLOAT3(+1.0f, +1.0f, +1.0f), DirectX::XMFLOAT4(DirectX::Colors::Cyan) }),
-			Vertex({ DirectX::XMFLOAT3(+1.0f, -1.0f, +1.0f), DirectX::XMFLOAT4(DirectX::Colors::Magenta) })
+			VPosData({ DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f) }),
+			VPosData({ DirectX::XMFLOAT3(-1.0f, +1.0f, -1.0f) }),
+			VPosData({ DirectX::XMFLOAT3(+1.0f, +1.0f, -1.0f) }),
+			VPosData({ DirectX::XMFLOAT3(+1.0f, -1.0f, -1.0f) }),
+			VPosData({ DirectX::XMFLOAT3(-1.0f, -1.0f, +1.0f) }),
+			VPosData({ DirectX::XMFLOAT3(-1.0f, +1.0f, +1.0f) }),
+			VPosData({ DirectX::XMFLOAT3(+1.0f, +1.0f, +1.0f) }),
+			VPosData({ DirectX::XMFLOAT3(+1.0f, -1.0f, +1.0f) })
 		};
 
-		// index 배열 생성 (6면 * 삼각형 2개 * 점3개 = 36개)
-		array<uint16_t, 36> indices =
+		array<VColorData, 8> boxColor
 		{
-			// front face
+			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Yellow) }),
+			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Yellow) }),
+			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Yellow) }),
+			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Yellow) }),
+			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Yellow) }),
+			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Yellow) }),
+			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Yellow) }),
+			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Yellow) })
+		};
+
+		array<uint16_t, 36> boxIndex =
+		{
 			0, 1, 2,
 			0, 2, 3,
 
@@ -277,25 +310,76 @@ namespace DK
 			4, 3, 7
 		};
 
-		const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
-		const UINT ibByteSize = (UINT)indices.size() * sizeof(uint16_t);
+		// 사면체 
+		array<VPosData, 5> vertices
+		{
+			VPosData({ DirectX::XMFLOAT3(0.0f, 2.0f, 0.0f) }),
+			VPosData({ DirectX::XMFLOAT3(+1.0f, -1.0f, +1.0f) }),
+			VPosData({ DirectX::XMFLOAT3(+1.0f, -1.0f, -1.0f) }),
+			VPosData({ DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f) }),
+			VPosData({ DirectX::XMFLOAT3(-1.0f, -1.0f, +1.0f) }),
+		};
+
+		array<VColorData, 5> colors
+		{
+			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Red) }),
+			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Green) }),
+			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Green) }),
+			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Green) }),
+			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Green) }),
+		};
+
+		// index 배열 생성 (6면 * 삼각형 2개 * 점3개 = 36개)
+		array<uint16_t, 18> indices =
+		{
+			0, 1, 2,
+			0, 2, 3,
+			0, 3, 4,
+			0, 4, 1,
+			1, 4, 3,
+			1, 3, 2,
+		};
+
+		std::vector<VPosData> vertexs;
+		vertexs.insert(vertexs.end(), boxVer.begin(), boxVer.end());
+		vertexs.insert(vertexs.end(), vertices.begin(), vertices.end());
+
+		std::vector<VColorData> vecColors;
+		vecColors.insert(vecColors.end(), boxColor.begin(), boxColor.end());
+		vecColors.insert(vecColors.end(), colors.begin(), colors.end());
+
+		std::vector<uint16_t> vecIndexs;
+		vecIndexs.insert(vecIndexs.end(), boxIndex.begin(), boxIndex.end());
+		vecIndexs.insert(vecIndexs.end(), indices.begin(), indices.end());
+
+		const UINT vbByteSize = (UINT)vertexs.size() * sizeof(VPosData);
+		const UINT cbByteSize = (UINT)vecColors.size() * sizeof(VColorData);
+		const UINT ibByteSize = (UINT)vecIndexs.size() * sizeof(uint16_t);
 
 		mBoxGeo = std::make_unique<MeshGeometry>();
 		mBoxGeo->Name = "boxGeo";
 
 		// 임시 buffer에 데이터 복사
 		THROW_IF_FAILED(D3DCreateBlob(vbByteSize, &mBoxGeo->VertexBufferCPU));
-		CopyMemory(mBoxGeo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+		CopyMemory(mBoxGeo->VertexBufferCPU->GetBufferPointer(), vertexs.data(), vbByteSize);
+
+		THROW_IF_FAILED(D3DCreateBlob(cbByteSize, &mBoxGeo->ColorBufferCPU));
+		CopyMemory(mBoxGeo->ColorBufferCPU->GetBufferPointer(), vecColors.data(), cbByteSize);
 
 		THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &mBoxGeo->IndexBufferCPU));
-		CopyMemory(mBoxGeo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+		CopyMemory(mBoxGeo->IndexBufferCPU->GetBufferPointer(), vecIndexs.data(), ibByteSize);
 
 		// 데이터를 default buffer에 생성
-		mBoxGeo->VertexBufferGPU = D3DUtils::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), vertices.data(), vbByteSize, mBoxGeo->VertexBufferUploader);
-		mBoxGeo->IndexBufferGPU = D3DUtils::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), indices.data(), ibByteSize, mBoxGeo->IndexBufferUploader);
+		mBoxGeo->VertexBufferGPU = D3DUtils::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), vertexs.data(), vbByteSize, mBoxGeo->VertexBufferUploader);
+		mBoxGeo->ColorBufferGPU = D3DUtils::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), vecColors.data(), cbByteSize, mBoxGeo->ColorBufferUploader);
+		mBoxGeo->IndexBufferGPU = D3DUtils::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), vecIndexs.data(), ibByteSize, mBoxGeo->IndexBufferUploader);
 
-		mBoxGeo->VertexByteStride = sizeof(Vertex);
+		mBoxGeo->VertexByteStride = sizeof(VPosData);
 		mBoxGeo->VertexBufferByteSize = vbByteSize;
+
+		mBoxGeo->ColorByteStride = sizeof(VColorData);
+		mBoxGeo->ColorBufferByteSize = cbByteSize;
+
 		mBoxGeo->IndexFormat = DXGI_FORMAT_R16_UINT;
 		mBoxGeo->IndexBufferByteSize = ibByteSize;
 
@@ -326,7 +410,21 @@ namespace DK
 		};
 		psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 		psoDesc.SampleMask = UINT_MAX;
-		psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+
+		D3D12_RASTERIZER_DESC rd;
+		rd.FillMode = D3D12_FILL_MODE_SOLID;
+		rd.CullMode = D3D12_CULL_MODE_BACK;
+		rd.FrontCounterClockwise = FALSE;
+		rd.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
+		rd.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
+		rd.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+		rd.DepthClipEnable = TRUE;
+		rd.MultisampleEnable = FALSE;
+		rd.AntialiasedLineEnable = FALSE;
+		rd.ForcedSampleCount = 0;
+		rd.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+		psoDesc.RasterizerState = rd;
+
 		psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 		psoDesc.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() };
 		psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;

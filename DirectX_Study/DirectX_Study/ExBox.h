@@ -15,6 +15,8 @@ namespace DK
 	struct ObjectConstants
 	{
 		DirectX::XMFLOAT4X4 WorldViewProj = MathUtils::Identity4x4();
+		DirectX::XMFLOAT4 Color;
+		float time;
 	};
 
 	class ExBox : public GraphicEngine
@@ -55,6 +57,8 @@ namespace DK
 		DirectX::XMFLOAT4X4 mWorld = MathUtils::Identity4x4();
 		DirectX::XMFLOAT4X4 mView = MathUtils::Identity4x4();
 		DirectX::XMFLOAT4X4 mProj = MathUtils::Identity4x4();
+		ObjectConstants wvp;
+
 
 		float mTheta = DirectX::XM_PIDIV4;	// 수평각도
 		float mPhi = DirectX::XM_PIDIV4;	// 수직각도
