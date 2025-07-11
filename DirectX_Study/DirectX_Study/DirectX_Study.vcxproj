@@ -129,7 +129,10 @@
   <ItemGroup>
     <ClCompile Include="D3DUtils.cpp" />
     <ClCompile Include="Dialog.cpp" />
-    <ClCompile Include="ExBox.cpp" />
+    <ClCompile Include="ExShape.cpp" />
+    <ClCompile Include="Ex\ExBox.cpp" />
+    <ClCompile Include="FrameResource.cpp" />
+    <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="GameTimer.cpp" />
     <ClCompile Include="GeometryGenerator.cpp" />
     <ClCompile Include="GraphicEngine.cpp" />
@@ -149,7 +152,10 @@
     <ClInclude Include="..\..\..\Downloads\d3dx12.h" />
     <ClInclude Include="D3DUtils.h" />
     <ClInclude Include="Dialog.h" />
-    <ClInclude Include="ExBox.h" />
+    <ClInclude Include="ExShape.h" />
+    <ClInclude Include="Ex\ExBox.h" />
+    <ClInclude Include="FrameResource.h" />
+    <ClInclude Include="GameObject.h" />
     <ClInclude Include="GameTimer.h" />
     <ClInclude Include="GeometryGenerator.h" />
     <ClInclude Include="GraphicEngine.h" />

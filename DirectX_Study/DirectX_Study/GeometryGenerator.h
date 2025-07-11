@@ -46,7 +46,7 @@ namespace DK
 			std::vector<Vertex> Vertices;
 			std::vector<uint32_t> Indices32;
 
-			std::vector<uint16_t> GetIndices16()
+			std::vector<uint16_t>& GetIndices16()
 			{
 				// TODO: 메모리 등 최적화를 위한 작업은 알겠다.
 				// 하지만 만약 static_cast<uint16_t> 부분에서 예외가 나오는 경우는 어떻게 처리할지 고민해보자.

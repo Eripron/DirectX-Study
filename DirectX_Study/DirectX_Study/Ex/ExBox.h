@@ -1,8 +1,8 @@
 #pragma once
 
-#include "GraphicEngine.h"
-#include "MathUtils.h"
-#include "UploadBuffer.h"
+#include "../GraphicEngine.h"
+#include "../MathUtils.h"
+#include "../UploadBuffer.h"
 
 #include <array>
 #include <vector>

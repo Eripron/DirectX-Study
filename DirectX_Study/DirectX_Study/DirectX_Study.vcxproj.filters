@@ -102,11 +102,20 @@
     <ClCompile Include="D3DUtils.cpp">
       <Filter>소스 파일\Utils</Filter>
     </ClCompile>
-    <ClCompile Include="ExBox.cpp">
-      <Filter>소스 파일\Engine\Ex</Filter>
-    </ClCompile>
     <ClCompile Include="GeometryGenerator.cpp">
       <Filter>소스 파일\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Ex\ExBox.cpp">
+      <Filter>소스 파일\Engine\Ex</Filter>
+    </ClCompile>
+    <ClCompile Include="GameObject.cpp">
+      <Filter>소스 파일\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="FrameResource.cpp">
+      <Filter>소스 파일\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="ExShape.cpp">
+      <Filter>소스 파일\Engine\Ex</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -155,9 +164,6 @@
     <ClInclude Include="D3DUtils.h">
       <Filter>헤더 파일\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="ExBox.h">
-      <Filter>헤더 파일\Engine\Ex</Filter>
-    </ClInclude>
     <ClInclude Include="UploadBuffer.h">
       <Filter>헤더 파일\DirectX</Filter>
     </ClInclude>
@@ -166,6 +172,18 @@
     </ClInclude>
     <ClInclude Include="GeometryGenerator.h">
       <Filter>헤더 파일\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Ex\ExBox.h">
+      <Filter>헤더 파일\Engine\Ex</Filter>
+    </ClInclude>
+    <ClInclude Include="GameObject.h">
+      <Filter>헤더 파일\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="FrameResource.h">
+      <Filter>헤더 파일\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="ExShape.h">
+      <Filter>헤더 파일\Engine\Ex</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

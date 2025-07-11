@@ -2,7 +2,8 @@
 
 #include "MainWindow.h"
 #include "GraphicEngine.h"
-#include "ExBox.h"
+//#include "Ex/ExBox.h"
+#include "ExShape.h"
 
 using namespace DK;
 
@@ -15,7 +16,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstace, LPSTR lpszCmdP
 		return -1;
 	}
 
-	ExBox engine(mainWindow.GetHandle());
+	ExShape engine(mainWindow.GetHandle());
 	engine.Init();
 
 	while (mainWindow.Run())
