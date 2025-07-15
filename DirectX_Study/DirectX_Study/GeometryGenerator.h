@@ -63,16 +63,11 @@ namespace DK
 		private:
 			std::vector<uint16_t> mIndices16;
 		};
-		
 
 		MeshData CreateBox(float width, float height, float depth);
-
 		MeshData CreateSphere(float radius, uint32_t sliceCount, uint32_t stackCount);
-
 		MeshData CreateCylinder(float bottomRadius, float topRadius, float height, uint32_t sliceCount, uint32_t stackCount);
-
 		MeshData CreateGrid(float width, float depth, uint32_t m, uint32_t n);
-
 		MeshData CreateQuad(float x, float y, float w, float h, float depth);
 
 	private:

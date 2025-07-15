@@ -106,7 +106,7 @@ namespace DK
 
 				Vertex vertex;
 				vertex.Position.x = radius * sinf(phi) * cosf(theta);
-				vertex.Position.y = radius * sinf(phi);
+				vertex.Position.y = radius * cosf(phi);
 				vertex.Position.z = radius * sinf(phi) * sinf(theta);
 
 				vertex.TangentU.x = -radius * sinf(phi) * sinf(theta);
@@ -218,11 +218,11 @@ namespace DK
 				int curIndex = ringVertexCount * i + j;
 
 				meshData.Indices32.push_back(curIndex);
-				meshData.Indices32.push_back(curIndex + ringVertexCount + j);
-				meshData.Indices32.push_back(curIndex + ringVertexCount + j + 1);
+				meshData.Indices32.push_back(curIndex + ringVertexCount);
+				meshData.Indices32.push_back(curIndex + ringVertexCount + 1);
 
 				meshData.Indices32.push_back(curIndex);
-				meshData.Indices32.push_back(curIndex + ringVertexCount + j + 1);
+				meshData.Indices32.push_back(curIndex + ringVertexCount + 1);
 				meshData.Indices32.push_back(curIndex + 1);
 			}
 		}

@@ -3,6 +3,7 @@
 #include "GraphicEngine.h"
 #include "GeometryGenerator.h"
 #include "FrameResource.h"
+#include "GameObject.h"
 
 namespace DK
 {
@@ -25,6 +26,14 @@ namespace DK
 		UINT IndexCount = 0;
 		UINT StartIndexLocation = 0;
 		int BaseVertexLocation = 0;
+	};
+
+	struct RenderObject
+	{
+		RenderObject() = default;
+
+		int NumFramesDirty = gNumFrameResources;
+		GameObject* pGameObject = nullptr;
 	};
 
 	class ExShape : public GraphicEngine
@@ -54,7 +63,7 @@ namespace DK
 		void BuildDescriptorHeaps();
 		void BuildConstantBufferViews();
 		void BuildPSOs();
-		void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
+		void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderObject>& renderObjects);
 
 	private:
 
@@ -67,17 +76,12 @@ namespace DK
 
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
 
-		std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> mGeometries;
 		std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3DBlob>> mShaders;
 		std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D12PipelineState>> mPSOs;
 
 		std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
-		std::vector<std::unique_ptr<RenderItem>> mAllRitems;
-
-		std::vector<RenderItem*> mOpaqueRitems;
 
 		PassConstants mMainPassCB;
-
 		UINT mPassCbvOffset = 0;
 
 		bool mIsWireframe = false;
@@ -89,5 +93,15 @@ namespace DK
 		float mTheta = 1.5f * DirectX::XM_PI;
 		float mPhi = 0.2f * DirectX::XM_PI;
 		float mRadius = 15.0f;
+
+	private:
+		// 구조 수정중
+		MeshBuffer mMeshBuffer;
+		std::vector<std::unique_ptr<GameObject>> mGameObjects;
+		std::vector<RenderObject> mRenderObjects;
+
+	private:
+		std::unordered_map<std::string, GeometryGenerator::MeshData> mMeshDatas;
+
 	};
 }

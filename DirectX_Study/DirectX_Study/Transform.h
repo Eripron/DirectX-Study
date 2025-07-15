@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Numeric.h"
+#include <DirectXMath.h>
+#include "MathUtils.h"
 
 namespace DK
 {
@@ -9,22 +10,31 @@ namespace DK
 	public:
 		Transform() = default;
 		
-		void SetPosition(const Vector3& vPosision);
-		void SetRotation(const Vector3& vRotation);
-		void SetScale(const Vector3& vScale);
+		void SetPosition(float x, float y, float z);
+		void SetPosition(const DirectX::XMFLOAT3& position);
 
-		Vector3 GetPosition();
-		Vector3 GetRotation();
-		Vector3 GetScale();
+		void SetRotation(float x, float y, float z);
+		void SetRotation(const DirectX::XMFLOAT3& rotation);
+
+		void SetScale(float x, float y, float z);
+		void SetScale(const DirectX::XMFLOAT3& scale);
+
+		DirectX::XMFLOAT3 GetPosition();
+		DirectX::XMFLOAT3 GetRotation();
+		DirectX::XMFLOAT3 GetScale();
+
+		DirectX::XMFLOAT4X4 GetMatrixWorld();
+
 
 	private:
-		Vector3 _vPosition = Vector3::Zero();
-		Vector3 _vRotation = Vector3::Zero();
-		Vector3 _vScale = Vector3::One();
+		void UpdateMatrixWorld();
 
-		// local axis
-		/*Vector3 _vRight = Vector3::Right();
-		Vector3 _vUp = Vector3::Up();
-		Vector3 _vForward = Vector3::Forward();*/
+	private:
+		DirectX::XMFLOAT3 mPosition = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+		DirectX::XMFLOAT3 mRotation = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+		DirectX::XMFLOAT3 mScale = DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f);
+
+		DirectX::XMFLOAT4X4 mWorldMatrix = MathUtils::Identity4x4();
+
 	};
 }
