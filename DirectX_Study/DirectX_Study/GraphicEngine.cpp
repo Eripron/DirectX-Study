@@ -1,5 +1,4 @@
 ﻿#include "GraphicEngine.h"
-#include "GraphicUtils.h"
 
 namespace DK
 {
@@ -543,7 +542,7 @@ namespace DK
 		bool bUp = GetAsyncKeyState(0x57);		// w
 		if (bDown ^ bUp)
 		{
-			return bDown ? -0.01f : 0.01f;
+			return bDown ? -1.0f : 1.0f;
 		}
 		return 0.0f;
 	}

@@ -4,36 +4,19 @@
 #include "GeometryGenerator.h"
 #include "FrameResource.h"
 #include "GameObject.h"
+#include "MeshRenderData.h"
 
 namespace DK
 {
 	const int gNumFrameResources = 3;
-
-	struct RenderItem
-	{
-		RenderItem() = default;
-
-		DirectX::XMFLOAT4X4 World = MathUtils::Identity4x4();
-
-		int NumFramesDirty = gNumFrameResources;
-
-		UINT ObjCBIndex = -1;
-
-		MeshGeometry* Geo = nullptr;
-
-		D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-
-		UINT IndexCount = 0;
-		UINT StartIndexLocation = 0;
-		int BaseVertexLocation = 0;
-	};
 
 	struct RenderObject
 	{
 		RenderObject() = default;
 
 		int NumFramesDirty = gNumFrameResources;
-		GameObject* pGameObject = nullptr;
+		GameObject* pRenderObject = nullptr;
+		D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	};
 
 	class ExShape : public GraphicEngine
@@ -84,7 +67,7 @@ namespace DK
 		PassConstants mMainPassCB;
 		UINT mPassCbvOffset = 0;
 
-		bool mIsWireframe = false;
+		Transform camera;
 
 		DirectX::XMFLOAT3 mEyePos = { 0.0f, 0.0f, 0.0f };
 		DirectX::XMFLOAT4X4 mView = MathUtils::Identity4x4();
@@ -95,8 +78,7 @@ namespace DK
 		float mRadius = 15.0f;
 
 	private:
-		// 구조 수정중
-		MeshBuffer mMeshBuffer;
+		MeshRenderData mMeshRenderData;
 		std::vector<std::unique_ptr<GameObject>> mGameObjects;
 		std::vector<RenderObject> mRenderObjects;
 

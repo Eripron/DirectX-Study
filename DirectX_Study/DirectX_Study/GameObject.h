@@ -2,8 +2,7 @@
 
 #include <string>
 #include "Transform.h"
-#include "GeometryGenerator.h"
-#include "D3DUtils.h"
+#include "MeshRenderData.h"
 
 namespace DK
 {
@@ -13,9 +12,16 @@ namespace DK
 		GameObject() = default;
 		~GameObject();
 
-		std::string mName;
+		Transform& GetTransform();
+		MeshRenderData* GetMeshRenderData();
+		MeshSection GetMeshSection();
+
+		void SetMeshData(MeshRenderData* pMesh, MeshSection section);
+
+	private:
 		Transform mTransform;
-		MeshDataDesc* mMeshData;
+		MeshRenderData* mpMesh = nullptr;
+		MeshSection mMeshSection;
 
 	};
 

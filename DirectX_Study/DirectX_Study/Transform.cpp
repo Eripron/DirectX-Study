@@ -2,12 +2,20 @@
 
 namespace DK
 {
+	Transform::Transform()
+	{
+		UpdateMatrixPosition();
+		UpdateMatrixRotation();
+		UpdateMatrixScale();
+	}
+
 	void Transform::SetPosition(float x, float y, float z)
 	{
 		mPosition.x = x;
 		mPosition.y = y;
 		mPosition.z = z;
 
+		UpdateMatrixPosition();
 		UpdateMatrixWorld();
 	}
 
@@ -15,6 +23,7 @@ namespace DK
 	{
 		mPosition = position;
 
+		UpdateMatrixPosition();
 		UpdateMatrixWorld();
 	}
 
@@ -24,6 +33,7 @@ namespace DK
 		mRotation.y = y;
 		mRotation.z = z;
 
+		UpdateMatrixRotation();
 		UpdateMatrixWorld();
 	}
 
@@ -31,6 +41,7 @@ namespace DK
 	{
 		mRotation = rotation;
 
+		UpdateMatrixRotation();
 		UpdateMatrixWorld();
 	}
 
@@ -40,6 +51,7 @@ namespace DK
 		mScale.y = y;
 		mScale.z = z;
 
+		UpdateMatrixScale();
 		UpdateMatrixWorld();
 	}
 
@@ -47,6 +59,7 @@ namespace DK
 	{
 		mScale = scale;
 
+		UpdateMatrixScale();
 		UpdateMatrixWorld();
 	}
 
@@ -70,13 +83,48 @@ namespace DK
 		return mWorldMatrix;
 	}
 
+	DirectX::XMFLOAT3 Transform::Right()
+	{
+		return mRight;
+	}
+
+	DirectX::XMFLOAT3 Transform::Up()
+	{
+		return mUp;
+	}
+
+	DirectX::XMFLOAT3 Transform::Front()
+	{
+		return mFront;
+	}
+
+	void Transform::UpdateMatrixPosition()
+	{
+		mPositionMatrix = DirectX::XMMatrixTranslation(mPosition.x, mPosition.y, mPosition.z);
+	}
+
+	void Transform::UpdateMatrixRotation()
+	{
+		mRotationMatrix = DirectX::XMMatrixRotationRollPitchYaw(
+			DirectX::XMConvertToRadians(mRotation.x),
+			DirectX::XMConvertToRadians(mRotation.y),
+			DirectX::XMConvertToRadians(mRotation.z));
+	}
+
+	void Transform::UpdateMatrixScale()
+	{
+		mScaleMatrix = DirectX::XMMatrixScaling(mScale.x, mScale.y, mScale.z);
+	}
+
 	void Transform::UpdateMatrixWorld()
 	{
-		DirectX::XMStoreFloat4x4(&mWorldMatrix, DirectX::XMMatrixScaling(mScale.x, mScale.y, mScale.z) *
-												DirectX::XMMatrixRotationRollPitchYaw(
-												DirectX::XMConvertToRadians(mRotation.x), 
-												DirectX::XMConvertToRadians(mRotation.y), 
-												DirectX::XMConvertToRadians(mRotation.z)) *
-												DirectX::XMMatrixTranslation(mPosition.x, mPosition.y, mPosition.z));
+		DirectX::XMFLOAT3 right = DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f);
+		DirectX::XMFLOAT3 up = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
+		DirectX::XMFLOAT3 front = DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f);
+
+		DirectX::XMStoreFloat3(&mRight, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&right), mRotationMatrix));
+		DirectX::XMStoreFloat3(&mUp, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&up), mRotationMatrix));
+		DirectX::XMStoreFloat3(&mFront, DirectX::XMVector3Transform(DirectX::XMLoadFloat3(&front), mRotationMatrix));
+		DirectX::XMStoreFloat4x4(&mWorldMatrix, mScaleMatrix * mRotationMatrix * mPositionMatrix);
 	}
 }

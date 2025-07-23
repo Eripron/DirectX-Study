@@ -45,8 +45,6 @@ namespace DK
 
 		std::unique_ptr<UploadBuffer<ObjectConstants>> mObjectCB = nullptr;
 
-		std::unique_ptr<MeshGeometry> mBoxGeo = nullptr;
-
 		Microsoft::WRL::ComPtr<ID3DBlob> mvsByteCode = nullptr;
 		Microsoft::WRL::ComPtr<ID3DBlob> mpsByteCode = nullptr;
 

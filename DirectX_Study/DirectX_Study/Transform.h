@@ -8,7 +8,7 @@ namespace DK
 	class Transform
 	{
 	public:
-		Transform() = default;
+		Transform();
 		
 		void SetPosition(float x, float y, float z);
 		void SetPosition(const DirectX::XMFLOAT3& position);
@@ -25,8 +25,14 @@ namespace DK
 
 		DirectX::XMFLOAT4X4 GetMatrixWorld();
 
+		DirectX::XMFLOAT3 Right();
+		DirectX::XMFLOAT3 Up();
+		DirectX::XMFLOAT3 Front();
 
 	private:
+		void UpdateMatrixPosition();
+		void UpdateMatrixRotation();
+		void UpdateMatrixScale();
 		void UpdateMatrixWorld();
 
 	private:
@@ -34,7 +40,15 @@ namespace DK
 		DirectX::XMFLOAT3 mRotation = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 		DirectX::XMFLOAT3 mScale = DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f);
 
+		DirectX::XMFLOAT3 mRight = DirectX::XMFLOAT3(1.0f, 0.0f, 0.0f);
+		DirectX::XMFLOAT3 mUp = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
+		DirectX::XMFLOAT3 mFront = DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f);
+
 		DirectX::XMFLOAT4X4 mWorldMatrix = MathUtils::Identity4x4();
+
+		DirectX::XMMATRIX mPositionMatrix;
+		DirectX::XMMATRIX mRotationMatrix;
+		DirectX::XMMATRIX mScaleMatrix;
 
 	};
 }

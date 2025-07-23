@@ -13,47 +13,6 @@ float MathUtils::GetLinearY(float a, float b, float x)
 	return a * x + b;
 }
 
-float MathUtils::Deg2Rad(float degree)
-{
-	return degree * (PI / 180.0f);
-}
-
-float MathUtils::Rad2Deg(float radian)
-{
-	return radian * (180.0f / PI);
-}
-
-float MathUtils::SinF(float degree)
-{
-	float normalized = fmodf(degree, 360.0f);
-	if (normalized < 0.0f)
-		normalized += 360.0f;
-
-	const float tolerance = 1e-4f;
-	if (fabsf(normalized - 0.0f) < tolerance || fabsf(normalized - 180.0f) < tolerance || fabsf(normalized - 360.0f) < tolerance) 
-		return 0.0f;
-
-	return sinf(Deg2Rad(degree));
-}
-
-float MathUtils::CosF(float degree)
-{
-	float normalized = fmodf(degree, 360.0f);
-	if (normalized < 0.0f)
-		normalized += 360.0f;
-
-	const float tolerance = 1e-4f;
-	if (fabsf(normalized - 90.0f) < tolerance || fabsf(normalized - 270.0f) < tolerance) 
-		return 0.0f;
-
-	return cosf(Deg2Rad(degree));
-}
-
-float MathUtils::TanF(float degree)
-{
-	return tanf(Deg2Rad(degree));
-}
-
 DirectX::XMFLOAT4X4 MathUtils::Identity4x4()
 {
 	return DirectX::XMFLOAT4X4(
@@ -61,4 +20,14 @@ DirectX::XMFLOAT4X4 MathUtils::Identity4x4()
 		0.0f, 1.0f, 0.0f, 0.0f,
 		0.0f, 0.0f, 1.0f, 0.0f,
 		0.0f, 0.0f, 0.0f, 1.0f);
+}
+
+DirectX::XMFLOAT3 MathUtils::MultiplyValueToFloat3(DirectX::XMFLOAT3 f1, float value)
+{
+	return DirectX::XMFLOAT3(f1.x * value, f1.y * value, f1.z * value);
+}
+
+DirectX::XMFLOAT3 MathUtils::AddFloat3ToFloat3(DirectX::XMFLOAT3 f1, DirectX::XMFLOAT3 f2)
+{
+	return DirectX::XMFLOAT3(f1.x + f2.x, f1.y + f2.y, f1.z + f2.z);
 }

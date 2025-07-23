@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Numeric.h"
-
 namespace DK
 {
 	class WindowsUtils

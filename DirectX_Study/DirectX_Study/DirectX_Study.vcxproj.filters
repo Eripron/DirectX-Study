@@ -13,29 +13,11 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="헤더 파일\Numeric">
-      <UniqueIdentifier>{83c52461-00fd-4f95-b857-4e4bec7a8a64}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="소스 파일\Numeric">
-      <UniqueIdentifier>{732e1826-600b-4ebb-ac0b-d07c799c9fc4}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="헤더 파일\Dialog">
-      <UniqueIdentifier>{e6a618c5-b4a2-4beb-8853-dd97392617c5}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="소스 파일\Dialog">
-      <UniqueIdentifier>{8262d621-b73a-4b9f-b210-cca1b592a799}</UniqueIdentifier>
-    </Filter>
     <Filter Include="소스 파일\Utils">
       <UniqueIdentifier>{8cc1434f-6b19-411d-854b-666b1506244e}</UniqueIdentifier>
     </Filter>
     <Filter Include="헤더 파일\Utils">
       <UniqueIdentifier>{41eed273-9937-417b-8bcb-e10f8afb9077}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="소스 파일\Graphic">
-      <UniqueIdentifier>{25eb343d-182f-4d4b-ba24-fd5b040782dc}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="헤더 파일\Graphic">
-      <UniqueIdentifier>{16c9940c-df8f-474c-98eb-a4b8d1608651}</UniqueIdentifier>
     </Filter>
     <Filter Include="헤더 파일\Engine">
       <UniqueIdentifier>{ebad5ea3-2b04-48f9-aad1-7084048f62b5}</UniqueIdentifier>
@@ -55,6 +37,15 @@
     <Filter Include="헤더 파일\DirectX">
       <UniqueIdentifier>{95844a29-ff33-4717-b8ca-6156d630fb69}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\Engine\Data">
+      <UniqueIdentifier>{34965537-1144-41cf-9b93-3fb3ae6e9e0a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Engine\Resource">
+      <UniqueIdentifier>{1eeef8f0-c7da-4872-9d8e-5780d556a179}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Engine\Resource">
+      <UniqueIdentifier>{fb2d7979-1459-48db-bdad-795b8588f76e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -63,31 +54,13 @@
     <ClCompile Include="MainWindow.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Numeric.cpp">
-      <Filter>소스 파일\Numeric</Filter>
-    </ClCompile>
-    <ClCompile Include="Dialog.cpp">
-      <Filter>소스 파일\Dialog</Filter>
-    </ClCompile>
-    <ClCompile Include="GraphicUtils.cpp">
-      <Filter>소스 파일\Utils</Filter>
-    </ClCompile>
     <ClCompile Include="MathUtils.cpp">
       <Filter>소스 파일\Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="Graphic.cpp">
-      <Filter>소스 파일\Graphic</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer.cpp">
-      <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="WindowsUtils.cpp">
       <Filter>소스 파일\Utils</Filter>
     </ClCompile>
     <ClCompile Include="GraphicEngine.cpp">
-      <Filter>소스 파일\Engine</Filter>
-    </ClCompile>
-    <ClCompile Include="Transform.cpp">
       <Filter>소스 파일\Engine</Filter>
     </ClCompile>
     <ClCompile Include="HSVColor.cpp">
@@ -102,20 +75,26 @@
     <ClCompile Include="D3DUtils.cpp">
       <Filter>소스 파일\Utils</Filter>
     </ClCompile>
-    <ClCompile Include="GeometryGenerator.cpp">
-      <Filter>소스 파일\Engine</Filter>
-    </ClCompile>
     <ClCompile Include="Ex\ExBox.cpp">
       <Filter>소스 파일\Engine\Ex</Filter>
     </ClCompile>
-    <ClCompile Include="GameObject.cpp">
-      <Filter>소스 파일\Engine</Filter>
-    </ClCompile>
-    <ClCompile Include="FrameResource.cpp">
-      <Filter>소스 파일\Engine</Filter>
-    </ClCompile>
     <ClCompile Include="ExShape.cpp">
       <Filter>소스 파일\Engine\Ex</Filter>
+    </ClCompile>
+    <ClCompile Include="ExLandAndWave.cpp">
+      <Filter>소스 파일\Engine\Ex</Filter>
+    </ClCompile>
+    <ClCompile Include="FrameResource.cpp">
+      <Filter>소스 파일\Engine\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="GeometryGenerator.cpp">
+      <Filter>소스 파일\Engine\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="GameObject.cpp">
+      <Filter>소스 파일\Engine\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Transform.cpp">
+      <Filter>소스 파일\Engine\Resource</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -125,31 +104,13 @@
     <ClInclude Include="MainWindow.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Numeric.h">
-      <Filter>헤더 파일\Numeric</Filter>
-    </ClInclude>
-    <ClInclude Include="Dialog.h">
-      <Filter>헤더 파일\Dialog</Filter>
-    </ClInclude>
     <ClInclude Include="MathUtils.h">
       <Filter>헤더 파일\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="GraphicUtils.h">
-      <Filter>헤더 파일\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Graphic.h">
-      <Filter>헤더 파일\Graphic</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer.h">
-      <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="WindowsUtils.h">
       <Filter>헤더 파일\Utils</Filter>
     </ClInclude>
     <ClInclude Include="GraphicEngine.h">
-      <Filter>헤더 파일\Engine</Filter>
-    </ClInclude>
-    <ClInclude Include="Transform.h">
       <Filter>헤더 파일\Engine</Filter>
     </ClInclude>
     <ClInclude Include="HSVColor.h">
@@ -164,26 +125,35 @@
     <ClInclude Include="D3DUtils.h">
       <Filter>헤더 파일\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="UploadBuffer.h">
-      <Filter>헤더 파일\DirectX</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\Downloads\d3dx12.h">
       <Filter>헤더 파일\DirectX</Filter>
-    </ClInclude>
-    <ClInclude Include="GeometryGenerator.h">
-      <Filter>헤더 파일\Engine</Filter>
     </ClInclude>
     <ClInclude Include="Ex\ExBox.h">
       <Filter>헤더 파일\Engine\Ex</Filter>
     </ClInclude>
-    <ClInclude Include="GameObject.h">
-      <Filter>헤더 파일\Engine</Filter>
-    </ClInclude>
-    <ClInclude Include="FrameResource.h">
-      <Filter>헤더 파일\Engine</Filter>
-    </ClInclude>
     <ClInclude Include="ExShape.h">
       <Filter>헤더 파일\Engine\Ex</Filter>
+    </ClInclude>
+    <ClInclude Include="ExLandAndWave.h">
+      <Filter>헤더 파일\Engine\Ex</Filter>
+    </ClInclude>
+    <ClInclude Include="FrameResource.h">
+      <Filter>헤더 파일\Engine\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="UploadBuffer.h">
+      <Filter>헤더 파일\Engine\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshRenderData.h">
+      <Filter>헤더 파일\Engine\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="GeometryGenerator.h">
+      <Filter>헤더 파일\Engine\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="GameObject.h">
+      <Filter>헤더 파일\Engine\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Transform.h">
+      <Filter>헤더 파일\Engine\Resource</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

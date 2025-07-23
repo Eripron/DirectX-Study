@@ -40,7 +40,7 @@ namespace DK
 	{
 		GraphicEngine::OnResize(width, height);
 
-		DirectX::XMMATRIX P = DirectX::XMMatrixPerspectiveFovLH(MathUtils::PI * 0.25f,  AspectRatio(), 1.0f, 1000.0f);
+		DirectX::XMMATRIX P = DirectX::XMMatrixPerspectiveFovLH(DirectX::XM_PI * 0.25f,  AspectRatio(), 1.0f, 1000.0f);
 		DirectX::XMStoreFloat4x4(&mProj, P);
 	}
 
@@ -81,78 +81,78 @@ namespace DK
 
 	void ExBox::Render()
 	{
-		// command allocator / command list 초기화 (순서 중요)
-		THROW_IF_FAILED(mDirectCmdListAlloc->Reset());
-		THROW_IF_FAILED(mCommandList->Reset(mDirectCmdListAlloc.Get(), mPSO.Get()));
+		//// command allocator / command list 초기화 (순서 중요)
+		//THROW_IF_FAILED(mDirectCmdListAlloc->Reset());
+		//THROW_IF_FAILED(mCommandList->Reset(mDirectCmdListAlloc.Get(), mPSO.Get()));
 
-		// view 설정
-		// RSSetViewports: 화면으로 출력할 영역(viewport) 설정
-		// RSSetScissorRects: 출력 시 제외할 영역(rect) 설정
-		mCommandList->RSSetViewports(1, &mScreenViewport);
-		mCommandList->RSSetScissorRects(1, &mScissorRect);
+		//// view 설정
+		//// RSSetViewports: 화면으로 출력할 영역(viewport) 설정
+		//// RSSetScissorRects: 출력 시 제외할 영역(rect) 설정
+		//mCommandList->RSSetViewports(1, &mScreenViewport);
+		//mCommandList->RSSetScissorRects(1, &mScissorRect);
 
-		// back buffer 리소스 상태 Render Target으로 전환
-		D3D12_RESOURCE_BARRIER rscBarrierTransition = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-		mCommandList->ResourceBarrier(1, &rscBarrierTransition);
+		//// back buffer 리소스 상태 Render Target으로 전환
+		//D3D12_RESOURCE_BARRIER rscBarrierTransition = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		//mCommandList->ResourceBarrier(1, &rscBarrierTransition);
 
-		// 렌더 타겟과 뎁스.스탠실 초기화
-		mCommandList->ClearRenderTargetView(CurrentBackBufferView(), DirectX::Colors::LightSteelBlue, 0, nullptr);
-		mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+		//// 렌더 타겟과 뎁스.스탠실 초기화
+		//mCommandList->ClearRenderTargetView(CurrentBackBufferView(), DirectX::Colors::LightSteelBlue, 0, nullptr);
+		//mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
-		// output merge 단계에서 사용할 render, depth.stencil buffer binding
-		D3D12_CPU_DESCRIPTOR_HANDLE back = CurrentBackBufferView();
-		D3D12_CPU_DESCRIPTOR_HANDLE handle = DepthStencilView();
-		mCommandList->OMSetRenderTargets(1, &back, true, &handle);
+		//// output merge 단계에서 사용할 render, depth.stencil buffer binding
+		//D3D12_CPU_DESCRIPTOR_HANDLE back = CurrentBackBufferView();
+		//D3D12_CPU_DESCRIPTOR_HANDLE handle = DepthStencilView();
+		//mCommandList->OMSetRenderTargets(1, &back, true, &handle);
 
-		// 힙을 GPU에 바인딩
-		ID3D12DescriptorHeap* descriptorHeaps[] = { mCbvHeap.Get() };
-		mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-		// 셰이더에서 사용할 root signature를 바인딩
-		mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
-		mCommandList->SetGraphicsRootDescriptorTable(0, mCbvHeap->GetGPUDescriptorHandleForHeapStart());
+		//// 힙을 GPU에 바인딩
+		//ID3D12DescriptorHeap* descriptorHeaps[] = { mCbvHeap.Get() };
+		//mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+		//// 셰이더에서 사용할 root signature를 바인딩
+		//mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
+		//mCommandList->SetGraphicsRootDescriptorTable(0, mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 
-		D3D12_VERTEX_BUFFER_VIEW bufferView = mBoxGeo->VertexBufferView();
-		mCommandList->IASetVertexBuffers(0, 1, &bufferView);
-		D3D12_VERTEX_BUFFER_VIEW colorView = mBoxGeo->ColorBufferView();
-		mCommandList->IASetVertexBuffers(1, 1, &colorView);
+		//D3D12_VERTEX_BUFFER_VIEW bufferView = mBoxGeo->VertexBufferView();
+		//mCommandList->IASetVertexBuffers(0, 1, &bufferView);
+		//D3D12_VERTEX_BUFFER_VIEW colorView = mBoxGeo->ColorBufferView();
+		//mCommandList->IASetVertexBuffers(1, 1, &colorView);
 
-		D3D12_INDEX_BUFFER_VIEW inxBufferView = mBoxGeo->IndexBufferView();
-		mCommandList->IASetIndexBuffer(&inxBufferView);
-		mCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		//D3D12_INDEX_BUFFER_VIEW inxBufferView = mBoxGeo->IndexBufferView();
+		//mCommandList->IASetIndexBuffer(&inxBufferView);
+		//mCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-		XMStoreFloat4x4(&mWorld, DirectX::XMMatrixTranslation(-2, 0, 0));
-		Update();
-		mObjectCB->CopyData(0, wvp);
-		mCommandList->DrawIndexedInstanced(36, 1, 0, 0, 0);
+		//XMStoreFloat4x4(&mWorld, DirectX::XMMatrixTranslation(-2, 0, 0));
+		//Update();
+		//mObjectCB->CopyData(0, wvp);
+		//mCommandList->DrawIndexedInstanced(36, 1, 0, 0, 0);
 
-		XMStoreFloat4x4(&mWorld, DirectX::XMMatrixTranslation(2, 0, 0));
-		Update();
-		mObjectCB->CopyData(1, wvp);
-		D3D12_GPU_DESCRIPTOR_HANDLE han = mCbvHeap->GetGPUDescriptorHandleForHeapStart();
-		han.ptr += mCbvSrvUavDescriptorSize;
-		mCommandList->SetGraphicsRootDescriptorTable(0, han);
-		mCommandList->DrawIndexedInstanced(18, 1, 36, 8, 0);
+		//XMStoreFloat4x4(&mWorld, DirectX::XMMatrixTranslation(2, 0, 0));
+		//Update();
+		//mObjectCB->CopyData(1, wvp);
+		//D3D12_GPU_DESCRIPTOR_HANDLE han = mCbvHeap->GetGPUDescriptorHandleForHeapStart();
+		//han.ptr += mCbvSrvUavDescriptorSize;
+		//mCommandList->SetGraphicsRootDescriptorTable(0, han);
+		//mCommandList->DrawIndexedInstanced(18, 1, 36, 8, 0);
 
-		// Indicate a state transition on the resource usage.
-		D3D12_RESOURCE_BARRIER backBufferTransition = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
-			D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-		mCommandList->ResourceBarrier(1, &backBufferTransition);
+		//// Indicate a state transition on the resource usage.
+		//D3D12_RESOURCE_BARRIER backBufferTransition = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
+		//	D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+		//mCommandList->ResourceBarrier(1, &backBufferTransition);
 
-		// Done recording commands.
-		THROW_IF_FAILED(mCommandList->Close());
+		//// Done recording commands.
+		//THROW_IF_FAILED(mCommandList->Close());
 
-		// Add the command list to the queue for execution.
-		ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
-		mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
+		//// Add the command list to the queue for execution.
+		//ID3D12CommandList* cmdsLists[] = { mCommandList.Get() };
+		//mCommandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
 
-		// swap the back and front buffers
-		THROW_IF_FAILED(mSwapChain->Present(0, 0));
-		mCurrBackBuffer = (mCurrBackBuffer + 1) % SwapChainBufferCount;
+		//// swap the back and front buffers
+		//THROW_IF_FAILED(mSwapChain->Present(0, 0));
+		//mCurrBackBuffer = (mCurrBackBuffer + 1) % SwapChainBufferCount;
 
-		// Wait until frame commands are complete.  This waiting is inefficient and is
-		// done for simplicity.  Later we will show how to organize our rendering code
-		// so we do not have to wait per frame.
-		FlushCommandQueue();
+		//// Wait until frame commands are complete.  This waiting is inefficient and is
+		//// done for simplicity.  Later we will show how to organize our rendering code
+		//// so we do not have to wait per frame.
+		//FlushCommandQueue();
 	}
 
 	void ExBox::BuildDescriptorHeaps()
@@ -259,136 +259,136 @@ namespace DK
 
 	void ExBox::BuildBoxGeometry()
 	{
-		// 정육면체의 vertex 배열 생성
-		array<VPosData, 8> boxVer
-		{
-			VPosData({ DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f) }),
-			VPosData({ DirectX::XMFLOAT3(-1.0f, +1.0f, -1.0f) }),
-			VPosData({ DirectX::XMFLOAT3(+1.0f, +1.0f, -1.0f) }),
-			VPosData({ DirectX::XMFLOAT3(+1.0f, -1.0f, -1.0f) }),
-			VPosData({ DirectX::XMFLOAT3(-1.0f, -1.0f, +1.0f) }),
-			VPosData({ DirectX::XMFLOAT3(-1.0f, +1.0f, +1.0f) }),
-			VPosData({ DirectX::XMFLOAT3(+1.0f, +1.0f, +1.0f) }),
-			VPosData({ DirectX::XMFLOAT3(+1.0f, -1.0f, +1.0f) })
-		};
+		//// 정육면체의 vertex 배열 생성
+		//array<VPosData, 8> boxVer
+		//{
+		//	VPosData({ DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f) }),
+		//	VPosData({ DirectX::XMFLOAT3(-1.0f, +1.0f, -1.0f) }),
+		//	VPosData({ DirectX::XMFLOAT3(+1.0f, +1.0f, -1.0f) }),
+		//	VPosData({ DirectX::XMFLOAT3(+1.0f, -1.0f, -1.0f) }),
+		//	VPosData({ DirectX::XMFLOAT3(-1.0f, -1.0f, +1.0f) }),
+		//	VPosData({ DirectX::XMFLOAT3(-1.0f, +1.0f, +1.0f) }),
+		//	VPosData({ DirectX::XMFLOAT3(+1.0f, +1.0f, +1.0f) }),
+		//	VPosData({ DirectX::XMFLOAT3(+1.0f, -1.0f, +1.0f) })
+		//};
 
-		array<VColorData, 8> boxColor
-		{
-			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Yellow) }),
-			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Yellow) }),
-			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Yellow) }),
-			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Yellow) }),
-			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Yellow) }),
-			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Yellow) }),
-			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Yellow) }),
-			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Yellow) })
-		};
+		//array<VColorData, 8> boxColor
+		//{
+		//	VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Yellow) }),
+		//	VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Yellow) }),
+		//	VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Yellow) }),
+		//	VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Yellow) }),
+		//	VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Yellow) }),
+		//	VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Yellow) }),
+		//	VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Yellow) }),
+		//	VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Yellow) })
+		//};
 
-		array<uint16_t, 36> boxIndex =
-		{
-			0, 1, 2,
-			0, 2, 3,
+		//array<uint16_t, 36> boxIndex =
+		//{
+		//	0, 1, 2,
+		//	0, 2, 3,
 
-			// back face
-			4, 6, 5,
-			4, 7, 6,
+		//	// back face
+		//	4, 6, 5,
+		//	4, 7, 6,
 
-			// left face
-			4, 5, 1,
-			4, 1, 0,
+		//	// left face
+		//	4, 5, 1,
+		//	4, 1, 0,
 
-			// right face
-			3, 2, 6,
-			3, 6, 7,
+		//	// right face
+		//	3, 2, 6,
+		//	3, 6, 7,
 
-			// top face
-			1, 5, 6,
-			1, 6, 2,
+		//	// top face
+		//	1, 5, 6,
+		//	1, 6, 2,
 
-			// bottom face
-			4, 0, 3,
-			4, 3, 7
-		};
+		//	// bottom face
+		//	4, 0, 3,
+		//	4, 3, 7
+		//};
 
-		// 사면체 
-		array<VPosData, 5> vertices
-		{
-			VPosData({ DirectX::XMFLOAT3(0.0f, 2.0f, 0.0f) }),
-			VPosData({ DirectX::XMFLOAT3(+1.0f, -1.0f, +1.0f) }),
-			VPosData({ DirectX::XMFLOAT3(+1.0f, -1.0f, -1.0f) }),
-			VPosData({ DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f) }),
-			VPosData({ DirectX::XMFLOAT3(-1.0f, -1.0f, +1.0f) }),
-		};
+		//// 사면체 
+		//array<VPosData, 5> vertices
+		//{
+		//	VPosData({ DirectX::XMFLOAT3(0.0f, 2.0f, 0.0f) }),
+		//	VPosData({ DirectX::XMFLOAT3(+1.0f, -1.0f, +1.0f) }),
+		//	VPosData({ DirectX::XMFLOAT3(+1.0f, -1.0f, -1.0f) }),
+		//	VPosData({ DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f) }),
+		//	VPosData({ DirectX::XMFLOAT3(-1.0f, -1.0f, +1.0f) }),
+		//};
 
-		array<VColorData, 5> colors
-		{
-			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Red) }),
-			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Green) }),
-			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Green) }),
-			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Green) }),
-			VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Green) }),
-		};
+		//array<VColorData, 5> colors
+		//{
+		//	VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Red) }),
+		//	VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Green) }),
+		//	VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Green) }),
+		//	VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Green) }),
+		//	VColorData({ DirectX::PackedVector::XMCOLOR(DirectX::Colors::Green) }),
+		//};
 
-		// index 배열 생성 (6면 * 삼각형 2개 * 점3개 = 36개)
-		array<uint16_t, 18> indices =
-		{
-			0, 1, 2,
-			0, 2, 3,
-			0, 3, 4,
-			0, 4, 1,
-			1, 4, 3,
-			1, 3, 2,
-		};
+		//// index 배열 생성 (6면 * 삼각형 2개 * 점3개 = 36개)
+		//array<uint16_t, 18> indices =
+		//{
+		//	0, 1, 2,
+		//	0, 2, 3,
+		//	0, 3, 4,
+		//	0, 4, 1,
+		//	1, 4, 3,
+		//	1, 3, 2,
+		//};
 
-		std::vector<VPosData> vertexs;
-		vertexs.insert(vertexs.end(), boxVer.begin(), boxVer.end());
-		vertexs.insert(vertexs.end(), vertices.begin(), vertices.end());
+		//std::vector<VPosData> vertexs;
+		//vertexs.insert(vertexs.end(), boxVer.begin(), boxVer.end());
+		//vertexs.insert(vertexs.end(), vertices.begin(), vertices.end());
 
-		std::vector<VColorData> vecColors;
-		vecColors.insert(vecColors.end(), boxColor.begin(), boxColor.end());
-		vecColors.insert(vecColors.end(), colors.begin(), colors.end());
+		//std::vector<VColorData> vecColors;
+		//vecColors.insert(vecColors.end(), boxColor.begin(), boxColor.end());
+		//vecColors.insert(vecColors.end(), colors.begin(), colors.end());
 
-		std::vector<uint16_t> vecIndexs;
-		vecIndexs.insert(vecIndexs.end(), boxIndex.begin(), boxIndex.end());
-		vecIndexs.insert(vecIndexs.end(), indices.begin(), indices.end());
+		//std::vector<uint16_t> vecIndexs;
+		//vecIndexs.insert(vecIndexs.end(), boxIndex.begin(), boxIndex.end());
+		//vecIndexs.insert(vecIndexs.end(), indices.begin(), indices.end());
 
-		const UINT vbByteSize = (UINT)vertexs.size() * sizeof(VPosData);
-		const UINT cbByteSize = (UINT)vecColors.size() * sizeof(VColorData);
-		const UINT ibByteSize = (UINT)vecIndexs.size() * sizeof(uint16_t);
+		//const UINT vbByteSize = (UINT)vertexs.size() * sizeof(VPosData);
+		//const UINT cbByteSize = (UINT)vecColors.size() * sizeof(VColorData);
+		//const UINT ibByteSize = (UINT)vecIndexs.size() * sizeof(uint16_t);
 
-		mBoxGeo = std::make_unique<MeshGeometry>();
-		mBoxGeo->Name = "boxGeo";
+		//mBoxGeo = std::make_unique<MeshGeometry>();
+		//mBoxGeo->Name = "boxGeo";
 
-		// 임시 buffer에 데이터 복사
-		THROW_IF_FAILED(D3DCreateBlob(vbByteSize, &mBoxGeo->VertexBufferCPU));
-		CopyMemory(mBoxGeo->VertexBufferCPU->GetBufferPointer(), vertexs.data(), vbByteSize);
+		//// 임시 buffer에 데이터 복사
+		//THROW_IF_FAILED(D3DCreateBlob(vbByteSize, &mBoxGeo->VertexBufferCPU));
+		//CopyMemory(mBoxGeo->VertexBufferCPU->GetBufferPointer(), vertexs.data(), vbByteSize);
 
-		THROW_IF_FAILED(D3DCreateBlob(cbByteSize, &mBoxGeo->ColorBufferCPU));
-		CopyMemory(mBoxGeo->ColorBufferCPU->GetBufferPointer(), vecColors.data(), cbByteSize);
+		//THROW_IF_FAILED(D3DCreateBlob(cbByteSize, &mBoxGeo->ColorBufferCPU));
+		//CopyMemory(mBoxGeo->ColorBufferCPU->GetBufferPointer(), vecColors.data(), cbByteSize);
 
-		THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &mBoxGeo->IndexBufferCPU));
-		CopyMemory(mBoxGeo->IndexBufferCPU->GetBufferPointer(), vecIndexs.data(), ibByteSize);
+		//THROW_IF_FAILED(D3DCreateBlob(ibByteSize, &mBoxGeo->IndexBufferCPU));
+		//CopyMemory(mBoxGeo->IndexBufferCPU->GetBufferPointer(), vecIndexs.data(), ibByteSize);
 
-		// 데이터를 default buffer에 생성
-		mBoxGeo->VertexBufferGPU = D3DUtils::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), vertexs.data(), vbByteSize, mBoxGeo->VertexBufferUploader);
-		mBoxGeo->ColorBufferGPU = D3DUtils::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), vecColors.data(), cbByteSize, mBoxGeo->ColorBufferUploader);
-		mBoxGeo->IndexBufferGPU = D3DUtils::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), vecIndexs.data(), ibByteSize, mBoxGeo->IndexBufferUploader);
+		//// 데이터를 default buffer에 생성
+		//mBoxGeo->VertexBufferGPU = D3DUtils::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), vertexs.data(), vbByteSize, mBoxGeo->VertexBufferUploader);
+		//mBoxGeo->ColorBufferGPU = D3DUtils::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), vecColors.data(), cbByteSize, mBoxGeo->ColorBufferUploader);
+		//mBoxGeo->IndexBufferGPU = D3DUtils::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), vecIndexs.data(), ibByteSize, mBoxGeo->IndexBufferUploader);
 
-		mBoxGeo->VertexByteStride = sizeof(VPosData);
-		mBoxGeo->VertexBufferByteSize = vbByteSize;
+		//mBoxGeo->VertexByteStride = sizeof(VPosData);
+		//mBoxGeo->VertexBufferByteSize = vbByteSize;
 
-		mBoxGeo->ColorByteStride = sizeof(VColorData);
-		mBoxGeo->ColorBufferByteSize = cbByteSize;
+		//mBoxGeo->ColorByteStride = sizeof(VColorData);
+		//mBoxGeo->ColorBufferByteSize = cbByteSize;
 
-		mBoxGeo->IndexFormat = DXGI_FORMAT_R16_UINT;
-		mBoxGeo->IndexBufferByteSize = ibByteSize;
+		//mBoxGeo->IndexFormat = DXGI_FORMAT_R16_UINT;
+		//mBoxGeo->IndexBufferByteSize = ibByteSize;
 
-		SubmeshGeometry submesh;
-		submesh.IndexCount = (UINT)indices.size();
-		submesh.StartIndexLocation = 0;
-		submesh.BaseVertexLocation = 0;
+		//SubmeshGeometry submesh;
+		//submesh.IndexCount = (UINT)indices.size();
+		//submesh.StartIndexLocation = 0;
+		//submesh.BaseVertexLocation = 0;
 
-		mBoxGeo->DrawArgs["box"] = submesh;
+		//mBoxGeo->DrawArgs["box"] = submesh;
 	}
 
 	void ExBox::BuildPSO()

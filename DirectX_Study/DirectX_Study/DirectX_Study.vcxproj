@@ -128,7 +128,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="D3DUtils.cpp" />
-    <ClCompile Include="Dialog.cpp" />
+    <ClCompile Include="ExLandAndWave.cpp" />
     <ClCompile Include="ExShape.cpp" />
     <ClCompile Include="Ex\ExBox.cpp" />
     <ClCompile Include="FrameResource.cpp" />
@@ -136,14 +136,10 @@
     <ClCompile Include="GameTimer.cpp" />
     <ClCompile Include="GeometryGenerator.cpp" />
     <ClCompile Include="GraphicEngine.cpp" />
-    <ClCompile Include="Graphic.cpp" />
-    <ClCompile Include="GraphicUtils.cpp" />
     <ClCompile Include="HSVColor.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MainWindow.cpp" />
     <ClCompile Include="MathUtils.cpp" />
-    <ClCompile Include="Numeric.cpp" />
-    <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="RGBColor.cpp" />
     <ClCompile Include="Transform.cpp" />
     <ClCompile Include="WindowsUtils.cpp" />
@@ -151,7 +147,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\..\Downloads\d3dx12.h" />
     <ClInclude Include="D3DUtils.h" />
-    <ClInclude Include="Dialog.h" />
+    <ClInclude Include="ExLandAndWave.h" />
     <ClInclude Include="ExShape.h" />
     <ClInclude Include="Ex\ExBox.h" />
     <ClInclude Include="FrameResource.h" />
@@ -159,13 +155,10 @@
     <ClInclude Include="GameTimer.h" />
     <ClInclude Include="GeometryGenerator.h" />
     <ClInclude Include="GraphicEngine.h" />
-    <ClInclude Include="Graphic.h" />
-    <ClInclude Include="GraphicUtils.h" />
     <ClInclude Include="HSVColor.h" />
     <ClInclude Include="MainWindow.h" />
     <ClInclude Include="MathUtils.h" />
-    <ClInclude Include="Numeric.h" />
-    <ClInclude Include="Renderer.h" />
+    <ClInclude Include="MeshRenderData.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="RGBColor.h" />
     <ClInclude Include="Transform.h" />
