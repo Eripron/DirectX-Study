@@ -527,7 +527,7 @@ namespace DK
 
 	float GraphicEngine::GetRotateInput()
 	{
-		bool bDown = GetAsyncKeyState(0x41);	// a
+		bool bDown = GetAsyncKeyState('A');	// a
 		bool bUp = GetAsyncKeyState(0x51);		// q
 		if (bDown ^ bUp)
 		{

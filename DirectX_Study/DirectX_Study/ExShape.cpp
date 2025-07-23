@@ -128,11 +128,35 @@ void DK::ExShape::Render()
 
 void DK::ExShape::UpdateCamera(const GameTimer& gt)
 {
-	// camera 회전
-	float xRot = GetRotateInput();
-	DirectX::XMFLOAT3 camRot = camera.GetRotation();
-	camRot.x += xRot * -0.01f;
-	camera.SetRotation(camRot);
+	bool bRButtonState = GetRButtonDown();
+	if (bRButtonClicked == false && bRButtonState)
+	{
+		bRButtonClicked = true;
+		GetCursorPos(&mPreMousePoint);
+	}
+	else if (bRButtonClicked && bRButtonState == false)
+	{
+		bRButtonClicked = false;
+	}
+
+	if (bRButtonState)
+	{
+		// 회전
+		POINT curMousePoint;
+		GetCursorPos(&curMousePoint);
+
+		DirectX::XMFLOAT3 camRot = camera.GetRotation();
+		camRot.x += static_cast<float>(curMousePoint.y - mPreMousePoint.y) * 0.3f;
+		camRot.y += static_cast<float>(curMousePoint.x - mPreMousePoint.x) * 0.3f;
+
+		camera.SetRotation(camRot);
+
+		mPreMousePoint = curMousePoint;
+
+
+
+
+	}
 
 	// camera 이동
 	DirectX::XMFLOAT3 dirRight = camera.Right();
@@ -140,9 +164,9 @@ void DK::ExShape::UpdateCamera(const GameTimer& gt)
 	DirectX::XMFLOAT3 dirUp = camera.Up();
 
 	DirectX::XMFLOAT3 dirMove = MathUtils::AddFloat3ToFloat3(
-		MathUtils::MultiplyValueToFloat3(dirRight, GetXAxisInput()), 
-		MathUtils::MultiplyValueToFloat3(dirFront, GetYAxisInput()));
-	dirMove = MathUtils::AddFloat3ToFloat3(dirMove, MathUtils::MultiplyValueToFloat3(dirUp, GetScaleInput()));
+		MathUtils::MultiplyValueToFloat3(dirRight, GetXMoveInput()), 
+		MathUtils::MultiplyValueToFloat3(dirFront, GetZMoveInput()));
+	dirMove = MathUtils::AddFloat3ToFloat3(dirMove, MathUtils::MultiplyValueToFloat3(dirUp, GetYMoveInput()));
 
 	DirectX::XMFLOAT3 cameraPos = camera.GetPosition();
 
@@ -498,4 +522,53 @@ void DK::ExShape::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std:
 		MeshSection meshSection = renderObject.pRenderObject->GetMeshSection();
 		cmdList->DrawIndexedInstanced(meshSection.IndexCount, 1, meshSection.StartIndexLocation, meshSection.BaseVertexLocation, 0);
 	}
+}
+
+bool DK::ExShape::GetRButtonDown()
+{
+	return GetAsyncKeyState(VK_RBUTTON) & 0x8000;
+}
+
+float DK::ExShape::GetXMoveInput()
+{
+	bool bLeft = GetKeyDown('a');
+	bool bRight = GetKeyDown('d');
+	if (bLeft ^ bRight)
+	{
+		return bLeft ? -1.0f : 1.0f;
+	}
+	return 0.f;
+}
+
+float DK::ExShape::GetYMoveInput()
+{
+	bool bDown = GetKeyDown('q');
+	bool bUp = GetKeyDown('e');
+	if (bDown ^ bUp)
+	{
+		return bDown ? -1.0f : 1.0f;
+	}
+	return 0.0f;
+}
+
+float DK::ExShape::GetZMoveInput()
+{
+	bool bFront = GetKeyDown('w');
+	bool bBack = GetKeyDown('s');
+	if (bFront ^ bBack)
+	{
+		return bFront ? 1.0f : -1.0f;
+	}
+	return 0.0f;
+}
+
+bool DK::ExShape::GetKeyDown(char c)
+{
+	if (c >= 'a' && c <= 'z')
+		c -= ('a' - 'A');
+
+	if (c >= 'A' && c <= 'Z')
+		return GetAsyncKeyState(c);
+	else
+		return false;
 }

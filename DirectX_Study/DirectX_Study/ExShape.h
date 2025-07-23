@@ -33,7 +33,6 @@ namespace DK
 		virtual void Update() override;
 		virtual void Render() override;
 
-		void OnKeyboardInput(const GameTimer& gt);
 		void UpdateCamera(const GameTimer& gt);
 		void UpdateObjectCBs(const GameTimer& gt);
 		void UpdateMainPassCB(const GameTimer& gt);
@@ -48,7 +47,16 @@ namespace DK
 		void BuildPSOs();
 		void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderObject>& renderObjects);
 
+		bool GetRButtonDown();
+		float GetXMoveInput();
+		float GetYMoveInput();
+		float GetZMoveInput();
+		bool GetKeyDown(char c);
+
 	private:
+
+		bool bRButtonClicked = false;
+		POINT mPreMousePoint;
 
 		std::vector<std::unique_ptr<FrameResource>> mFrameResources;
 		FrameResource* mCurrFrameResource = nullptr;
