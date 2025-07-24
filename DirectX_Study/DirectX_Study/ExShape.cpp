@@ -15,9 +15,12 @@ bool DK::ExShape::Init()
 
 	THROW_IF_FAILED(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
 
+	mWaves = std::make_unique<Wave>(128, 128, 1.0f, 0.03f, 4.0f, 0.2f);
+
 	camera.SetPosition(0, 0, -10);
 
 	BuildShapeGeometry();	// vertex, index의 default buffer 생성
+	BuildWavesGeometryBuffers();
 	BuildRenderItems();
 	BuildShadersAndInputLayout();
 	BuildFrameResources();
@@ -65,6 +68,7 @@ void DK::ExShape::Update()
 
 	UpdateObjectCBs(mTimer);
 	UpdateMainPassCB(mTimer);
+	UpdateWave(mTimer);
 }
 
 void DK::ExShape::Render()
@@ -152,10 +156,6 @@ void DK::ExShape::UpdateCamera(const GameTimer& gt)
 		camera.SetRotation(camRot);
 
 		mPreMousePoint = curMousePoint;
-
-
-
-
 	}
 
 	// camera 이동
@@ -239,6 +239,41 @@ void DK::ExShape::UpdateMainPassCB(const GameTimer& gt)
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);
+}
+
+void DK::ExShape::UpdateWave(const GameTimer& gt)
+{
+	// Every quarter second, generate a random wave.
+	static float t_base = 0.0f;
+	if ((mTimer.TotalTime() - t_base) >= 0.25f)
+	{
+		t_base += 0.25f;
+
+		int i = MathUtils::Rand(4, mWaves->RowCount() - 5);
+		int j = MathUtils::Rand(4, mWaves->ColumnCount() - 5);
+
+		float r = MathUtils::RandF(0.2f, 0.5f);
+
+		mWaves->Disturb(i, j, r);
+	}
+
+	// Update the wave simulation.
+	mWaves->Update(gt.DeltaTime());
+
+	// Update the wave vertex buffer with the new solution.
+	auto currWavesVB = mCurrFrameResource->WavesVB.get();
+	for (int i = 0; i < mWaves->VertexCount(); ++i)
+	{
+		Vertex v;
+
+		v.Pos = mWaves->Position(i);
+		v.Color = DirectX::XMFLOAT4(DirectX::Colors::Blue);
+
+		currWavesVB->CopyData(i, v);
+	}
+
+	// Set the dynamic VB of the wave renderitem to the current frame VB.
+	mpWaveGameObject->GetMeshRenderData()->VertexBuffer = currWavesVB->GetResource();
 }
 
 void DK::ExShape::BuildRootSignature()
@@ -344,6 +379,53 @@ void DK::ExShape::BuildShapeGeometry()
 	mMeshRenderData.BuildMeshRenderData(md3dDevice.Get(), mCommandList.Get());
 }
 
+void DK::ExShape::BuildWavesGeometryBuffers()
+{
+	std::vector<std::uint16_t> indices(3 * mWaves->TriangleCount()); // 3 indices per face
+	assert(mWaves->VertexCount() < 0x0000ffff);
+
+	// Iterate over each quad.
+	int m = mWaves->RowCount();
+	int n = mWaves->ColumnCount();
+	int k = 0;
+	for (int i = 0; i < m - 1; ++i)
+	{
+		for (int j = 0; j < n - 1; ++j)
+		{
+			indices[k] = i * n + j;
+			indices[k + 1] = i * n + j + 1;
+			indices[k + 2] = (i + 1) * n + j;
+
+			indices[k + 3] = (i + 1) * n + j;
+			indices[k + 4] = i * n + j + 1;
+			indices[k + 5] = (i + 1) * n + j + 1;
+
+			k += 6; // next quad
+		}
+	}
+
+	UINT vbByteSize = mWaves->VertexCount() * sizeof(Vertex);
+	UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	auto meshRenderData = std::make_unique<MeshRenderData>();
+
+	meshRenderData->IndexBuffer = D3DUtils::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), indices.data(), ibByteSize, meshRenderData->IndexUploadBuffer);
+
+	meshRenderData->VertexByteStride = sizeof(Vertex);
+	meshRenderData->VertexBufferByteSize = vbByteSize;
+	meshRenderData->IndexBufferByteSize = ibByteSize;
+	meshRenderData->IndexFormat = DXGI_FORMAT_R16_UINT;
+
+	MeshSection section;
+	section.IndexCount = (UINT)indices.size();
+	section.StartIndexLocation = 0;
+	section.BaseVertexLocation = 0;
+
+	meshRenderData->MeshSections["wave"] = section;
+
+	mWaveMeshData = std::move(meshRenderData);
+}
+
 void DK::ExShape::BuildRenderItems()
 {
 	/*std::unique_ptr<GameObject> objBox = std::make_unique<GameObject>();
@@ -383,6 +465,14 @@ void DK::ExShape::BuildRenderItems()
 		mGameObjects.push_back(std::move(objSphere2));
 	}*/
 
+	std::unique_ptr<GameObject> objWave = std::make_unique<GameObject>();
+	if (mWaveMeshData->GetMeshSection("wave", section))
+	{
+		objWave->SetMeshData(mWaveMeshData.get(), section);
+		mpWaveGameObject = objWave.get();
+		mGameObjects.push_back(std::move(objWave));
+	}
+
 	for (auto& object : mGameObjects)
 	{
 		RenderObject ro;
@@ -395,7 +485,7 @@ void DK::ExShape::BuildFrameResources()
 {
 	for (int i = 0; i < gNumFrameResources; ++i)
 	{
-		mFrameResources.push_back(std::make_unique<FrameResource>(md3dDevice.Get(), 1, (UINT)mGameObjects.size()));
+		mFrameResources.push_back(std::make_unique<FrameResource>(md3dDevice.Get(), 1, (UINT)mGameObjects.size(), mWaves->VertexCount()));
 	}
 }
 

@@ -5,6 +5,7 @@
 #include "FrameResource.h"
 #include "GameObject.h"
 #include "MeshRenderData.h"
+#include "Wave.h"
 
 namespace DK
 {
@@ -36,10 +37,12 @@ namespace DK
 		void UpdateCamera(const GameTimer& gt);
 		void UpdateObjectCBs(const GameTimer& gt);
 		void UpdateMainPassCB(const GameTimer& gt);
+		void UpdateWave(const GameTimer& gt);
 
 		void BuildRootSignature();
 		void BuildShadersAndInputLayout();
 		void BuildShapeGeometry();
+		void BuildWavesGeometryBuffers();
 		void BuildRenderItems();
 		void BuildFrameResources();
 		void BuildDescriptorHeaps();
@@ -84,6 +87,11 @@ namespace DK
 		float mTheta = 1.5f * DirectX::XM_PI;
 		float mPhi = 0.2f * DirectX::XM_PI;
 		float mRadius = 15.0f;
+
+		std::unique_ptr<Wave> mWaves;
+		std::unique_ptr<MeshRenderData> mWaveMeshData;
+		GameObject* mpWaveGameObject;
+		//RenderObject mWaveRenderObject;
 
 	private:
 		MeshRenderData mMeshRenderData;

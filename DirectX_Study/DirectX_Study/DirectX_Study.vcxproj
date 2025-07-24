@@ -142,6 +142,7 @@
     <ClCompile Include="MathUtils.cpp" />
     <ClCompile Include="RGBColor.cpp" />
     <ClCompile Include="Transform.cpp" />
+    <ClCompile Include="Wave.cpp" />
     <ClCompile Include="WindowsUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -163,6 +164,7 @@
     <ClInclude Include="RGBColor.h" />
     <ClInclude Include="Transform.h" />
     <ClInclude Include="UploadBuffer.h" />
+    <ClInclude Include="Wave.h" />
     <ClInclude Include="WindowsUtils.h" />
   </ItemGroup>
   <ItemGroup>

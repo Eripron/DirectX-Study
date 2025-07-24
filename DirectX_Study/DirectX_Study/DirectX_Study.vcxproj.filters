@@ -96,6 +96,9 @@
     <ClCompile Include="Transform.cpp">
       <Filter>소스 파일\Engine\Resource</Filter>
     </ClCompile>
+    <ClCompile Include="Wave.cpp">
+      <Filter>소스 파일\Engine\Ex</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
@@ -154,6 +157,9 @@
     </ClInclude>
     <ClInclude Include="Transform.h">
       <Filter>헤더 파일\Engine\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Wave.h">
+      <Filter>헤더 파일\Engine\Ex</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

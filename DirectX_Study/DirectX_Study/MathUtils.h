@@ -18,4 +18,8 @@ public:
 
 	static DirectX::XMFLOAT3 MultiplyValueToFloat3(DirectX::XMFLOAT3 f1, float value);
 	static DirectX::XMFLOAT3 AddFloat3ToFloat3(DirectX::XMFLOAT3 f1, DirectX::XMFLOAT3 f2);
+
+	static int Rand(int a, int b);
+	static float RandF();
+	static float RandF(float a, float b);
 };
