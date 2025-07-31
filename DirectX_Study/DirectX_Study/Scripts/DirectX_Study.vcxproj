@@ -127,42 +127,51 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Scripts\Engine\Common\GameTimer.cpp" />
-    <ClCompile Include="Scripts\Engine\Common\Wave.cpp" />
-    <ClCompile Include="Scripts\Engine\Component\GameObject.cpp" />
-    <ClCompile Include="Scripts\Engine\Component\Transform.cpp" />
-    <ClCompile Include="Scripts\Engine\GraphicEngine.cpp" />
-    <ClCompile Include="Scripts\Engine\Resource\FrameResource.cpp" />
-    <ClCompile Include="Scripts\Engine\Utils\D3DUtils.cpp" />
-    <ClCompile Include="Scripts\Engine\Utils\GeometryGenerator.cpp" />
-    <ClCompile Include="Scripts\Engine\Utils\MathUtils.cpp" />
-    <ClCompile Include="Scripts\Ex\ExBox.cpp" />
-    <ClCompile Include="Scripts\Ex\ExShape.cpp" />
-    <ClCompile Include="Scripts\Main.cpp" />
-    <ClCompile Include="Scripts\Window\MainWindow.cpp" />
-    <ClCompile Include="Scripts\Window\WindowsUtils.cpp" />
+    <ClCompile Include="D3DUtils.cpp" />
+    <ClCompile Include="ExLandAndWave.cpp" />
+    <ClCompile Include="ExShape.cpp" />
+    <ClCompile Include="Ex\ExBox.cpp" />
+    <ClCompile Include="FrameResource.cpp" />
+    <ClCompile Include="GameObject.cpp" />
+    <ClCompile Include="GameTimer.cpp" />
+    <ClCompile Include="GeometryGenerator.cpp" />
+    <ClCompile Include="GraphicEngine.cpp" />
+    <ClCompile Include="HSVColor.cpp" />
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="MainWindow.cpp" />
+    <ClCompile Include="MathUtils.cpp" />
+    <ClCompile Include="RGBColor.cpp" />
+    <ClCompile Include="Transform.cpp" />
+    <ClCompile Include="Wave.cpp" />
+    <ClCompile Include="WindowsUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Scripts\Engine\Common\GameTimer.h" />
-    <ClInclude Include="Scripts\Engine\Common\Wave.h" />
-    <ClInclude Include="Scripts\Engine\Component\GameObject.h" />
-    <ClInclude Include="Scripts\Engine\Component\Transform.h" />
-    <ClInclude Include="Scripts\Engine\Data\DataTypes.h" />
-    <ClInclude Include="Scripts\Engine\GraphicEngine.h" />
-    <ClInclude Include="Scripts\Engine\Resource\FrameResource.h" />
-    <ClInclude Include="Scripts\Engine\Resource\UploadBuffer.h" />
-    <ClInclude Include="Scripts\Engine\Utils\D3DUtils.h" />
-    <ClInclude Include="Scripts\Engine\Utils\GeometryGenerator.h" />
-    <ClInclude Include="Scripts\Engine\Utils\MathUtils.h" />
-    <ClInclude Include="Scripts\Ex\ExBox.h" />
-    <ClInclude Include="Scripts\Ex\ExShape.h" />
-    <ClInclude Include="Scripts\Header\d3dx12.h" />
-    <ClInclude Include="Scripts\Window\MainWindow.h" />
-    <ClInclude Include="Scripts\Window\resource.h" />
-    <ClInclude Include="Scripts\Window\WindowsUtils.h" />
+    <ClInclude Include="..\..\..\Downloads\d3dx12.h" />
+    <ClInclude Include="D3DUtils.h" />
+    <ClInclude Include="DataHeader.h" />
+    <ClInclude Include="ExLandAndWave.h" />
+    <ClInclude Include="ExShape.h" />
+    <ClInclude Include="Ex\ExBox.h" />
+    <ClInclude Include="FrameResource.h" />
+    <ClInclude Include="GameObject.h" />
+    <ClInclude Include="GameTimer.h" />
+    <ClInclude Include="GeometryGenerator.h" />
+    <ClInclude Include="GraphicEngine.h" />
+    <ClInclude Include="HSVColor.h" />
+    <ClInclude Include="LightData.h" />
+    <ClInclude Include="MainWindow.h" />
+    <ClInclude Include="Material.h" />
+    <ClInclude Include="MathUtils.h" />
+    <ClInclude Include="MeshRenderData.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="RGBColor.h" />
+    <ClInclude Include="Transform.h" />
+    <ClInclude Include="UploadBuffer.h" />
+    <ClInclude Include="Wave.h" />
+    <ClInclude Include="WindowsUtils.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Scripts\Window\DirectX_Study.rc" />
+    <ResourceCompile Include="DirectX_Study.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

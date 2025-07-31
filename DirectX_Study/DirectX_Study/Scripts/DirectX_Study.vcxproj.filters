@@ -1,0 +1,185 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="소스 파일">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="헤더 파일">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="리소스 파일">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="소스 파일\Utils">
+      <UniqueIdentifier>{8cc1434f-6b19-411d-854b-666b1506244e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Utils">
+      <UniqueIdentifier>{41eed273-9937-417b-8bcb-e10f8afb9077}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Engine">
+      <UniqueIdentifier>{ebad5ea3-2b04-48f9-aad1-7084048f62b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Engine">
+      <UniqueIdentifier>{8ac72ca1-e71d-4a18-8b33-bd5b4ebe5750}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Engine\Ex">
+      <UniqueIdentifier>{d498e381-bb91-4561-9cf8-d6dbd6e3697f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Engine\Ex">
+      <UniqueIdentifier>{01e31620-5438-43ec-bc80-ef0aa8dc766f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\DirectX">
+      <UniqueIdentifier>{6f44fae0-0328-4de0-b07f-f9df3a119742}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\DirectX">
+      <UniqueIdentifier>{95844a29-ff33-4717-b8ca-6156d630fb69}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Engine\Data">
+      <UniqueIdentifier>{34965537-1144-41cf-9b93-3fb3ae6e9e0a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Engine\Resource">
+      <UniqueIdentifier>{1eeef8f0-c7da-4872-9d8e-5780d556a179}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Engine\Resource">
+      <UniqueIdentifier>{fb2d7979-1459-48db-bdad-795b8588f76e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Data">
+      <UniqueIdentifier>{e007d329-49ca-4d09-aebe-ccea4bce6cc3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Data">
+      <UniqueIdentifier>{d9456b7b-c673-4976-9bdd-7e36e676e479}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Main.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="MainWindow.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="MathUtils.cpp">
+      <Filter>소스 파일\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="WindowsUtils.cpp">
+      <Filter>소스 파일\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="GraphicEngine.cpp">
+      <Filter>소스 파일\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="HSVColor.cpp">
+      <Filter>소스 파일\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="RGBColor.cpp">
+      <Filter>소스 파일\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="GameTimer.cpp">
+      <Filter>소스 파일\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="D3DUtils.cpp">
+      <Filter>소스 파일\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Ex\ExBox.cpp">
+      <Filter>소스 파일\Engine\Ex</Filter>
+    </ClCompile>
+    <ClCompile Include="ExShape.cpp">
+      <Filter>소스 파일\Engine\Ex</Filter>
+    </ClCompile>
+    <ClCompile Include="ExLandAndWave.cpp">
+      <Filter>소스 파일\Engine\Ex</Filter>
+    </ClCompile>
+    <ClCompile Include="FrameResource.cpp">
+      <Filter>소스 파일\Engine\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="GeometryGenerator.cpp">
+      <Filter>소스 파일\Engine\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="GameObject.cpp">
+      <Filter>소스 파일\Engine\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Transform.cpp">
+      <Filter>소스 파일\Engine\Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Wave.cpp">
+      <Filter>소스 파일\Engine\Ex</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="resource.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="MainWindow.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="MathUtils.h">
+      <Filter>헤더 파일\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowsUtils.h">
+      <Filter>헤더 파일\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="GraphicEngine.h">
+      <Filter>헤더 파일\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="HSVColor.h">
+      <Filter>헤더 파일\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="RGBColor.h">
+      <Filter>헤더 파일\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="GameTimer.h">
+      <Filter>헤더 파일\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="D3DUtils.h">
+      <Filter>헤더 파일\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Downloads\d3dx12.h">
+      <Filter>헤더 파일\DirectX</Filter>
+    </ClInclude>
+    <ClInclude Include="Ex\ExBox.h">
+      <Filter>헤더 파일\Engine\Ex</Filter>
+    </ClInclude>
+    <ClInclude Include="ExShape.h">
+      <Filter>헤더 파일\Engine\Ex</Filter>
+    </ClInclude>
+    <ClInclude Include="ExLandAndWave.h">
+      <Filter>헤더 파일\Engine\Ex</Filter>
+    </ClInclude>
+    <ClInclude Include="FrameResource.h">
+      <Filter>헤더 파일\Engine\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="UploadBuffer.h">
+      <Filter>헤더 파일\Engine\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="GeometryGenerator.h">
+      <Filter>헤더 파일\Engine\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="GameObject.h">
+      <Filter>헤더 파일\Engine\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Transform.h">
+      <Filter>헤더 파일\Engine\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Wave.h">
+      <Filter>헤더 파일\Engine\Ex</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshRenderData.h">
+      <Filter>헤더 파일\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>헤더 파일\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="LightData.h">
+      <Filter>헤더 파일\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="DataHeader.h">
+      <Filter>헤더 파일\Data</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="DirectX_Study.rc">
+      <Filter>리소스 파일</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
