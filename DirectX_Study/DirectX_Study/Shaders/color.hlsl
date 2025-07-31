@@ -112,7 +112,7 @@ float4 PS(VertexOut pin) : SV_Target
 
     // Common convention to take alpha from diffuse material.
     litColor.a = gDiffuseAlbedo.a;
-
+    
     return litColor;
 }
 

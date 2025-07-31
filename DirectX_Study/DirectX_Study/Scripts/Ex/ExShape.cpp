@@ -390,6 +390,7 @@ void DK::ExShape::CreateMaterials()
 	matGrass->DiffuseAlbedo = DirectX::XMFLOAT4(0.2f, 0.6f, 0.2f, 1.0f);
 	matGrass->FresnelR0 = DirectX::XMFLOAT3(0.01f, 0.01f, 0.01f);
 	matGrass->Roughness = 0.125f;
+	matGrass->NumFramesDirty = g_NumFrameResources;
 
 	std::unique_ptr<Material> matWater = std::make_unique<Material>();
 	matWater->Name = "water";
@@ -397,6 +398,7 @@ void DK::ExShape::CreateMaterials()
 	matWater->DiffuseAlbedo = DirectX::XMFLOAT4(0.0f, 0.2f, 0.6f, 1.0f);
 	matWater->FresnelR0 = DirectX::XMFLOAT3(0.1f, 0.1f, 0.1f);
 	matWater->Roughness = 0.0f;
+	matWater->NumFramesDirty = g_NumFrameResources;
 
 	m_materials[matGrass->Name] = std::move(matGrass);
 	m_materials[matWater->Name] = std::move(matWater);
