@@ -169,7 +169,7 @@ namespace DK
 		DirectX::XMFLOAT3 Direction = { 0.0f, -1.0f, 0.0f };
 		float FalloffEnd = 10.0f;		// ºû °¨¼è ³¡ °Å¸®
 		DirectX::XMFLOAT3 Position = { 0.0f, 0.0f, 0.0f };
-		float SpotPower = 64.0f;
+		float SpotPower = 30.0f;
 	};
 
 #pragma endregion
@@ -180,7 +180,7 @@ namespace DK
 	{
 		std::string Name;
 
-		int MatCBIndex = -1;			// ?
+		int MatCBIndex = -1;
 		int DiffuseSrvHeapIndex = -1;	// ?
 		int NormalSrvHeapIndex = -1;	// ?
 

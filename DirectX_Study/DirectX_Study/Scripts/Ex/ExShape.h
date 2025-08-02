@@ -41,7 +41,7 @@ namespace DK
 		void UpdateWave(const GameTimer& gt);
 		void UpdateCamera(const GameTimer& gt);
 		void UpdateObjectCBs(const GameTimer& gt);
-		void UpdateMainPassCB(const GameTimer& gt);
+		void UpdateRenderPassCB(const GameTimer& gt);
 		void UpdateMaterialCB(const GameTimer& gt);
 
 		void CreateGeometry();

@@ -67,7 +67,7 @@ bool DK::ExShape::Update()
 
 	UpdateWave(m_gameTimer);
 	UpdateCamera(m_gameTimer);
-	UpdateMainPassCB(m_gameTimer);
+	UpdateRenderPassCB(m_gameTimer);
 	UpdateObjectCBs(m_gameTimer);
 	UpdateMaterialCB(m_gameTimer);
 
@@ -233,7 +233,7 @@ void DK::ExShape::UpdateObjectCBs(const GameTimer& gt)
 	}
 }
 
-void DK::ExShape::UpdateMainPassCB(const GameTimer& gt)
+void DK::ExShape::UpdateRenderPassCB(const GameTimer& gt)
 {
 	DirectX::XMMATRIX view = XMLoadFloat4x4(&m_View);
 	DirectX::XMMATRIX proj = XMLoadFloat4x4(&m_Proj);
@@ -269,12 +269,34 @@ void DK::ExShape::UpdateMainPassCB(const GameTimer& gt)
 
 	float mSunTheta = 1.25f * DirectX::XM_PI;
 	float mSunPhi = DirectX::XM_PIDIV4;
-
 	DirectX::XMVECTOR lightDir = MathUtils::SphericalToCartesian(1.0f, mSunTheta, mSunPhi);
 	lightDir = DirectX::XMVectorScale(lightDir, -1.0f);
 
-	XMStoreFloat3(&m_renderPassCB.Lights[0].Direction, lightDir);
-	m_renderPassCB.Lights[0].Strength = { 1.0f, 1.0f, 0.9f };
+	//XMStoreFloat3(&m_renderPassCB.Lights[0].Direction, lightDir);
+
+	//m_renderPassCB.Lights[0].Strength = { 1.0f, 0.0f, 0.0f };
+
+	Light spotLight;
+	spotLight.Strength = { 1.0f, 1.0f, 1.0f };
+	spotLight.FalloffStart = 10;
+	spotLight.FalloffEnd = 20;
+	spotLight.Position = { 10.0f, 15.0f, 0.0f };
+
+	Light pointLight;
+	pointLight.Strength = { 1.0f, 1.0f, 0.9f };
+	pointLight.FalloffStart = 15;
+	pointLight.FalloffEnd = 20;
+
+	/*for (int i = 0; i < 5; ++i)
+		m_renderPassCB.Lights[i] = pointLight;
+
+	m_renderPassCB.Lights[0].Position = { 0.0f, 10.0f, 0.0f };
+	m_renderPassCB.Lights[1].Position = { 30.0f, 10.0f, 30.0f };
+	m_renderPassCB.Lights[2].Position = { -30.0f, 10.0f, -30.0f };
+	m_renderPassCB.Lights[3].Position = { -30.0f, 10.0f, 30.0f };
+	m_renderPassCB.Lights[4].Position = { 30.0f, 10.0f, -30.0f };*/
+
+	m_renderPassCB.Lights[0] = spotLight;
 
 	auto currPassCB = m_pCurrFrameResource->RenderPassCB.get();
 	currPassCB->CopyData(0, m_renderPassCB);

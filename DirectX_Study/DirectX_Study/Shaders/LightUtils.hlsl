@@ -33,6 +33,7 @@ float CalcAttenuation(float d, float falloffStart, float falloffEnd)
 // R0 = ( (n-1)/(n+1) )^2, where n is the index of refraction.
 float3 SchlickFresnel(float3 R0, float3 normal, float3 lightVec)
 {
+    // staurate: 0~1의 값으로 클램프
     float cosIncidentAngle = saturate(dot(normal, lightVec));
 
     float f0 = 1.0f - cosIncidentAngle;
@@ -43,13 +44,16 @@ float3 SchlickFresnel(float3 R0, float3 normal, float3 lightVec)
 
 float3 BlinnPhong(float3 lightStrength, float3 lightVec, float3 normal, float3 toEye, Material mat)
 {
-    const float m = mat.Shininess * 256.0f;
+    const float m = mat.Shininess * 1000.0f;     // 곱하는 이유와 shinenss인 이유
     float3 halfVec = normalize(toEye + lightVec);
 
+    // 거칠기 계수
     float roughnessFactor = (m + 8.0f) * pow(max(dot(halfVec, normal), 0.0f), m) / 8.0f;
+    // 프레넬 효과 계수
     float3 fresnelFactor = SchlickFresnel(mat.FresnelR0, halfVec, lightVec);
 
-    float3 specAlbedo = fresnelFactor*roughnessFactor;
+    // 반영 계수
+    float3 specAlbedo = fresnelFactor * roughnessFactor;
 
     // Our spec formula goes outside [0,1] range, but we are 
     // doing LDR rendering.  So scale it down a bit.
@@ -61,16 +65,12 @@ float3 BlinnPhong(float3 lightStrength, float3 lightVec, float3 normal, float3 t
 //---------------------------------------------------------------------------------------
 // Evaluates the lighting equation for directional lights.
 //---------------------------------------------------------------------------------------
-float3 ComputeDirectionalLight(Light L, Material mat, float3 normal, float3 toEye)
+float3 ComputeDirectionalLight(Light light, Material mat, float3 n, float3 toEye)
 {
-    // The light vector aims opposite the direction the light rays travel.
-    float3 lightVec = -L.Direction;
+    float3 L = -light.Direction;
+    float3 lightStrength = light.Strength * max(dot(L, n), 0.0f);
 
-    // Scale light down by Lambert's cosine law.
-    float ndotl = max(dot(lightVec, normal), 0.0f);
-    float3 lightStrength = L.Strength * ndotl;
-
-    return BlinnPhong(lightStrength, lightVec, normal, toEye, mat);
+    return BlinnPhong(lightStrength, L, n, toEye, mat);
 }
 
 //---------------------------------------------------------------------------------------
@@ -135,9 +135,7 @@ float3 ComputeSpotLight(Light L, Material mat, float3 pos, float3 normal, float3
     return BlinnPhong(lightStrength, lightVec, normal, toEye, mat);
 }
 
-float4 ComputeLighting(Light gLights[MaxLights], Material mat,
-                       float3 pos, float3 normal, float3 toEye,
-                       float3 shadowFactor)
+float4 ComputeLighting(Light gLights[MaxLights], Material mat, float3 pos, float3 normal, float3 toEye, float3 shadowFactor)
 {
     float3 result = 0.0f;
 

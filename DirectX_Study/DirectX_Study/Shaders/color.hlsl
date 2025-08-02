@@ -6,7 +6,7 @@
 
 // Defaults for number of lights.
 #ifndef NUM_DIR_LIGHTS
-    #define NUM_DIR_LIGHTS 1
+    #define NUM_DIR_LIGHTS 0
 #endif
 
 #ifndef NUM_POINT_LIGHTS
@@ -14,14 +14,13 @@
 #endif
 
 #ifndef NUM_SPOT_LIGHTS
-    #define NUM_SPOT_LIGHTS 0
+    #define NUM_SPOT_LIGHTS 1
 #endif
 
 // Include structures and functions for lighting.
-#include "LightUtils.hlsl"
+#include "LightUtils.hlsl" 
 
 // Constant data that varies per frame.
-
 cbuffer cbPerObject : register(b0)
 {
     float4x4 gWorld;
@@ -29,9 +28,9 @@ cbuffer cbPerObject : register(b0)
 
 cbuffer cbMaterial : register(b1)
 {
-	float4 gDiffuseAlbedo;
-    float3 gFresnelR0;
-    float  gRoughness;
+	float4 gDiffuseAlbedo;  // 반사율(md)
+    float3 gFresnelR0;      // 매질(R0)
+    float  gRoughness;      // 거칠기(m)
 	float4x4 gMatTransform;
 };
 
@@ -74,39 +73,69 @@ struct VertexOut
     float3 NormalW : NORMAL;
 };
 
+float3x3 cofactor(float3x3 m)
+{
+    float3x3 c;
+
+    c[0][0] = (m[1][1] * m[2][2] - m[1][2] * m[2][1]);  // +C00
+    c[0][1] = -(m[1][0] * m[2][2] - m[1][2] * m[2][0]); // -C01
+    c[0][2] = (m[1][0] * m[2][1] - m[1][1] * m[2][0]);  // +C02
+
+    c[1][0] = -(m[0][1] * m[2][2] - m[0][2] * m[2][1]); // -C10
+    c[1][1] = (m[0][0] * m[2][2] - m[0][2] * m[2][0]);  // +C11
+    c[1][2] = -(m[0][0] * m[2][1] - m[0][1] * m[2][0]); // -C12
+
+    c[2][0] = (m[0][1] * m[1][2] - m[0][2] * m[1][1]);  // +C20
+    c[2][1] = -(m[0][0] * m[1][2] - m[0][2] * m[1][0]); // -C21
+    c[2][2] = (m[0][0] * m[1][1] - m[0][1] * m[1][0]);  // +C22
+
+    return c;
+}
+
+float3x3 inverse(float3x3 m)
+{
+    float det = determinant(m);
+    
+    // 부동소수점 오차를 방지하기 위해서 절충값 1e-5 사용
+    if(det < 1e-5) 
+        return float3x3(0, 0, 0, 0, 0, 0, 0, 0, 0);
+    
+    float3x3 adj = transpose(cofactor(m));
+    
+    return adj / det;
+}
+
 VertexOut VS(VertexIn vin)
 {
 	VertexOut vout = (VertexOut)0.0f;
 	
-    // Transform to world space.
+    // * 월드 변환
     float4 posW = mul(float4(vin.PosL, 1.0f), gWorld);
     vout.PosW = posW.xyz;
 
-    // Assumes nonuniform scaling; otherwise, need to use inverse-transpose of world matrix.
-    vout.NormalW = mul(vin.NormalL, (float3x3)gWorld);
-
-    // Transform to homogeneous clip space.
+    // * 뷰, 투영 변환
     vout.PosH = mul(posW, gViewProj);
+    
+    // * normal vector 변환
+    float3x3 invTrans = transpose(inverse((float3x3) gWorld));
+    vout.NormalW = normalize(mul(vin.NormalL, invTrans));
 
     return vout;
 }
 
 float4 PS(VertexOut pin) : SV_Target
 {
-    // Interpolating normal can unnormalize it, so renormalize it.
-    pin.NormalW = normalize(pin.NormalW);
-
     // Vector from point being lit to eye. 
     float3 toEyeW = normalize(gEyePosW - pin.PosW);
 
-	// Indirect lighting.
+	//  ambient 계산 = 간접광의 양 * 반사율
     float4 ambient = gAmbientLight * gDiffuseAlbedo;
 
     const float shininess = 1.0f - gRoughness;
     Material mat = { gDiffuseAlbedo, gFresnelR0, shininess };
     float3 shadowFactor = 1.0f;
-    float4 directLight = ComputeLighting(gLights, mat, pin.PosW,
-        pin.NormalW, toEyeW, shadowFactor);
+    
+    float4 directLight = ComputeLighting(gLights, mat, pin.PosW, pin.NormalW, toEyeW, shadowFactor);
 
     float4 litColor = ambient + directLight;
 
