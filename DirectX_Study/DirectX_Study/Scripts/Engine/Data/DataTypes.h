@@ -2,6 +2,7 @@
 
 #include <d3d12.h>
 #include <DirectXMath.h>
+#include <string>
 #include <vector>
 #include <unordered_map>
 
@@ -36,9 +37,22 @@ namespace DK
 		}
 
 		DirectX::XMFLOAT3 Position;
-		DirectX::XMFLOAT3 Normal;
+		DirectX::XMFLOAT3 Normal;	// surface normal
+		DirectX::XMFLOAT2 TexC;		// Texture Coordinate
 		DirectX::XMFLOAT3 TangentU;
-		DirectX::XMFLOAT2 TexC;
+
+		static std::vector<D3D12_INPUT_ELEMENT_DESC> GetInputLayout()
+		{
+			std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout =
+			{
+				{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+				{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+				{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+				//{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+			};
+
+			return inputLayout;
+		}
 	};
 
 #pragma region <Mesh>
@@ -47,6 +61,7 @@ namespace DK
 	{
 		MeshData() {}
 
+		std::string Name;
 		std::vector<Vertex> Vertices;
 		std::vector<uint32_t> Indices32;
 

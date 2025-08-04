@@ -305,6 +305,8 @@ bool GraphicEngine::OnResize(int width, int height, bool force)
 
 		m_rectScissor = { 0, 0, m_nClientWidth, m_nClientHeight };
 
+		m_camera.SetAspect(AspectRatio());
+
 		return true;
 	}
 
@@ -328,9 +330,11 @@ void GraphicEngine::FlushCommandQueue()
 	}
 
 bool GraphicEngine::Update()
-	{
-		return true;
-	}
+{
+	UpdateCamera();
+
+	return true;
+}
 
 bool GraphicEngine::Render()
 	{
@@ -396,6 +400,48 @@ bool GraphicEngine::Render()
 		return true;
 	}
 
+void DK::GraphicEngine::UpdateCamera()
+{
+	bool bRButtonState = GetRMouseDown();
+	if (m_bRButtonClicked == false && bRButtonState)
+	{
+		m_bRButtonClicked = true;
+		GetCursorPos(&m_preCursorPos);
+	}
+	else if (m_bRButtonClicked && bRButtonState == false)
+	{
+		m_bRButtonClicked = false;
+	}
+
+	if (bRButtonState)
+	{
+		// rotation
+		POINT curCursorPos;
+		GetCursorPos(&curCursorPos);
+
+		DirectX::XMFLOAT3 camRot = m_camera.GetTransform().GetRotation();
+		camRot.x += static_cast<float>(curCursorPos.y - m_preCursorPos.y) * 0.3f;
+		camRot.y += static_cast<float>(curCursorPos.x - m_preCursorPos.x) * 0.3f;
+
+		m_camera.GetTransform().SetRotation(camRot.x, camRot.y, camRot.z);
+
+		m_preCursorPos = curCursorPos;
+
+		// move
+		DirectX::XMFLOAT3 move =
+		{
+			GetKeyDownValue('a', -1.0f, 'd', 1.0f),
+			GetKeyDownValue('q', -1.0f, 'e', 1.0f),
+			GetKeyDownValue('s', -1.0f, 'w', 1.0f)
+		};
+
+		DirectX::XMFLOAT3 dirMove = (m_camera.GetTransform().Right() * move.x) + (m_camera.GetTransform().Front() * move.z) + (m_camera.GetTransform().Up() * move.y);
+		DirectX::XMFLOAT3 cameraPos = m_camera.GetTransform().GetPosition();
+		cameraPos = cameraPos + (dirMove * 0.003f);
+		m_camera.GetTransform().SetPosition(cameraPos.x, cameraPos.y, cameraPos.z);
+	}
+}
+
 HWND GraphicEngine::GetHandleWindow() const
 {
 	return m_hWnd;
@@ -440,49 +486,29 @@ void GraphicEngine::Set4xMassState(bool state)
 		}
 	}
 
-float GraphicEngine::GetXAxisInput()
-	{
-		bool bLeft = GetAsyncKeyState(VK_LEFT);
-		bool bRight = GetAsyncKeyState(VK_RIGHT);
-		if (bLeft ^ bRight)
-		{
-			return bLeft ? -1.0f : 1.0f;
-		}
-		return 0.f;
-	}
+bool DK::GraphicEngine::GetKeyDown(int vKey)
+{
+	if (vKey >= 'a' && vKey <= 'z')
+		vKey -= ('a' - 'A');
 
-float GraphicEngine::GetYAxisInput()
-	{
-		bool bDown = GetAsyncKeyState(VK_DOWN);
-		bool bUp = GetAsyncKeyState(VK_UP);
-		if (bDown ^ bUp)
-		{
-			return bDown ? -1.0f : 1.0f;
-		}
-		return 0.0f;
-	}
+	return GetAsyncKeyState(vKey);
+}
 
-float GraphicEngine::GetRotateInput()
+float DK::GraphicEngine::GetKeyDownValue(char c1, float f1, char c2, float f2)
+{
+	bool bKeyC1 = GetKeyDown(c1);
+	bool bKeyC2 = GetKeyDown(c2);
+	if (bKeyC1 ^ bKeyC2)
 	{
-		bool bDown = GetAsyncKeyState('A');	// a
-		bool bUp = GetAsyncKeyState(0x51);		// q
-		if (bDown ^ bUp)
-		{
-			return bDown ? -1.0f : 1.0f;
-		}
-		return 0.0f;
+		return bKeyC1 ? f1 : f2;
 	}
+	return 0.f;
+}
 
-float GraphicEngine::GetScaleInput()
-	{
-		bool bDown = GetAsyncKeyState(0x53);	// s 
-		bool bUp = GetAsyncKeyState(0x57);		// w
-		if (bDown ^ bUp)
-		{
-			return bDown ? -1.0f : 1.0f;
-		}
-		return 0.0f;
-	}
+bool DK::GraphicEngine::GetRMouseDown()
+{
+	return GetKeyDown(VK_RBUTTON);
+}
 
 void GraphicEngine::CalculateFrameStats()
 	{

@@ -1,9 +1,5 @@
 #pragma once
 
-/// header
-
-///
-
 #include <Windows.h>
 #include <dxgi1_4.h>
 #include <d3d12.h>
@@ -20,6 +16,7 @@
 #include <d3dcompiler.h>
 
 #include "../../Header/d3dx12.h"
+#include "../Component/Camera.h"
 
 inline std::wstring AnsiToWString(const std::string& str)
 {
@@ -123,7 +120,7 @@ namespace DK
 			HRESULT hr = S_OK;
 
 			Microsoft::WRL::ComPtr<ID3DBlob> byteCode = nullptr;
-			Microsoft::WRL::ComPtr<ID3DBlob> errors;
+			Microsoft::WRL::ComPtr<ID3DBlob> errors = nullptr;
 
 			// D3DCompileFromFile
 			// : Microsoft HLSL(High Level Shader Language) 코드를 지정된 대상에 대한 바이트코드로 컴파일합니다.

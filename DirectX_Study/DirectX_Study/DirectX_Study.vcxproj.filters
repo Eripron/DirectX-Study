@@ -105,6 +105,12 @@
     <ClCompile Include="Scripts\Engine\Utils\GeometryGenerator.cpp">
       <Filter>소스 파일\Engine\Utils</Filter>
     </ClCompile>
+    <ClCompile Include="Scripts\Ex\ExTexture.cpp">
+      <Filter>소스 파일\Ex</Filter>
+    </ClCompile>
+    <ClCompile Include="Scripts\Engine\Component\Camera.cpp">
+      <Filter>소스 파일\Engine\Component</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Scripts\Window\MainWindow.h">
@@ -157,6 +163,12 @@
     </ClInclude>
     <ClInclude Include="Scripts\Engine\Data\DataTypes.h">
       <Filter>헤더 파일\Engine\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="Scripts\Ex\ExTexture.h">
+      <Filter>헤더 파일\Ex</Filter>
+    </ClInclude>
+    <ClInclude Include="Scripts\Engine\Component\Camera.h">
+      <Filter>헤더 파일\Engine\Component</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -1,7 +1,9 @@
 #pragma once
 
 #include "Utils/D3DUtils.h"
+
 #include "Common/GameTimer.h"
+#include "Data/DataTypes.h"
 
 #pragma comment(lib,"d3dcompiler.lib")
 #pragma comment(lib, "D3D12.lib")
@@ -32,6 +34,8 @@ namespace DK
 		virtual bool Update();
 		virtual bool Render();
 
+		virtual void UpdateCamera();
+
 		// get set
 		HWND GetHandleWindow() const;
 		float AspectRatio() const;
@@ -43,10 +47,10 @@ namespace DK
 		bool Get4xMassState() const;
 		void Set4xMassState(bool state);
 
-		float GetXAxisInput();
-		float GetYAxisInput();
-		float GetRotateInput();
-		float GetScaleInput();
+		bool GetKeyDown(int vKey);
+		float GetKeyDownValue(char c1, float f1, char c2, float f2);
+
+		bool GetRMouseDown();
 
 		// debug
 		void CalculateFrameStats();
@@ -98,6 +102,11 @@ namespace DK
 
 		D3D12_VIEWPORT m_viewPortScreen;
 		D3D12_RECT m_rectScissor;
+
+		// camera
+		Camera m_camera;
+		bool m_bRButtonClicked = false;
+		POINT m_preCursorPos;
 	};
 
 }

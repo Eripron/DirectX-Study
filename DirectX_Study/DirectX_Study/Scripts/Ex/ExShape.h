@@ -39,7 +39,6 @@ namespace DK
 		virtual bool Render() override;
 
 		void UpdateWave(const GameTimer& gt);
-		void UpdateCamera(const GameTimer& gt);
 		void UpdateObjectCBs(const GameTimer& gt);
 		void UpdateRenderPassCB(const GameTimer& gt);
 		void UpdateMaterialCB(const GameTimer& gt);
@@ -53,12 +52,6 @@ namespace DK
 		void BuildPSOs();
 
 		void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderObject>& renderObjects);
-
-		bool GetRButtonDown();
-		float GetXMoveInput();
-		float GetYMoveInput();
-		float GetZMoveInput();
-		bool GetKeyDown(char c);
 
 		DirectX::XMFLOAT3 GetHillNormal(float x, float z);
 
@@ -84,13 +77,5 @@ namespace DK
 		Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pso;
 
 		RenderPassConstants m_renderPassCB;
-
-		POINT m_preCursorPos;
-		bool m_bRButtonClicked = false;
-
-		Transform m_camera;
-
-		DirectX::XMFLOAT4X4 m_View = MathUtils::Identity4x4();
-		DirectX::XMFLOAT4X4 m_Proj = MathUtils::Identity4x4();
 	};
 }

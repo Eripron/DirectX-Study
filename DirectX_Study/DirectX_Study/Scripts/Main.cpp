@@ -1,7 +1,7 @@
 #include <Windows.h>
 
 #include "Window/MainWindow.h"
-#include "Ex/ExShape.h"
+#include "Ex/ExTexture.h"
 
 using namespace DK;
 
@@ -16,7 +16,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstace, LPSTR lpszCmdP
 
 	HWND hWnd = mainWindow.GetHandle();
 
-	ExShape engine(hWnd);
+	ExTexture engine(hWnd);
 	engine.Init();
 
 	while (mainWindow.Run())

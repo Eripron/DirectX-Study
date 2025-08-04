@@ -12,12 +12,12 @@ using namespace std;
 
 namespace DK
 {
-	struct ObjectConstants
+	/*struct ObjectConstants
 	{
 		DirectX::XMFLOAT4X4 WorldViewProj = MathUtils::Identity4x4();
 		DirectX::XMFLOAT4 Color;
 		float time;
-	};
+	};*/
 
 	class ExBox : public GraphicEngine
 	{

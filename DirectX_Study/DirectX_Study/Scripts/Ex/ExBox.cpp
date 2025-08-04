@@ -49,40 +49,40 @@ namespace DK
 
 	bool ExBox::Update()
 	{
-		if (GraphicEngine::Update() == false)
-			return false;
+		//if (GraphicEngine::Update() == false)
+		//	return false;
 
-		mTheta += GetXAxisInput() * 0.001f;
-		mPhi += GetYAxisInput() * 0.001f;
-		if (mPhi < 0.1f)
-			mPhi = 0.1f;
-		else if (mPhi > DirectX::XM_PI - 0.1f)
-			mPhi = DirectX::XM_PI - 0.1f;
+		//mTheta += GetXAxisInput() * 0.001f;
+		//mPhi += GetYAxisInput() * 0.001f;
+		//if (mPhi < 0.1f)
+		//	mPhi = 0.1f;
+		//else if (mPhi > DirectX::XM_PI - 0.1f)
+		//	mPhi = DirectX::XM_PI - 0.1f;
 
-		// Convert Spherical to Cartesian coordinates.
-		float x = mRadius * sinf(mPhi) * cosf(mTheta);
-		float z = mRadius * sinf(mPhi) * sinf(mTheta);
-		float y = mRadius * cosf(mPhi);
+		//// Convert Spherical to Cartesian coordinates.
+		//float x = mRadius * sinf(mPhi) * cosf(mTheta);
+		//float z = mRadius * sinf(mPhi) * sinf(mTheta);
+		//float y = mRadius * cosf(mPhi);
 
-		// Build the view matrix.
-		DirectX::XMVECTOR pos = DirectX::XMVectorSet(x, y, z, 1.0f);
-		DirectX::XMVECTOR target = DirectX::XMVectorZero();
-		DirectX::XMVECTOR up = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+		//// Build the view matrix.
+		//DirectX::XMVECTOR pos = DirectX::XMVectorSet(x, y, z, 1.0f);
+		//DirectX::XMVECTOR target = DirectX::XMVectorZero();
+		//DirectX::XMVECTOR up = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
-		DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(pos, target, up);
-		XMStoreFloat4x4(&mView, view);
+		//DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(pos, target, up);
+		//XMStoreFloat4x4(&mView, view);
 
-		DirectX::XMMATRIX world = XMLoadFloat4x4(&mWorld);
-		DirectX::XMMATRIX proj = XMLoadFloat4x4(&mProj);
-		DirectX::XMMATRIX worldViewProj = world * view * proj;
+		//DirectX::XMMATRIX world = XMLoadFloat4x4(&mWorld);
+		//DirectX::XMMATRIX proj = XMLoadFloat4x4(&mProj);
+		//DirectX::XMMATRIX worldViewProj = world * view * proj;
 
-		// Update the constant buffer with the latest worldViewProj matrix.
-		ObjectConstants objConstants;
-		XMStoreFloat4x4(&objConstants.WorldViewProj, XMMatrixTranspose(worldViewProj));
-		XMStoreFloat4x4(&wvp.WorldViewProj, XMMatrixTranspose(worldViewProj));
-		wvp.Color = DirectX::XMFLOAT4(DirectX::Colors::White);
-		wvp.time = m_gameTimer.DeltaTimef();
-		//mObjectCB->CopyData(0, objConstants);
+		//// Update the constant buffer with the latest worldViewProj matrix.
+		//ObjectConstants objConstants;
+		//XMStoreFloat4x4(&objConstants.WorldViewProj, XMMatrixTranspose(worldViewProj));
+		//XMStoreFloat4x4(&wvp.WorldViewProj, XMMatrixTranspose(worldViewProj));
+		//wvp.Color = DirectX::XMFLOAT4(DirectX::Colors::White);
+		//wvp.time = m_gameTimer.DeltaTimef();
+		////mObjectCB->CopyData(0, objConstants);
 
 		return true;
 	}

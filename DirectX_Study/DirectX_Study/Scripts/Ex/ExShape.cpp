@@ -17,7 +17,7 @@ bool ExShape::Init()
 
 	THROW_IF_FAILED(m_commandList->Reset(m_commandAlloc.Get(), nullptr));
 
-	m_camera.SetPosition(0, 0, -10);
+	m_camera.GetTransform().SetPosition(0, 0, 10.0f);
 
 	CreateGeometry();
 	CreateMaterials();
@@ -42,9 +42,6 @@ bool ExShape::OnResize(int width, int height, bool force)
 	if (GraphicEngine::OnResize(width, height, force) == false)
 		return false;
 
-	DirectX::XMMATRIX P = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(60.0f), AspectRatio(), 1.0f, 1000.0f);
-	XMStoreFloat4x4(&m_Proj, P);
-
 	return true;
 }
 
@@ -66,7 +63,6 @@ bool DK::ExShape::Update()
 	}
 
 	UpdateWave(m_gameTimer);
-	UpdateCamera(m_gameTimer);
 	UpdateRenderPassCB(m_gameTimer);
 	UpdateObjectCBs(m_gameTimer);
 	UpdateMaterialCB(m_gameTimer);
@@ -161,56 +157,6 @@ void DK::ExShape::UpdateWave(const GameTimer& gt)
 	m_pGOWave->GetMeshBuffer()->VertexBuffer = currWavesVB->GetBuffer();
 }
 
-void DK::ExShape::UpdateCamera(const GameTimer& gt)
-{
-	bool bRButtonState = GetRButtonDown();
-	if (m_bRButtonClicked == false && bRButtonState)
-	{
-		m_bRButtonClicked = true;
-		GetCursorPos(&m_preCursorPos);
-	}
-	else if (m_bRButtonClicked && bRButtonState == false)
-	{
-		m_bRButtonClicked = false;
-	}
-
-	if (bRButtonState)
-	{
-		// 회전
-		POINT curCursorPos;
-		GetCursorPos(&curCursorPos);
-
-		DirectX::XMFLOAT3 camRot = m_camera.GetRotation();
-		camRot.x += static_cast<float>(curCursorPos.y - m_preCursorPos.y) * 0.3f;
-		camRot.y += static_cast<float>(curCursorPos.x - m_preCursorPos.x) * 0.3f;
-
-		m_camera.SetRotation(camRot.x, camRot.y, camRot.z);
-
-		m_preCursorPos = curCursorPos;
-	}
-
-	// camera 이동
-	DirectX::XMFLOAT3 dirRight = m_camera.Right();
-	DirectX::XMFLOAT3 dirFront = m_camera.Front();
-	DirectX::XMFLOAT3 dirUp = m_camera.Up();
-
-	DirectX::XMFLOAT3 dirMove = (dirRight * GetXMoveInput()) + (dirFront * GetZMoveInput()) + (dirUp * GetYMoveInput());
-
-	DirectX::XMFLOAT3 cameraPos = m_camera.GetPosition();
-	cameraPos = cameraPos + (dirMove * 0.1f);
-	m_camera.SetPosition(cameraPos.x, cameraPos.y, cameraPos.z);
-
-	DirectX::XMFLOAT3 targetPos = cameraPos + (dirFront * 100.0f);
-
-	// Build the view matrix.
-	DirectX::XMVECTOR eyePos = DirectX::XMVectorSet(cameraPos.x, cameraPos.y, cameraPos.z, 1.0f);
-	DirectX::XMVECTOR focusPos = DirectX::XMLoadFloat3(&targetPos);
-	DirectX::XMVECTOR upDir = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-
-	DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(eyePos, focusPos, upDir);
-	XMStoreFloat4x4(&m_View, view);
-}
-
 void DK::ExShape::UpdateObjectCBs(const GameTimer& gt)
 {
 	auto currObjectCB = m_pCurrFrameResource->ObjectCB.get();
@@ -235,8 +181,11 @@ void DK::ExShape::UpdateObjectCBs(const GameTimer& gt)
 
 void DK::ExShape::UpdateRenderPassCB(const GameTimer& gt)
 {
-	DirectX::XMMATRIX view = XMLoadFloat4x4(&m_View);
-	DirectX::XMMATRIX proj = XMLoadFloat4x4(&m_Proj);
+	DirectX::XMFLOAT4X4 viewMatrix = m_camera.GetViewMatrix();
+	DirectX::XMFLOAT4X4 projMatrix = m_camera.GetProjMatrix();
+
+	DirectX::XMMATRIX view = XMLoadFloat4x4(&viewMatrix);
+	DirectX::XMMATRIX proj = XMLoadFloat4x4(&projMatrix);
 	DirectX::XMMATRIX viewProj = XMMatrixMultiply(view, proj);
 
 	DirectX::XMVECTOR viewDetermin = XMMatrixDeterminant(view);
@@ -257,7 +206,7 @@ void DK::ExShape::UpdateRenderPassCB(const GameTimer& gt)
 	XMStoreFloat4x4(&m_renderPassCB.ViewProj, XMMatrixTranspose(viewProj));
 	XMStoreFloat4x4(&m_renderPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
 
-	m_renderPassCB.EyePosW = m_camera.GetPosition();
+	m_renderPassCB.EyePosW = m_camera.GetTransform().GetPosition();
 	m_renderPassCB.RenderTargetSize = DirectX::XMFLOAT2((float)m_nClientWidth, (float)m_nClientHeight);
 	m_renderPassCB.InvRenderTargetSize = DirectX::XMFLOAT2(1.0f / m_nClientWidth, 1.0f / m_nClientHeight);
 	m_renderPassCB.NearZ = 1.0f;
@@ -466,11 +415,7 @@ void DK::ExShape::BuildShadersAndInputLayout()
 	m_shaderByteCode["standardVS"] = D3DUtils::CompileShader(L"Shaders\\color.hlsl", nullptr, "VS", "vs_5_0");
 	m_shaderByteCode["opaquePS"] = D3DUtils::CompileShader(L"Shaders\\color.hlsl", nullptr, "PS", "ps_5_0");
 
-	m_inputLayout =
-	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-	};
+	m_inputLayout = Vertex::GetInputLayout();
 }
 
 void DK::ExShape::BuildFrameResources()
@@ -530,7 +475,6 @@ void DK::ExShape::BuildPSOs()
 		m_shaderByteCode["opaquePS"]->GetBufferSize()
 	};
 	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	//psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 	psoDesc.SampleMask = UINT_MAX;
@@ -573,55 +517,6 @@ void DK::ExShape::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std:
 		MeshSection meshSection = renderObject.pGameObject->GetMeshSection();
 		cmdList->DrawIndexedInstanced(meshSection.IndexCount, 1, meshSection.StartIndexLocation, meshSection.BaseVertexLocation, 0);
 	}
-}
-
-bool DK::ExShape::GetRButtonDown()
-{
-	return GetAsyncKeyState(VK_RBUTTON) & 0x8000;
-}
-
-float DK::ExShape::GetXMoveInput()
-{
-	bool bLeft = GetKeyDown('a');
-	bool bRight = GetKeyDown('d');
-	if (bLeft ^ bRight)
-	{
-		return bLeft ? -1.0f : 1.0f;
-	}
-	return 0.f;
-}
-
-float DK::ExShape::GetYMoveInput()
-{
-	bool bDown = GetKeyDown('q');
-	bool bUp = GetKeyDown('e');
-	if (bDown ^ bUp)
-	{
-		return bDown ? -1.0f : 1.0f;
-	}
-	return 0.0f;
-}
-
-float DK::ExShape::GetZMoveInput()
-{
-	bool bFront = GetKeyDown('w');
-	bool bBack = GetKeyDown('s');
-	if (bFront ^ bBack)
-	{
-		return bFront ? 1.0f : -1.0f;
-	}
-	return 0.0f;
-}
-
-bool DK::ExShape::GetKeyDown(char c)
-{
-	if (c >= 'a' && c <= 'z')
-		c -= ('a' - 'A');
-
-	if (c >= 'A' && c <= 'Z')
-		return GetAsyncKeyState(c);
-	else
-		return false;
 }
 
 DirectX::XMFLOAT3 DK::ExShape::GetHillNormal(float x, float z)
