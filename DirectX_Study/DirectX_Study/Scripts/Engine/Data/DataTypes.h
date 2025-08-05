@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <array>
 
 #include "../Utils/D3DUtils.h"
 #include "../Utils/MathUtils.h"
@@ -47,8 +48,8 @@ namespace DK
 			{
 				{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
 				{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-				{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
-				//{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+				{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+				{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 			};
 
 			return inputLayout;
@@ -210,11 +211,79 @@ namespace DK
 
 #pragma endregion
 
+#pragma region Texture
+
+	struct Texture
+	{
+		std::string Name;
+
+		std::wstring FileName;
+
+		Microsoft::WRL::ComPtr<ID3D12Resource> Resource = nullptr;
+		Microsoft::WRL::ComPtr<ID3D12Resource> UploadHeap = nullptr;
+
+
+		static std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers()
+		{
+			const CD3DX12_STATIC_SAMPLER_DESC pointWrap(
+				0, // shaderRegister
+				D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
+				D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
+				D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
+				D3D12_TEXTURE_ADDRESS_MODE_WRAP); // addressW
+
+			const CD3DX12_STATIC_SAMPLER_DESC pointClamp(
+				1, // shaderRegister
+				D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
+				D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
+				D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
+				D3D12_TEXTURE_ADDRESS_MODE_CLAMP); // addressW
+
+			const CD3DX12_STATIC_SAMPLER_DESC linearWrap(
+				2, // shaderRegister
+				D3D12_FILTER_MIN_MAG_MIP_LINEAR, // filter
+				D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
+				D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
+				D3D12_TEXTURE_ADDRESS_MODE_WRAP); // addressW
+
+			const CD3DX12_STATIC_SAMPLER_DESC linearClamp(
+				3, // shaderRegister
+				D3D12_FILTER_MIN_MAG_MIP_LINEAR, // filter
+				D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
+				D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
+				D3D12_TEXTURE_ADDRESS_MODE_CLAMP); // addressW
+
+			const CD3DX12_STATIC_SAMPLER_DESC anisotropicWrap(
+				4, // shaderRegister
+				D3D12_FILTER_ANISOTROPIC, // filter
+				D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
+				D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
+				D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressW
+				0.0f,                             // mipLODBias
+				8);                               // maxAnisotropy
+
+			const CD3DX12_STATIC_SAMPLER_DESC anisotropicClamp(
+				5, // shaderRegister
+				D3D12_FILTER_ANISOTROPIC, // filter
+				D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
+				D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
+				D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressW
+				0.0f,                              // mipLODBias
+				8);                                // maxAnisotropy
+
+			return { pointWrap, pointClamp, linearWrap, linearClamp, anisotropicWrap, anisotropicClamp };
+		}
+	};
+
+#pragma endregion
+
+
 #pragma region Constants
 
 	struct ObjectConstants
 	{
 		DirectX::XMFLOAT4X4 WorldMatrix = MathUtils::Identity4x4();
+		DirectX::XMFLOAT4X4 TexTransform = MathUtils::Identity4x4();
 	};
 
 	struct RenderPassConstants

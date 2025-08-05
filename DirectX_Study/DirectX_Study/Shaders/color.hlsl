@@ -6,7 +6,7 @@
 
 // Defaults for number of lights.
 #ifndef NUM_DIR_LIGHTS
-    #define NUM_DIR_LIGHTS 1
+    #define NUM_DIR_LIGHTS 3
 #endif
 
 #ifndef NUM_POINT_LIGHTS
@@ -20,22 +20,11 @@
 // Include structures and functions for lighting.
 #include "LightUtils.hlsl" 
 
-// Constant data that varies per frame.
-cbuffer cbPerObject : register(b0)
-{
-    float4x4 gWorld;
-};
-
-cbuffer cbMaterial : register(b1)
-{
-	float4 gDiffuseAlbedo;  // 반사율(md)
-    float3 gFresnelR0;      // 매질(R0)
-    float  gRoughness;      // 거칠기(m)
-	float4x4 gMatTransform;
-};
+Texture2D gDiffuseMap : register(t0);
+SamplerState gsamLinear : register(s0);
 
 // Constant data that varies per material.
-cbuffer cbPass : register(b2)
+cbuffer cbPass : register(b0)
 {
     float4x4 gView;
     float4x4 gInvView;
@@ -59,12 +48,28 @@ cbuffer cbPass : register(b2)
     // are spot lights for a maximum of MaxLights per object.
     Light gLights[MaxLights];
 };
+
+// Constant data that varies per frame.
+cbuffer cbPerObject : register(b1)
+{
+    float4x4 gWorld;
+    float4x4 gTexTransform;
+};
+
+cbuffer cbMaterial : register(b2)
+{
+	float4 gDiffuseAlbedo;  // 반사율(md)
+    float3 gFresnelR0;      // 매질(R0)
+    float  gRoughness;      // 거칠기(m)
+	float4x4 gMatTransform;
+};
  
 struct VertexIn
 {
 	float3 PosL    : POSITION;
     float3 NormalL : NORMAL;
     float2 TexC    : TEXCOORD;
+    float3 TangentU : TANGENT;
 };
 
 struct VertexOut
@@ -72,6 +77,7 @@ struct VertexOut
 	float4 PosH    : SV_POSITION;
     float3 PosW    : POSITION;
     float3 NormalW : NORMAL;
+    float2 TexC : TEXCOORD;
 };
 
 float3x3 cofactor(float3x3 m)
@@ -121,27 +127,32 @@ VertexOut VS(VertexIn vin)
     float3x3 invTrans = transpose(inverse((float3x3) gWorld));
     vout.NormalW = normalize(mul(vin.NormalL, invTrans));
 
+    // Output vertex attributes for interpolation across triangle.
+    float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gTexTransform);
+    vout.TexC = mul(texC, gMatTransform).xy;
+    
     return vout;
 }
 
 float4 PS(VertexOut pin) : SV_Target
 {
+    float4 diffuseAlbedo = gDiffuseMap.Sample(gsamLinear, pin.TexC) * gDiffuseAlbedo;
+    
     // Vector from point being lit to eye. 
     float3 toEyeW = normalize(gEyePosW - pin.PosW);
 
 	//  ambient 계산 = 간접광의 양 * 반사율
-    float4 ambient = gAmbientLight * gDiffuseAlbedo;
+    float4 ambient = gAmbientLight * diffuseAlbedo;
 
     const float shininess = 1.0f - gRoughness;
-    Material mat = { gDiffuseAlbedo, gFresnelR0, shininess };
+    Material mat = { diffuseAlbedo, gFresnelR0, shininess };
     float3 shadowFactor = 1.0f;
-    
     float4 directLight = ComputeLighting(gLights, mat, pin.PosW, pin.NormalW, toEyeW, shadowFactor);
 
     float4 litColor = ambient + directLight;
 
     // Common convention to take alpha from diffuse material.
-    litColor.a = gDiffuseAlbedo.a;
+    litColor.a = diffuseAlbedo.a;
     
     return litColor;
 }

@@ -6,6 +6,7 @@
 #include "../Engine/Utils/D3DUtils.h"
 #include "../Engine/Utils/MathUtils.h"
 #include "../Engine/Utils/GeometryGenerator.h"
+#include "../Engine/Utils/DDSTextureLoader.h"
 
 #include "../Engine/Component/GameObject.h"
 #include "../Engine/Component/Camera.h"
@@ -27,6 +28,7 @@ namespace DK
 		void CreateMaterial();
 		void CreateGameObject();
 		void CreateFrameResource();
+		void LoadTexture();
 
 		void BuildDescriptor();
 		void BuildInputLayoutAndShader();
@@ -56,6 +58,7 @@ namespace DK
 		// resource
 		std::vector<std::unique_ptr<MeshBuffer>> m_vecMeshBuffers;						// mesh
 		std::unordered_map<std::string, std::unique_ptr<Material>> m_mapMaterials;		// material
+		std::unordered_map<std::string, std::unique_ptr<Texture>> m_mapTextures;
 		std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3DBlob>> m_mapShaders;	// shader code
 		std::vector<GameObject> m_vecGameObjects;		// object
 

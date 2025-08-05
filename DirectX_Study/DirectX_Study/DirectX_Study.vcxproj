@@ -135,6 +135,7 @@
     <ClCompile Include="Scripts\Engine\GraphicEngine.cpp" />
     <ClCompile Include="Scripts\Engine\Resource\FrameResource.cpp" />
     <ClCompile Include="Scripts\Engine\Utils\D3DUtils.cpp" />
+    <ClCompile Include="Scripts\Engine\Utils\DDSTextureLoader.cpp" />
     <ClCompile Include="Scripts\Engine\Utils\GeometryGenerator.cpp" />
     <ClCompile Include="Scripts\Engine\Utils\MathUtils.cpp" />
     <ClCompile Include="Scripts\Ex\ExBox.cpp" />
@@ -155,6 +156,7 @@
     <ClInclude Include="Scripts\Engine\Resource\FrameResource.h" />
     <ClInclude Include="Scripts\Engine\Resource\UploadBuffer.h" />
     <ClInclude Include="Scripts\Engine\Utils\D3DUtils.h" />
+    <ClInclude Include="Scripts\Engine\Utils\DDSTextureLoader.h" />
     <ClInclude Include="Scripts\Engine\Utils\GeometryGenerator.h" />
     <ClInclude Include="Scripts\Engine\Utils\MathUtils.h" />
     <ClInclude Include="Scripts\Ex\ExBox.h" />

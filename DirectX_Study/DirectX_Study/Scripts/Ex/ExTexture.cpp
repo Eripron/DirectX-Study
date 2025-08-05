@@ -17,11 +17,13 @@ bool DK::ExTexture::Init()
 
 	m_camera.GetTransform().SetPosition(0, 0, -10);
 
-	CreateGeometry();	// mesh, buffer 积己
-	CreateMaterial();	// material 积己
-	CreateGameObject();	// 免仿 go 积己
+	LoadTexture();
+	CreateGeometry();		// mesh, buffer 积己
+	CreateMaterial();		// material 积己
+	CreateGameObject();		// 免仿 go 积己
 	CreateFrameResource();	// const buffer 殿 积己
 
+	BuildDescriptor();
 	BuildInputLayoutAndShader();
 	BuildRootSignature();
 	BuildPSO();
@@ -61,6 +63,7 @@ void DK::ExTexture::CreateMaterial()
 	matWood->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	matWood->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
 	matWood->Roughness = 0.2f;
+	matWood->NumFramesDirty = m_nFrameReesourceCount;
 
 	m_mapMaterials[matWood->Name] = std::move(matWood);
 }
@@ -93,6 +96,20 @@ void DK::ExTexture::CreateFrameResource()
 	}
 }
 
+void DK::ExTexture::LoadTexture()
+{
+	std::unique_ptr<Texture> spTexture = std::make_unique<Texture>();
+	spTexture->Name = "woodCrateTex";
+	spTexture->FileName = L"Textures/WoodCrate01.dds";
+
+	// todo: load texture
+	DirectX::CreateDDSTextureFromFile12(m_d3dDevice.Get(),
+		m_commandList.Get(), spTexture->FileName.c_str(),
+		spTexture->Resource, spTexture->UploadHeap);
+
+	m_mapTextures[spTexture->Name] = std::move(spTexture);
+}
+
 void DK::ExTexture::BuildDescriptor()
 {
 	// create descriptor heap
@@ -101,21 +118,23 @@ void DK::ExTexture::BuildDescriptor()
 	heapDesc.NumDescriptors = 1;
 	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	heapDesc.NodeMask = 0;
-
-	m_d3dDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_spHeapSRV));
+	THROW_IF_FAILED(m_d3dDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_spHeapSRV)));
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(m_spHeapSRV->GetCPUDescriptorHandleForHeapStart());
 
-	// todo
-	//D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
-	////srvDesc.Format = ;
-	//srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	//srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	//srvDesc.Texture2D.MostDetailedMip = 0;
-	////srvDesc.Texture2D.MipLevels = ;
-	//srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+	auto crateTex = m_mapTextures["woodCrateTex"]->Resource;
 
-	//m_d3dDevice->CreateShaderResourceView()
+	// texture2D俊 措茄 view 积己
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
+	srvDesc.Format = crateTex->GetDesc().Format;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+	srvDesc.Texture2D.MipLevels = crateTex->GetDesc().MipLevels;
+	srvDesc.Texture2D.PlaneSlice = 0;
+	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+
+	m_d3dDevice->CreateShaderResourceView(crateTex.Get(), &srvDesc, hDescriptor);
 }
 
 void DK::ExTexture::BuildInputLayoutAndShader()
@@ -137,19 +156,17 @@ void DK::ExTexture::BuildRootSignature()
 	rootParameters[2].InitAsConstantBufferView(1);
 	rootParameters[3].InitAsConstantBufferView(2);
 
-	// todo- static sampler object binding
+	auto staticSamplers = Texture::GetStaticSamplers();
 
 	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc(4, rootParameters, 
-		0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+		staticSamplers.size(), staticSamplers.data(), 
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	Microsoft::WRL::ComPtr<ID3DBlob> spSerializedRootSig = nullptr;
 	Microsoft::WRL::ComPtr<ID3DBlob> spError = nullptr;
 
-	HRESULT hr = D3D12SerializeRootSignature(
-		&rootSignatureDesc, 
-		D3D_ROOT_SIGNATURE_VERSION_1, 
-		spSerializedRootSig.GetAddressOf(), 
-		spError.GetAddressOf());
+	HRESULT hr = D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, 
+		spSerializedRootSig.GetAddressOf(), spError.GetAddressOf());
 
 	if (spError != nullptr)
 	{
@@ -192,7 +209,7 @@ void DK::ExTexture::BuildPSO()
 	psoDesc.SampleDesc.Count = m_b4xMsaaState ? 4 : 1;
 	psoDesc.SampleDesc.Quality = m_b4xMsaaState ? (m_u4xMsaaQuality - 1) : 0;
 
-	m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(m_spPSO.GetAddressOf()));
+	m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_spPSO));
 }
 
 bool DK::ExTexture::OnResize(int width, int height, bool force)
@@ -262,13 +279,14 @@ void DK::ExTexture::UpdateRenderPassCB()
 
 	m_renderPassCB.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
 
-	float mSunTheta = 1.25f * DirectX::XM_PI;
-	float mSunPhi = DirectX::XM_PIDIV4;
-	DirectX::XMVECTOR lightDir = MathUtils::SphericalToCartesian(1.0f, mSunTheta, mSunPhi);
-	lightDir = DirectX::XMVectorScale(lightDir, -1.0f);
+	m_renderPassCB.Lights[0].Direction = { 0.57735f, -0.57735f, 0.57735f };
+	m_renderPassCB.Lights[0].Strength = { 0.6f, 0.6f, 0.6f };
 
-	XMStoreFloat3(&m_renderPassCB.Lights[0].Direction, lightDir);
-	m_renderPassCB.Lights[0].Strength = { 1.0f, 0.0f, 0.0f };
+	m_renderPassCB.Lights[1].Direction = { -0.57735f, -0.57735f, 0.57735f };
+	m_renderPassCB.Lights[1].Strength = { 0.3f, 0.3f, 0.3f };
+
+	m_renderPassCB.Lights[2].Direction = { 0.0f, -0.707f, -0.707f };
+	m_renderPassCB.Lights[2].Strength = { 0.15f, 0.15f, 0.15f };
 
 	auto currPassCB = m_pCurrFrameResource->RenderPassCB.get();
 	currPassCB->CopyData(0, m_renderPassCB);
@@ -281,8 +299,15 @@ void DK::ExTexture::UpdateObjectCBs()
 	int objCount = m_vecGameObjects.size();
 	for (int i = 0; i < objCount; ++i)
 	{
+		DirectX::XMFLOAT4X4 worldMatrix = m_vecGameObjects[i].GetTransform().GetWorldMatrix();
+		DirectX::XMFLOAT4X4 texTransform = MathUtils::Identity4x4();
+
+		XMMATRIX world = XMLoadFloat4x4(&worldMatrix);
+		XMMATRIX vTexTransform = XMLoadFloat4x4(&texTransform);
+
 		ObjectConstants constants;
-		constants.WorldMatrix = m_vecGameObjects[i].GetTransform().GetWorldMatrix();
+		XMStoreFloat4x4(&constants.WorldMatrix, XMMatrixTranspose(world));
+		XMStoreFloat4x4(&constants.TexTransform, XMMatrixTranspose(vTexTransform));
 
 		objectCB->CopyData(i, constants);
 	}
@@ -296,10 +321,16 @@ void DK::ExTexture::UpdateMaterialCBs()
 	{
 		Material* mat = data.second.get();
 
+		if (mat->NumFramesDirty <= 0)
+			continue;
+
+		XMMATRIX matTransform = XMLoadFloat4x4(&mat->MatTransform);
+
 		MaterialConstants matConstants;
 		matConstants.DiffuseAlbedo = mat->DiffuseAlbedo;
 		matConstants.FresnelR0 = mat->FresnelR0;
 		matConstants.Roughness = mat->Roughness;
+		XMStoreFloat4x4(&matConstants.MatTransform, XMMatrixTranspose(matTransform));
 
 		meterialCB->CopyData(mat->MatCBIndex, matConstants);
 	}
@@ -326,10 +357,13 @@ bool DK::ExTexture::Render()
 	// Specify the buffers we are going to render to.
 	m_commandList->OMSetRenderTargets(1, &backBuffer, true, &depthStencil);
 
+	ID3D12DescriptorHeap* descriptorHeaps[] = { m_spHeapSRV.Get()};
+	m_commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+
 	m_commandList->SetGraphicsRootSignature(m_spRootSignature.Get());
 
 	auto passCB = m_pCurrFrameResource->RenderPassCB->GetBuffer();
-	m_commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
+	m_commandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
 
 	DrawGameObjects(m_commandList.Get());
 
@@ -364,19 +398,22 @@ void DK::ExTexture::DrawGameObjects(ID3D12GraphicsCommandList* cmdList)
 
 		auto viewVB = go.GetMeshBuffer()->VertexBufferView();
 		auto viewIB = go.GetMeshBuffer()->IndexBufferView();
+
 		cmdList->IASetVertexBuffers(0, 1, &viewVB);
 		cmdList->IASetIndexBuffer(&viewIB);
 		cmdList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		CD3DX12_GPU_DESCRIPTOR_HANDLE tex(m_spHeapSRV->GetGPUDescriptorHandleForHeapStart());
+		tex.Offset(go.GetMaterial()->DiffuseSrvHeapIndex, m_uCbvSrvUavDescriptorSize);
 
 		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + (objCBByteSize * i);
 
 		int matCBIndex = go.GetMaterial()->MatCBIndex;
 		D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = materialCB->GetGPUVirtualAddress() + (matCBIndex * matCBByteSize);
 
-		// todo- srv heap table 眠啊
-
-		cmdList->SetGraphicsRootConstantBufferView(0, objCBAddress);
-		cmdList->SetGraphicsRootConstantBufferView(1, matCBAddress);
+		cmdList->SetGraphicsRootDescriptorTable(0, tex);
+		cmdList->SetGraphicsRootConstantBufferView(2, objCBAddress);
+		cmdList->SetGraphicsRootConstantBufferView(3, matCBAddress);
 
 		MeshSection meshSection = go.GetMeshSection();
 		cmdList->DrawIndexedInstanced(meshSection.IndexCount, 1, meshSection.StartIndexLocation, meshSection.BaseVertexLocation, 0);

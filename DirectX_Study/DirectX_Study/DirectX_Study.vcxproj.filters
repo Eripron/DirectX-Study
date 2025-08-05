@@ -111,6 +111,9 @@
     <ClCompile Include="Scripts\Engine\Component\Camera.cpp">
       <Filter>소스 파일\Engine\Component</Filter>
     </ClCompile>
+    <ClCompile Include="Scripts\Engine\Utils\DDSTextureLoader.cpp">
+      <Filter>소스 파일\Engine\Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Scripts\Window\MainWindow.h">
@@ -169,6 +172,9 @@
     </ClInclude>
     <ClInclude Include="Scripts\Engine\Component\Camera.h">
       <Filter>헤더 파일\Engine\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Scripts\Engine\Utils\DDSTextureLoader.h">
+      <Filter>헤더 파일\Engine\Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
