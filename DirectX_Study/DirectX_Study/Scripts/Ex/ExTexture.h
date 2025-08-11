@@ -20,35 +20,32 @@ namespace DK
 		ExTexture(HWND hWnd);
 		~ExTexture();
 
-		virtual bool Init() override;
-
 	protected:
-		// Init
+		virtual void Init() override;
+		virtual bool OnResize(int width, int height, bool force) override;
+		virtual bool Update() override;
+		virtual bool Render() override;
+
 		void CreateGeometry();
 		void CreateMaterial();
 		void CreateGameObject();
 		void CreateFrameResource();
 		void LoadTexture();
+		void LoadTexture(std::wstring fileName);
 
 		void BuildDescriptor();
 		void BuildInputLayoutAndShader();
 		void BuildRootSignature();
 		void BuildPSO();
 
-	protected:
-		virtual bool OnResize(int width, int height, bool force);
-
-		virtual bool Update() override;
 		void UpdateRenderPassCB();
 		void UpdateObjectCBs();
 		void UpdateMaterialCBs();
 
-		virtual bool Render() override;
 		void DrawGameObjects(ID3D12GraphicsCommandList* cmdList);
 
 	private:
-
-		Microsoft::WRL::ComPtr<ID3D12PipelineState> m_spPSO;
+		std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3D12PipelineState>> m_mapPSO;
 		Microsoft::WRL::ComPtr<ID3D12RootSignature> m_spRootSignature;
 		
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_spHeapSRV;
@@ -70,5 +67,9 @@ namespace DK
 
 		// constants
 		RenderPassConstants m_renderPassCB;
+
+		// todo gizmo
+		std::unique_ptr<MeshBuffer> m_sceneMeshBuffer;
+		GameObject goBaseGrid;
 	};
 }

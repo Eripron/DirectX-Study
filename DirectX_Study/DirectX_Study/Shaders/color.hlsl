@@ -158,3 +158,25 @@ float4 PS(VertexOut pin) : SV_Target
 }
 
 
+VertexOut GizmoVS(VertexIn vin)
+{
+    VertexOut vout = (VertexOut) 0.0f;
+	
+    // * 월드 변환
+    float4 posW = mul(float4(vin.PosL, 1.0f), gWorld);
+    vout.PosW = posW.xyz;
+
+    // * 뷰, 투영 변환
+    vout.PosH = mul(posW, gViewProj);
+    
+    return vout;
+}
+
+float4 GizmoPS(VertexOut pin) : SV_Target
+{
+    float gray = 0.8f;
+    float4 color = { gray, gray, gray, 1.0f };
+    
+    return color;
+}
+

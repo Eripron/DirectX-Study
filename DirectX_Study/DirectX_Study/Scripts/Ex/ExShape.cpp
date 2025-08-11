@@ -10,13 +10,8 @@ ExShape::~ExShape()
 {
 }
 
-bool ExShape::Init()
+void ExShape::Init()
 {
-	if (GraphicEngine::Init() == false)
-		return false;
-
-	THROW_IF_FAILED(m_commandList->Reset(m_commandAlloc.Get(), nullptr));
-
 	m_camera.GetTransform().SetPosition(0, 0, 10.0f);
 
 	CreateGeometry();
@@ -26,15 +21,6 @@ bool ExShape::Init()
 	BuildFrameResources();
 	BuildRootSignature();
 	BuildPSOs();
-
-	THROW_IF_FAILED(m_commandList->Close());
-	ID3D12CommandList* cmdsLists[] = { m_commandList.Get() };
-	m_commandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
-
-	// Wait until initialization is complete.
-	FlushCommandQueue();
-
-	return false;
 }
 
 bool ExShape::OnResize(int width, int height, bool force)

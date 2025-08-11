@@ -8,14 +8,51 @@ DK::ExTexture::~ExTexture()
 {
 }
 
-bool DK::ExTexture::Init()
+void DK::ExTexture::Init()
 {
-	if (GraphicEngine::Init() == false)
-		return false;
-
-	THROW_IF_FAILED(m_commandList->Reset(m_commandAlloc.Get(), nullptr));
-
 	m_camera.GetTransform().SetPosition(0, 0, -10);
+	{
+		MeshData mesh;
+
+		int halfLen = 500;
+		for (int pos = -halfLen; pos <= halfLen; pos += 10)
+		{
+			int vertexIndex = mesh.Vertices.size();
+
+			Vertex top;
+			top.Position = DirectX::XMFLOAT3(pos, 0, halfLen);
+
+			Vertex bottom;
+			bottom.Position = DirectX::XMFLOAT3(pos, 0, -halfLen);
+
+			Vertex left;
+			left.Position = DirectX::XMFLOAT3(halfLen, 0, pos);
+
+			Vertex right;
+			right.Position = DirectX::XMFLOAT3(-halfLen, 0, pos);
+
+
+			mesh.Vertices.push_back(top);
+			mesh.Vertices.push_back(bottom);
+			mesh.Vertices.push_back(left);
+			mesh.Vertices.push_back(right);
+
+			mesh.Indices32.push_back(vertexIndex);
+			mesh.Indices32.push_back(vertexIndex + 1);
+			mesh.Indices32.push_back(vertexIndex + 2);
+			mesh.Indices32.push_back(vertexIndex + 3);
+		}
+
+		std::unique_ptr<MeshBuffer> sceneBuffer = std::make_unique<MeshBuffer>();
+		sceneBuffer->AddMeshData("baseGrid", mesh);
+		sceneBuffer->CreateMeshBuffer(m_d3dDevice.Get(), m_commandList.Get());
+
+		m_sceneMeshBuffer = std::move(sceneBuffer);
+
+		MeshSection section;
+		m_sceneMeshBuffer->GetMeshSection("baseGrid", section);
+		goBaseGrid.SetMeshData(m_sceneMeshBuffer.get(), section);
+	}
 
 	LoadTexture();
 	CreateGeometry();		// mesh, buffer 생성
@@ -27,22 +64,14 @@ bool DK::ExTexture::Init()
 	BuildInputLayoutAndShader();
 	BuildRootSignature();
 	BuildPSO();
-
-	THROW_IF_FAILED(m_commandList->Close());
-	ID3D12CommandList* cmdLists[] = { m_commandList.Get()};
-	m_commandQueue->ExecuteCommandLists(1, cmdLists);
-
-	FlushCommandQueue();
-
-	return true;
 }
 
 void DK::ExTexture::CreateGeometry()
 {
 	GeometryGenerator geoGen;
-	std::unique_ptr<MeshBuffer> meshBuffer = std::make_unique<MeshBuffer>();
 
 	// create mesh data
+	std::unique_ptr<MeshBuffer> meshBuffer = std::make_unique<MeshBuffer>();
 	MeshData meshBox = geoGen.CreateBox(1, 1, 1);
 	meshBox.Name = "box";
 
@@ -92,49 +121,78 @@ void DK::ExTexture::CreateFrameResource()
 	for (int i = 0; i < m_nFrameReesourceCount; ++i)
 	{
 		m_vecFrameResoruce.push_back(std::make_unique<FrameResource>(
-			m_d3dDevice.Get(), 1, m_vecGameObjects.size(), m_mapMaterials.size(), 1));
+			m_d3dDevice.Get(), 1, m_vecGameObjects.size() + 1, m_mapMaterials.size(), 1));
 	}
 }
 
 void DK::ExTexture::LoadTexture()
 {
-	std::unique_ptr<Texture> spTexture = std::make_unique<Texture>();
-	spTexture->Name = "woodCrateTex";
-	spTexture->FileName = L"Textures/WoodCrate01.dds";
+	LoadTexture(L"Textures/WoodCrate01.dds");
+}
 
-	// todo: load texture
+void DK::ExTexture::LoadTexture(std::wstring path)
+{
+	size_t firstIdx = path.rfind(L'/') + 1;
+	size_t lastIdx = path.rfind(L'.');
+	std::string name = WStringToAnsi(path.substr(firstIdx, lastIdx - firstIdx));
+
+	std::unique_ptr<Texture> spTexture = std::make_unique<Texture>();
+
+	spTexture->FileName = path;
+
 	DirectX::CreateDDSTextureFromFile12(m_d3dDevice.Get(),
 		m_commandList.Get(), spTexture->FileName.c_str(),
 		spTexture->Resource, spTexture->UploadHeap);
 
-	m_mapTextures[spTexture->Name] = std::move(spTexture);
+	m_mapTextures[name] = std::move(spTexture);
 }
 
 void DK::ExTexture::BuildDescriptor()
 {
+	int nTextureCount = m_mapTextures.size();
+
 	// create descriptor heap
 	D3D12_DESCRIPTOR_HEAP_DESC heapDesc;
 	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	heapDesc.NumDescriptors = 1;
+	heapDesc.NumDescriptors = nTextureCount;
 	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	heapDesc.NodeMask = 0;
 	THROW_IF_FAILED(m_d3dDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_spHeapSRV)));
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(m_spHeapSRV->GetCPUDescriptorHandleForHeapStart());
+	CD3DX12_CPU_DESCRIPTOR_HANDLE descriptorHandle(m_spHeapSRV->GetCPUDescriptorHandleForHeapStart());
 
-	auto crateTex = m_mapTextures["woodCrateTex"]->Resource;
+	for(auto iter = m_mapTextures.begin(); iter != m_mapTextures.end(); ++iter)
+	{
+		Texture* texture = iter->second.get();
+		D3D12_RESOURCE_DESC rscDesc = texture->Resource->GetDesc();
 
-	// texture2D에 대한 view 생성
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
-	srvDesc.Format = crateTex->GetDesc().Format;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Texture2D.MostDetailedMip = 0;
-	srvDesc.Texture2D.MipLevels = crateTex->GetDesc().MipLevels;
-	srvDesc.Texture2D.PlaneSlice = 0;
-	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+		// texture2D에 대한 view 생성
+		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
+		srvDesc.Format = rscDesc.Format;
+		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		srvDesc.Texture2D.MostDetailedMip = 0;
+		srvDesc.Texture2D.MipLevels = rscDesc.MipLevels;
+		srvDesc.Texture2D.PlaneSlice = 0;
+		srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 
-	m_d3dDevice->CreateShaderResourceView(crateTex.Get(), &srvDesc, hDescriptor);
+		m_d3dDevice->CreateShaderResourceView(texture->Resource.Get(), &srvDesc, descriptorHandle);
+		descriptorHandle.ptr += m_uCbvSrvUavDescriptorSize;
+	}
+
+	//auto crateTex = m_mapTextures["woodCrateTex"]->Resource;
+
+	//// texture2D에 대한 view 생성
+	//D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
+	//srvDesc.Format = crateTex->GetDesc().Format;
+	//srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	//srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	//srvDesc.Texture2D.MostDetailedMip = 0;
+	//srvDesc.Texture2D.MipLevels = crateTex->GetDesc().MipLevels;
+	//srvDesc.Texture2D.PlaneSlice = 0;
+	//srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+
+	//m_d3dDevice->CreateShaderResourceView(crateTex.Get(), &srvDesc, descriptorHandle);
 }
 
 void DK::ExTexture::BuildInputLayoutAndShader()
@@ -142,13 +200,16 @@ void DK::ExTexture::BuildInputLayoutAndShader()
 	m_mapShaders["VS"] = D3DUtils::CompileShader(L"Shaders\\color.hlsl", nullptr, "VS", "vs_5_0");
 	m_mapShaders["PS"] = D3DUtils::CompileShader(L"Shaders\\color.hlsl", nullptr, "PS", "ps_5_0");
 
+	m_mapShaders["GizmoVS"] = D3DUtils::CompileShader(L"Shaders\\color.hlsl", nullptr, "GizmoVS", "vs_5_0");
+	m_mapShaders["GizmoPS"] = D3DUtils::CompileShader(L"Shaders\\color.hlsl", nullptr, "GizmoPS", "ps_5_0");
+
 	m_vecInputLayout = Vertex::GetInputLayout();
 }
 
 void DK::ExTexture::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE descriptorRange;
-	descriptorRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+	descriptorRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, m_mapTextures.size(), 0);
 
 	CD3DX12_ROOT_PARAMETER rootParameters[4];
 	rootParameters[0].InitAsDescriptorTable(1, &descriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
@@ -209,7 +270,22 @@ void DK::ExTexture::BuildPSO()
 	psoDesc.SampleDesc.Count = m_b4xMsaaState ? 4 : 1;
 	psoDesc.SampleDesc.Quality = m_b4xMsaaState ? (m_u4xMsaaQuality - 1) : 0;
 
-	m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_spPSO));
+	m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_mapPSO["std"]));
+
+	// gizmo
+	psoDesc.VS =
+	{
+		m_mapShaders["GizmoVS"]->GetBufferPointer(),
+		m_mapShaders["GizmoVS"]->GetBufferSize()
+	};
+	psoDesc.PS =
+	{
+		m_mapShaders["GizmoPS"]->GetBufferPointer(),
+		m_mapShaders["GizmoPS"]->GetBufferSize()
+	};
+	psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+	m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_mapPSO["gizmo"]));
 }
 
 bool DK::ExTexture::OnResize(int width, int height, bool force)
@@ -311,6 +387,14 @@ void DK::ExTexture::UpdateObjectCBs()
 
 		objectCB->CopyData(i, constants);
 	}
+
+	ObjectConstants constants;
+
+	Transform camPos = m_camera.GetTransform();
+	DirectX::XMMATRIX moveMatrix = DirectX::XMMatrixTranslation((int)floorf(camPos.GetPosition().x) / 10 * 10, 0, (int)floorf(camPos.GetPosition().z) / 10 * 10);
+	XMStoreFloat4x4(&constants.WorldMatrix, XMMatrixTranspose(moveMatrix));
+
+	objectCB->CopyData(objCount, constants);
 }
 
 void DK::ExTexture::UpdateMaterialCBs()
@@ -341,7 +425,7 @@ bool DK::ExTexture::Render()
 	auto cmdListAlloc = m_pCurrFrameResource->CmdListAlloc;
 
 	cmdListAlloc->Reset();
-	m_commandList->Reset(cmdListAlloc.Get(), m_spPSO.Get());
+	m_commandList->Reset(cmdListAlloc.Get(), m_mapPSO["std"].Get());
 
 	m_commandList->RSSetViewports(1, &m_viewPortScreen);
 	m_commandList->RSSetScissorRects(1, &m_rectScissor);
@@ -364,6 +448,27 @@ bool DK::ExTexture::Render()
 
 	auto passCB = m_pCurrFrameResource->RenderPassCB->GetBuffer();
 	m_commandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
+
+	{
+		m_commandList->SetPipelineState(m_mapPSO["gizmo"].Get());
+		UINT objCBByteSize = D3DUtils::CalcConstBufferByteSize(sizeof(ObjectConstants));
+		auto objectCB = m_pCurrFrameResource->ObjectCB->GetBuffer();
+
+		auto viewVB = goBaseGrid.GetMeshBuffer()->VertexBufferView();
+		auto viewIB = goBaseGrid.GetMeshBuffer()->IndexBufferView();
+
+		m_commandList->IASetVertexBuffers(0, 1, &viewVB);
+		m_commandList->IASetIndexBuffer(&viewIB);
+		m_commandList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_LINELIST);
+
+		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + (objCBByteSize * m_vecGameObjects.size());
+		m_commandList->SetGraphicsRootConstantBufferView(2, objCBAddress);
+
+		MeshSection meshSection = goBaseGrid.GetMeshSection();
+		m_commandList->DrawIndexedInstanced(meshSection.IndexCount, 1, meshSection.StartIndexLocation, meshSection.BaseVertexLocation, 0);
+
+		m_commandList->SetPipelineState(m_mapPSO["std"].Get());
+	}
 
 	DrawGameObjects(m_commandList.Get());
 

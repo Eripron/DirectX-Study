@@ -124,7 +124,10 @@ struct DDS_HEADER_DXT10
 namespace
 {
 
-struct handle_closer { void operator()(HANDLE h) { if (h) CloseHandle(h); } };
+struct handle_closer 
+{
+    void operator()(HANDLE h) { if (h) CloseHandle(h); } 
+};
 
 typedef public std::unique_ptr<void, handle_closer> ScopedHandle;
 

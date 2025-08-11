@@ -17,7 +17,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstace, LPSTR lpszCmdP
 	HWND hWnd = mainWindow.GetHandle();
 
 	ExTexture engine(hWnd);
-	engine.Init();
+	engine.Initialize();
 
 	while (mainWindow.Run())
 	{

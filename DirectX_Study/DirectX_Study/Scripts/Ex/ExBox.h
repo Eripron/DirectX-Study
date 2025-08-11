@@ -25,9 +25,9 @@ namespace DK
 		ExBox(HWND hWnd);
 		~ExBox();
 
-		virtual bool Init() override;
 
 	protected:
+		virtual void Init() override;
 		virtual bool OnResize(int width, int height, bool force);
 		virtual bool Update() override;
 		virtual bool Render() override;

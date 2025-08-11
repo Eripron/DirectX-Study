@@ -215,8 +215,6 @@ namespace DK
 
 	struct Texture
 	{
-		std::string Name;
-
 		std::wstring FileName;
 
 		Microsoft::WRL::ComPtr<ID3D12Resource> Resource = nullptr;

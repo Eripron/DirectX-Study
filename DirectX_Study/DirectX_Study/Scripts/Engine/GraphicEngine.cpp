@@ -20,15 +20,30 @@ GraphicEngine::~GraphicEngine()
 			FlushCommandQueue();
 }
 
-bool GraphicEngine::Init()
+bool DK::GraphicEngine::Initialize()
 {
 	if (InitDirect3D() == false)
 		return false;
 
-	OnResize(m_nClientWidth, m_nClientHeight, true);
 	m_gameTimer.Init();
+	OnResize(m_nClientWidth, m_nClientHeight, true);
+
+	THROW_IF_FAILED(m_commandList->Reset(m_commandAlloc.Get(), nullptr));
+
+	Init();
+
+	THROW_IF_FAILED(m_commandList->Close());
+	ID3D12CommandList* cmdLists[] = { m_commandList.Get() };
+	m_commandQueue->ExecuteCommandLists(1, cmdLists);
+
+	FlushCommandQueue();
 
 	return true;
+}
+
+void GraphicEngine::Init()
+{
+
 }
 
 void GraphicEngine::Run()
@@ -419,9 +434,10 @@ void DK::GraphicEngine::UpdateCamera()
 		POINT curCursorPos;
 		GetCursorPos(&curCursorPos);
 
+		float rotSpeed = 0.2f;
 		DirectX::XMFLOAT3 camRot = m_camera.GetTransform().GetRotation();
-		camRot.x += static_cast<float>(curCursorPos.y - m_preCursorPos.y) * 0.3f;
-		camRot.y += static_cast<float>(curCursorPos.x - m_preCursorPos.x) * 0.3f;
+		camRot.x += static_cast<float>(curCursorPos.y - m_preCursorPos.y) * rotSpeed;
+		camRot.y += static_cast<float>(curCursorPos.x - m_preCursorPos.x) * rotSpeed;
 
 		m_camera.GetTransform().SetRotation(camRot.x, camRot.y, camRot.z);
 
@@ -437,7 +453,11 @@ void DK::GraphicEngine::UpdateCamera()
 
 		DirectX::XMFLOAT3 dirMove = (m_camera.GetTransform().Right() * move.x) + (m_camera.GetTransform().Front() * move.z) + (m_camera.GetTransform().Up() * move.y);
 		DirectX::XMFLOAT3 cameraPos = m_camera.GetTransform().GetPosition();
-		cameraPos = cameraPos + (dirMove * 0.003f);
+		float speed = 0.005f;
+		if (GetKeyDown(VK_SHIFT))
+			speed *= 2.5f;
+
+		cameraPos = cameraPos + (dirMove * speed);
 		m_camera.GetTransform().SetPosition(cameraPos.x, cameraPos.y, cameraPos.z);
 	}
 }

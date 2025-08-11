@@ -17,11 +17,13 @@ namespace DK
 		GraphicEngine(HWND hWnd);
 		virtual ~GraphicEngine();
 
-		virtual bool Init();
+		bool Initialize();
 		void Run();
 
 	protected:
 		// init fuction
+		virtual void Init();
+
 		bool InitDirect3D();
 		void CreateCommandObjects();
 		void CreateSwapChain();

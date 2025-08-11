@@ -30,9 +30,9 @@ namespace DK
 		ExShape(HWND hWnd);
 		~ExShape();
 
-		virtual bool Init() override;
 
 	protected:
+		virtual void Init() override;
 		virtual bool OnResize(int width, int height, bool force) override;
 
 		virtual bool Update() override;

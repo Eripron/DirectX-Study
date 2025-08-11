@@ -11,29 +11,14 @@ namespace DK
 	{
 	}
 
-	bool ExBox::Init()
+	void ExBox::Init()
 	{
-		if (GraphicEngine::Init() == false)
-			return false;
-
-		THROW_IF_FAILED(m_commandList->Reset(m_commandAlloc.Get(), nullptr));
-
 		BuildDescriptorHeaps();
 		BuildConstantBuffers();
 		BuildRootSignature();
 		BuildShadersAndInputLayout();
 		BuildBoxGeometry();
 		BuildPSO();
-
-		// Execute the initialization commands.
-		THROW_IF_FAILED(m_commandList->Close());
-		ID3D12CommandList* cmdsLists[] = { m_commandList.Get() };
-		m_commandQueue->ExecuteCommandLists(_countof(cmdsLists), cmdsLists);
-
-		// Wait until initialization is complete.
-		FlushCommandQueue();
-
-		return true;
 	}
 
 	bool ExBox::OnResize(int width, int height, bool force)
