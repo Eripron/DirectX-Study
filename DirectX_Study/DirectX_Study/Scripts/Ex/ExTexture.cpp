@@ -11,47 +11,9 @@ DK::ExTexture::~ExTexture()
 void DK::ExTexture::Init()
 {
 	m_camera.GetTransform().SetPosition(0, 0, -10);
+
 	{
-		MeshData mesh;
-
-		int halfLen = 500;
-		for (int pos = -halfLen; pos <= halfLen; pos += 10)
-		{
-			int vertexIndex = mesh.Vertices.size();
-
-			Vertex top;
-			top.Position = DirectX::XMFLOAT3(pos, 0, halfLen);
-
-			Vertex bottom;
-			bottom.Position = DirectX::XMFLOAT3(pos, 0, -halfLen);
-
-			Vertex left;
-			left.Position = DirectX::XMFLOAT3(halfLen, 0, pos);
-
-			Vertex right;
-			right.Position = DirectX::XMFLOAT3(-halfLen, 0, pos);
-
-
-			mesh.Vertices.push_back(top);
-			mesh.Vertices.push_back(bottom);
-			mesh.Vertices.push_back(left);
-			mesh.Vertices.push_back(right);
-
-			mesh.Indices32.push_back(vertexIndex);
-			mesh.Indices32.push_back(vertexIndex + 1);
-			mesh.Indices32.push_back(vertexIndex + 2);
-			mesh.Indices32.push_back(vertexIndex + 3);
-		}
-
-		std::unique_ptr<MeshBuffer> sceneBuffer = std::make_unique<MeshBuffer>();
-		sceneBuffer->AddMeshData("baseGrid", mesh);
-		sceneBuffer->CreateMeshBuffer(m_d3dDevice.Get(), m_commandList.Get());
-
-		m_sceneMeshBuffer = std::move(sceneBuffer);
-
-		MeshSection section;
-		m_sceneMeshBuffer->GetMeshSection("baseGrid", section);
-		goBaseGrid.SetMeshData(m_sceneMeshBuffer.get(), section);
+		m_gizmo.Init(m_d3dDevice.Get(), m_commandList.Get(), m_nFrameReesourceCount, m_eBackBufferFormat, m_eDepthStencilFormat);
 	}
 
 	LoadTexture();
@@ -71,8 +33,8 @@ void DK::ExTexture::CreateGeometry()
 	GeometryGenerator geoGen;
 
 	// create mesh data
-	std::unique_ptr<MeshBuffer> meshBuffer = std::make_unique<MeshBuffer>();
-	MeshData meshBox = geoGen.CreateBox(1, 1, 1);
+	std::unique_ptr<MeshBuffer<Vertex>> meshBuffer = std::make_unique<MeshBuffer<Vertex>>();
+	MeshData<Vertex> meshBox = geoGen.CreateBox(1, 1, 1);
 	meshBox.Name = "box";
 
 	// build mesh data
@@ -102,7 +64,7 @@ void DK::ExTexture::CreateGameObject()
 	GameObject goBox;
 
 	// set mesh
-	MeshBuffer* pMeshBuffer = m_vecMeshBuffers[0].get();
+	MeshBuffer<Vertex>* pMeshBuffer = m_vecMeshBuffers[0].get();
 	MeshSection section;
 
 	if (pMeshBuffer->GetMeshSection("box", section))
@@ -121,7 +83,7 @@ void DK::ExTexture::CreateFrameResource()
 	for (int i = 0; i < m_nFrameReesourceCount; ++i)
 	{
 		m_vecFrameResoruce.push_back(std::make_unique<FrameResource>(
-			m_d3dDevice.Get(), 1, m_vecGameObjects.size() + 1, m_mapMaterials.size(), 1));
+			m_d3dDevice.Get(), 1, m_vecGameObjects.size(), m_mapMaterials.size(), 1));
 	}
 }
 
@@ -315,6 +277,10 @@ bool DK::ExTexture::Update()
 	UpdateObjectCBs();
 	UpdateMaterialCBs();
 
+	{
+		m_gizmo.Update(&m_camera);
+	}
+
 	return true;
 }
 
@@ -388,13 +354,13 @@ void DK::ExTexture::UpdateObjectCBs()
 		objectCB->CopyData(i, constants);
 	}
 
-	ObjectConstants constants;
+	/*ObjectConstants constants;
 
 	Transform camPos = m_camera.GetTransform();
 	DirectX::XMMATRIX moveMatrix = DirectX::XMMatrixTranslation((int)floorf(camPos.GetPosition().x) / 10 * 10, 0, (int)floorf(camPos.GetPosition().z) / 10 * 10);
 	XMStoreFloat4x4(&constants.WorldMatrix, XMMatrixTranspose(moveMatrix));
 
-	objectCB->CopyData(objCount, constants);
+	objectCB->CopyData(objCount, constants);*/
 }
 
 void DK::ExTexture::UpdateMaterialCBs()
@@ -425,7 +391,7 @@ bool DK::ExTexture::Render()
 	auto cmdListAlloc = m_pCurrFrameResource->CmdListAlloc;
 
 	cmdListAlloc->Reset();
-	m_commandList->Reset(cmdListAlloc.Get(), m_mapPSO["std"].Get());
+	m_commandList->Reset(cmdListAlloc.Get(), nullptr);
 
 	m_commandList->RSSetViewports(1, &m_viewPortScreen);
 	m_commandList->RSSetScissorRects(1, &m_rectScissor);
@@ -441,34 +407,19 @@ bool DK::ExTexture::Render()
 	// Specify the buffers we are going to render to.
 	m_commandList->OMSetRenderTargets(1, &backBuffer, true, &depthStencil);
 
-	ID3D12DescriptorHeap* descriptorHeaps[] = { m_spHeapSRV.Get()};
-	m_commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+	{
+		m_gizmo.PreRender(m_commandList.Get());
+	}
 
 	m_commandList->SetGraphicsRootSignature(m_spRootSignature.Get());
+
+	ID3D12DescriptorHeap* descriptorHeaps[] = { m_spHeapSRV.Get() };
+	m_commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
 	auto passCB = m_pCurrFrameResource->RenderPassCB->GetBuffer();
 	m_commandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
 
-	{
-		m_commandList->SetPipelineState(m_mapPSO["gizmo"].Get());
-		UINT objCBByteSize = D3DUtils::CalcConstBufferByteSize(sizeof(ObjectConstants));
-		auto objectCB = m_pCurrFrameResource->ObjectCB->GetBuffer();
-
-		auto viewVB = goBaseGrid.GetMeshBuffer()->VertexBufferView();
-		auto viewIB = goBaseGrid.GetMeshBuffer()->IndexBufferView();
-
-		m_commandList->IASetVertexBuffers(0, 1, &viewVB);
-		m_commandList->IASetIndexBuffer(&viewIB);
-		m_commandList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_LINELIST);
-
-		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + (objCBByteSize * m_vecGameObjects.size());
-		m_commandList->SetGraphicsRootConstantBufferView(2, objCBAddress);
-
-		MeshSection meshSection = goBaseGrid.GetMeshSection();
-		m_commandList->DrawIndexedInstanced(meshSection.IndexCount, 1, meshSection.StartIndexLocation, meshSection.BaseVertexLocation, 0);
-
-		m_commandList->SetPipelineState(m_mapPSO["std"].Get());
-	}
+	m_commandList->SetPipelineState(m_mapPSO["std"].Get());
 
 	DrawGameObjects(m_commandList.Get());
 

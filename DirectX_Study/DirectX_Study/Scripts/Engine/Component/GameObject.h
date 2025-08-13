@@ -14,17 +14,17 @@ namespace DK
 		~GameObject();
 
 		Transform& GetTransform();
-		MeshBuffer* GetMeshBuffer();
+		MeshBuffer<Vertex>* GetMeshBuffer();
 		MeshSection GetMeshSection();
 		Material* GetMaterial();
 
-		void SetMeshData(MeshBuffer* pMeshBuffer, MeshSection meshSection);
+		void SetMeshData(MeshBuffer<Vertex>* pMeshBuffer, MeshSection meshSection);
 		void SetMaterial(Material* pMat);
 
 	private:
 		Transform m_transform;
 
-		MeshBuffer* m_pMeshBuffer = nullptr;
+		MeshBuffer<Vertex>* m_pMeshBuffer = nullptr;
 		MeshSection m_meshSection;
 
 		Material* m_pMaterial = nullptr;

@@ -3,9 +3,9 @@
 
 using namespace DK;
 
-MeshData GeometryGenerator::CreateBox(float width, float height, float depth)
+MeshData<Vertex> GeometryGenerator::CreateBox(float width, float height, float depth)
 {
-	MeshData mesh;
+	MeshData<Vertex> mesh;
 
 	Vertex v[24];
 
@@ -82,9 +82,9 @@ MeshData GeometryGenerator::CreateBox(float width, float height, float depth)
 	return mesh;
 }
 
-MeshData GeometryGenerator::CreateSphere(float radius, uint32_t sliceCount, uint32_t stackCount)
+MeshData<Vertex> GeometryGenerator::CreateSphere(float radius, uint32_t sliceCount, uint32_t stackCount)
 {
-	MeshData meshData;
+	MeshData<Vertex> meshData;
 
 	float phiStep = DirectX::XM_PI / stackCount;
 	float thetaStep = DirectX::XM_PI * 2.0f / sliceCount;
@@ -166,9 +166,9 @@ MeshData GeometryGenerator::CreateSphere(float radius, uint32_t sliceCount, uint
 	return meshData;
 }
 
-MeshData GeometryGenerator::CreateCylinder(float bottomRadius, float topRadius, float height, uint32_t sliceCount, uint32_t stackCount)
+MeshData<Vertex> GeometryGenerator::CreateCylinder(float bottomRadius, float topRadius, float height, uint32_t sliceCount, uint32_t stackCount)
 {
-	MeshData meshData;
+	MeshData<Vertex> meshData;
 
 	float dh = height / stackCount;
 	float dr = (topRadius - bottomRadius) / stackCount;
@@ -231,9 +231,9 @@ MeshData GeometryGenerator::CreateCylinder(float bottomRadius, float topRadius, 
 	return meshData;
 }
 
-MeshData GeometryGenerator::CreateGrid(float width, float depth, uint32_t m, uint32_t n)
+MeshData<Vertex> GeometryGenerator::CreateGrid(float width, float depth, uint32_t m, uint32_t n)
 {
-	MeshData meshData;
+	MeshData<Vertex> meshData;
 
 	uint32_t vertexCount = m * n;
 
@@ -284,9 +284,9 @@ MeshData GeometryGenerator::CreateGrid(float width, float depth, uint32_t m, uin
 	return meshData;
 }
 
-MeshData GeometryGenerator::CreateQuad(float x, float y, float w, float h, float depth)
+MeshData<Vertex> GeometryGenerator::CreateQuad(float x, float y, float w, float h, float depth)
 {
-	MeshData meshData;
+	MeshData<Vertex> meshData;
 
 	// resize를 통해서 공간 확보 및 index 접근을 위해서 호출
 	meshData.Vertices.resize(4);
@@ -328,7 +328,7 @@ MeshData GeometryGenerator::CreateQuad(float x, float y, float w, float h, float
 	return meshData;
 }
 
-void GeometryGenerator::Subdivide(MeshData& meshData)
+void GeometryGenerator::Subdivide(MeshData<Vertex>& meshData)
 {
 }
 
@@ -339,7 +339,7 @@ Vertex GeometryGenerator::MidPoint(const Vertex& v0, const Vertex& v1)
 	return vertex;
 }
 
-void GeometryGenerator::BuildCylinderTopCap(float bottomRadius, float topRadius, float height, uint32_t sliceCount, uint32_t stackCount, MeshData& meshData)
+void GeometryGenerator::BuildCylinderTopCap(float bottomRadius, float topRadius, float height, uint32_t sliceCount, uint32_t stackCount, MeshData<Vertex>& meshData)
 {
 	uint32_t baseIndex = (uint32_t)meshData.Vertices.size();
 
@@ -373,7 +373,7 @@ void GeometryGenerator::BuildCylinderTopCap(float bottomRadius, float topRadius,
 	}
 }
 
-void GeometryGenerator::BuildCylinderBottomCap(float bottomRadius, float topRadius, float height, uint32_t sliceCount, uint32_t stackCount, MeshData& meshData)
+void GeometryGenerator::BuildCylinderBottomCap(float bottomRadius, float topRadius, float height, uint32_t sliceCount, uint32_t stackCount, MeshData<Vertex>& meshData)
 {
 	uint32_t baseIndex = (uint32_t)meshData.Vertices.size();
 	float y = -0.5f * height;

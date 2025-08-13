@@ -58,12 +58,13 @@ namespace DK
 
 #pragma region <Mesh>
 
+	template <class VERTEX>
 	struct MeshData
 	{
 		MeshData() {}
 
 		std::string Name;
-		std::vector<Vertex> Vertices;
+		std::vector<VERTEX> Vertices;
 		std::vector<uint32_t> Indices32;
 
 		const std::vector<uint16_t>& GetIndices16()
@@ -91,6 +92,7 @@ namespace DK
 		INT BaseVertexLocation = 0;
 	};
 
+	template <class VERTEX>
 	struct MeshBuffer
 	{
 		Microsoft::WRL::ComPtr<ID3D12Resource> VertexUploadBuffer = nullptr;
@@ -104,17 +106,17 @@ namespace DK
 		UINT IndexBufferByteSize = 0;
 		DXGI_FORMAT IndexFormat = DXGI_FORMAT_R16_UINT;
 
-		std::vector<Vertex> Vertices;
+		std::vector<VERTEX> Vertices;
 		std::vector<std::uint16_t> Indices;
 
 		std::unordered_map<std::string, MeshSection> MeshSections;
 
-		void AddMeshData(std::string name, MeshData& meshData)
+		void AddMeshData(std::string name, MeshData<VERTEX>& meshData)
 		{
 			AddMeshData(name, meshData.Vertices, meshData.GetIndices16());
 		}
 
-		void AddMeshData(std::string name, const std::vector<Vertex>& vertices, const std::vector<std::uint16_t>& indices)
+		void AddMeshData(std::string name, const std::vector<VERTEX>& vertices, const std::vector<std::uint16_t>& indices)
 		{
 			if (MeshSections.find(name) != MeshSections.end())
 			{
@@ -134,7 +136,7 @@ namespace DK
 
 		void CreateMeshBuffer(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList)
 		{
-			VertexByteStride = sizeof(Vertex);
+			VertexByteStride = sizeof(VERTEX);
 			VertexBufferByteSize = VertexByteStride * Vertices.size();
 			IndexBufferByteSize = sizeof(std::uint16_t) * Indices.size();
 

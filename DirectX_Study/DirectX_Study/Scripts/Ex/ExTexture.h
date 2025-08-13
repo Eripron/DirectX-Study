@@ -7,6 +7,7 @@
 #include "../Engine/Utils/MathUtils.h"
 #include "../Engine/Utils/GeometryGenerator.h"
 #include "../Engine/Utils/DDSTextureLoader.h"
+#include "../Engine/Utils/Gizmo.h"
 
 #include "../Engine/Component/GameObject.h"
 #include "../Engine/Component/Camera.h"
@@ -53,7 +54,7 @@ namespace DK
 		std::vector<D3D12_INPUT_ELEMENT_DESC> m_vecInputLayout;
 
 		// resource
-		std::vector<std::unique_ptr<MeshBuffer>> m_vecMeshBuffers;						// mesh
+		std::vector<std::unique_ptr<MeshBuffer<Vertex>>> m_vecMeshBuffers;						// mesh
 		std::unordered_map<std::string, std::unique_ptr<Material>> m_mapMaterials;		// material
 		std::unordered_map<std::string, std::unique_ptr<Texture>> m_mapTextures;
 		std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3DBlob>> m_mapShaders;	// shader code
@@ -68,8 +69,6 @@ namespace DK
 		// constants
 		RenderPassConstants m_renderPassCB;
 
-		// todo gizmo
-		std::unique_ptr<MeshBuffer> m_sceneMeshBuffer;
-		GameObject goBaseGrid;
+		Gizmo m_gizmo;
 	};
 }

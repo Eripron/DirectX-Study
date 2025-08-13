@@ -11,7 +11,7 @@ Transform& GameObject::GetTransform()
 	return m_transform;
 }
 
-MeshBuffer* GameObject::GetMeshBuffer()
+MeshBuffer<Vertex>* GameObject::GetMeshBuffer()
 {
 	return m_pMeshBuffer;
 }
@@ -26,7 +26,7 @@ Material* GameObject::GetMaterial()
 	return m_pMaterial;
 }
 
-void GameObject::SetMeshData(MeshBuffer* pMeshBuffer, MeshSection meshSection)
+void GameObject::SetMeshData(MeshBuffer<Vertex>* pMeshBuffer, MeshSection meshSection)
 {
 	m_pMeshBuffer = pMeshBuffer;
 	m_meshSection = meshSection;

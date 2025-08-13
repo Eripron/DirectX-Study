@@ -266,7 +266,7 @@ void DK::ExShape::CreateGeometry()
 {
 	// ** land geometry
 	GeometryGenerator geoGen;
-	MeshData gridMeshData = geoGen.CreateGrid(160.0f, 160.0f, 50, 50);
+	MeshData<Vertex> gridMeshData = geoGen.CreateGrid(160.0f, 160.0f, 50, 50);
 
 	// grid vertex Ãß°¡
 	std::vector<Vertex> vecVertex;
@@ -284,7 +284,7 @@ void DK::ExShape::CreateGeometry()
 	}
 
 	std::string meshName = "land";
-	auto meshLand = std::make_unique<MeshBuffer>();
+	auto meshLand = std::make_unique<MeshBuffer<Vertex>>();
 	meshLand->AddMeshData(meshName, vecVertex, gridMeshData.GetIndices16());
 	meshLand->CreateMeshBuffer(m_d3dDevice.Get(), m_commandList.Get());
 
@@ -320,7 +320,7 @@ void DK::ExShape::CreateGeometry()
 	UINT vbByteSize = m_waves->VertexCount() * sizeof(Vertex);
 	UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
-	auto meshWave = std::make_unique<MeshBuffer>();
+	auto meshWave = std::make_unique<MeshBuffer<Vertex>>();
 
 	meshWave->IndexBuffer = D3DUtils::CreateDefaultBuffer(m_d3dDevice.Get(), m_commandList.Get(), indices.data(), ibByteSize, meshWave->IndexUploadBuffer);
 
@@ -365,7 +365,7 @@ void DK::ExShape::BuildRenderObject()
 {
 	std::unique_ptr<GameObject> objGrid = std::make_unique<GameObject>();
 
-	MeshBuffer* meshLand = m_meshBuffers["land"].get();
+	MeshBuffer<Vertex>* meshLand = m_meshBuffers["land"].get();
 	MeshSection section;
 	if (meshLand->GetMeshSection("land", section))
 	{
@@ -377,7 +377,7 @@ void DK::ExShape::BuildRenderObject()
 
 	std::unique_ptr<GameObject> objWave = std::make_unique<GameObject>();
 
-	MeshBuffer* meshWave = m_meshBuffers["wave"].get();
+	MeshBuffer<Vertex>* meshWave = m_meshBuffers["wave"].get();
 	if (meshWave->GetMeshSection("wave", section))
 	{
 		objWave->SetMeshData(meshWave, section);

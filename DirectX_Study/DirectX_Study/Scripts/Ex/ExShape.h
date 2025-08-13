@@ -59,7 +59,7 @@ namespace DK
 
 		std::unique_ptr<Wave> m_waves;
 
-		std::unordered_map<std::string, std::unique_ptr<MeshBuffer>> m_meshBuffers;
+		std::unordered_map<std::string, std::unique_ptr<MeshBuffer<Vertex>>> m_meshBuffers;
 		std::unordered_map<std::string, std::unique_ptr<Material>> m_materials;
 
 		GameObject* m_pGOWave;
