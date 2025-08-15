@@ -47,6 +47,10 @@ cbuffer cbPass : register(b0)
     // indices [NUM_DIR_LIGHTS+NUM_POINT_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHT+NUM_SPOT_LIGHTS)
     // are spot lights for a maximum of MaxLights per object.
     Light gLights[MaxLights];
+    
+    float4 gFogColor;
+    float gFogStart;
+    float gFogRange;
 };
 
 // Constant data that varies per frame.
@@ -138,9 +142,13 @@ float4 PS(VertexOut pin) : SV_Target
 {
     float4 diffuseAlbedo = gDiffuseMap.Sample(gsamLinear, pin.TexC) * gDiffuseAlbedo;
     
+    clip(diffuseAlbedo.a - 0.1f);
+    
     // Vector from point being lit to eye. 
-    float3 toEyeW = normalize(gEyePosW - pin.PosW);
-
+    float3 toEyeW = gEyePosW - pin.PosW;
+    float distToEye = length(toEyeW);
+	toEyeW /= distToEye; // normalize
+    
 	//  ambient 계산 = 간접광의 양 * 반사율
     float4 ambient = gAmbientLight * diffuseAlbedo;
 
@@ -151,32 +159,11 @@ float4 PS(VertexOut pin) : SV_Target
 
     float4 litColor = ambient + directLight;
 
+    float fogAmount = saturate((distToEye - gFogStart) / gFogRange);
+    litColor = lerp(litColor, gFogColor, fogAmount);
+    
     // Common convention to take alpha from diffuse material.
     litColor.a = diffuseAlbedo.a;
     
     return litColor;
 }
-
-
-VertexOut GizmoVS(VertexIn vin)
-{
-    VertexOut vout = (VertexOut) 0.0f;
-	
-    // * 월드 변환
-    float4 posW = mul(float4(vin.PosL, 1.0f), gWorld);
-    vout.PosW = posW.xyz;
-
-    // * 뷰, 투영 변환
-    vout.PosH = mul(posW, gViewProj);
-    
-    return vout;
-}
-
-float4 GizmoPS(VertexOut pin) : SV_Target
-{
-    float gray = 0.8f;
-    float4 color = { gray, gray, gray, 1.0f };
-    
-    return color;
-}
-

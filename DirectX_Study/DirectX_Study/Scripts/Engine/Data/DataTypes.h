@@ -208,7 +208,7 @@ namespace DK
 		DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };	// md: 반사율
 		DirectX::XMFLOAT3 FresnelR0 = { 0.01f, 0.01f, 0.01f };			// Rf(0): 매질
 		float Roughness = 0.25f;										// m: 거칠기
-		DirectX::XMFLOAT4X4 MatTransform = MathUtils::Identity4x4();	// ?
+		DirectX::XMFLOAT4X4 MatTransform = MathUtils::Identity4x4();	// texture uv 변환
 	};
 
 #pragma endregion
@@ -309,7 +309,12 @@ namespace DK
 		float DeltaTime = 0.0f;
 
 		DirectX::XMFLOAT4 AmbientLight = { 0.0f, 0.0f, 0.0f, 1.0f };
+
 		Light Lights[16];
+
+		DirectX::XMFLOAT4 FogColor = { 0.8f, 0.8f, 0.8f, 1.0f };
+		float FogStart = 1.0f;
+		float FogRange = 100.0f;
 	};
 
 	struct MaterialConstants
