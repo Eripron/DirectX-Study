@@ -199,8 +199,8 @@ namespace DK
 		std::string Name;
 
 		int MatCBIndex = -1;
-		int DiffuseSrvHeapIndex = -1;	// ?
-		int NormalSrvHeapIndex = -1;	// ?
+		int DiffuseSrvHeapIndex = -1;	// mat view index
+		int NormalSrvHeapIndex = -1;	// shader view index
 
 		int NumFramesDirty;
 
@@ -218,6 +218,7 @@ namespace DK
 	struct Texture
 	{
 		std::wstring FileName;
+		UINT TexCBIndex = -1;
 
 		Microsoft::WRL::ComPtr<ID3D12Resource> Resource = nullptr;
 		Microsoft::WRL::ComPtr<ID3D12Resource> UploadHeap = nullptr;

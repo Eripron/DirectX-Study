@@ -23,8 +23,15 @@
 Texture2D gDiffuseMap : register(t0);
 SamplerState gsamLinear : register(s0);
 
+// Constant data that varies per frame.
+cbuffer cbPerObject : register(b0)
+{
+    float4x4 gWorld;
+    float4x4 gTexTransform;
+};
+
 // Constant data that varies per material.
-cbuffer cbPass : register(b0)
+cbuffer cbPass : register(b1)
 {
     float4x4 gView;
     float4x4 gInvView;
@@ -51,13 +58,6 @@ cbuffer cbPass : register(b0)
     float4 gFogColor;
     float gFogStart;
     float gFogRange;
-};
-
-// Constant data that varies per frame.
-cbuffer cbPerObject : register(b1)
-{
-    float4x4 gWorld;
-    float4x4 gTexTransform;
 };
 
 cbuffer cbMaterial : register(b2)

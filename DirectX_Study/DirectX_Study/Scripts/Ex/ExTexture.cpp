@@ -12,15 +12,11 @@ void DK::ExTexture::Init()
 {
 	m_camera.GetTransform().SetPosition(0, 0, -10);
 
-	{
-		m_gizmo.Init(m_d3dDevice.Get(), m_commandList.Get(), m_nFrameReesourceCount, m_eBackBufferFormat, m_eDepthStencilFormat);
-	}
-
 	LoadTexture();
-	CreateGeometry();		// mesh, buffer 积己
-	CreateMaterial();		// material 积己
-	CreateGameObject();		// 免仿 go 积己
-	CreateFrameResource();	// const buffer 殿 积己
+	CreateMaterial();
+	CreateGeometry();
+	CreateGameObject();
+	CreateFrameResource();
 
 	BuildDescriptor();
 	BuildInputLayoutAndShader();
@@ -28,204 +24,119 @@ void DK::ExTexture::Init()
 	BuildPSO();
 }
 
-void DK::ExTexture::CreateGeometry()
+bool DK::ExTexture::Update()
 {
-	GeometryGenerator geoGen;
+	if (GraphicEngine::Update() == false)
+		return false;
 
-	// create mesh data
-	std::unique_ptr<MeshBuffer<Vertex>> meshBuffer = std::make_unique<MeshBuffer<Vertex>>();
-
-	// add mesh data
-	MeshData<Vertex> meshBox = geoGen.CreateBox(1, 1, 1);
-	meshBox.Name = "box";
-	meshBuffer->AddMeshData(meshBox.Name, meshBox);
-
-	MeshData<Vertex> meshGrid = geoGen.CreateGrid(160, 160, 50, 50);
-	meshGrid.Name = "grid";
-
-	std::vector<Vertex> vecVertex;
-	for (int i = 0; i < meshGrid.Vertices.size(); ++i)
+	m_nCurrFrameResourceIndex = (m_nCurrFrameResourceIndex + 1) % m_nFrameReesourceCount;
+	m_pCurrFrameResource = m_vecFrameResoruce[m_nCurrFrameResourceIndex].get();
+	if (m_pCurrFrameResource->Fence != 0 && m_fence->GetCompletedValue() < m_pCurrFrameResource->Fence)
 	{
-		Vertex vertex = meshGrid.Vertices[i];
-
-		DirectX::XMFLOAT3 pos = meshGrid.Vertices[i].Position;
-		pos.y = 0.3f * (pos.z * sinf(0.1f * pos.x) + pos.x * cosf(0.1f * pos.z));
-
-		vertex.Position = pos;
-		vertex.Normal = GetHillNormal(vertex.Position.x, vertex.Position.z);
-
-		vecVertex.push_back(vertex);
+		HANDLE eventHandle = CreateEventEx(nullptr, nullptr, 0, EVENT_ALL_ACCESS);
+		THROW_IF_FAILED(m_fence->SetEventOnCompletion(m_pCurrFrameResource->Fence, eventHandle));
+		WaitForSingleObject(eventHandle, INFINITE);
+		CloseHandle(eventHandle);
 	}
 
-	meshBuffer->AddMeshData(meshGrid.Name, vecVertex, meshGrid.GetIndices16());
+	AnimateMaterials(m_gameTimer);
+	UpdateObjectCBs();
+	UpdateMaterialCBs();
+	UpdateRenderPassCB();
+	UpdateReflectRenderPassCB();
 
-	meshBuffer->CreateMeshBuffer(m_d3dDevice.Get(), m_commandList.Get());
+	return true;
+}
 
-	// add buffer
-	m_vecMeshBuffers.push_back(std::move(meshBuffer));
+bool DK::ExTexture::Render()
+{
+	auto cmdListAlloc = m_pCurrFrameResource->CmdListAlloc;
 
+	cmdListAlloc->Reset();
+	m_commandList->Reset(cmdListAlloc.Get(), nullptr);
 
-	// ** wave geometry
-	m_waves = std::make_unique<Wave>(128, 128, 1.0f, 0.03f, 4.0f, 0.2f);
+	m_commandList->RSSetViewports(1, &m_viewPortScreen);
+	m_commandList->RSSetScissorRects(1, &m_rectScissor);
 
-	std::vector<std::uint16_t> indices(3 * m_waves->TriangleCount());
-	assert(m_waves->VertexCount() < 0x0000ffff);
+	CD3DX12_RESOURCE_BARRIER renderTarget = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	m_commandList->ResourceBarrier(1, &renderTarget);
 
-	// Iterate over each quad.
-	int m = m_waves->RowCount();
-	int n = m_waves->ColumnCount();
-	int k = 0;
-	for (int i = 0; i < m - 1; ++i)
+	D3D12_CPU_DESCRIPTOR_HANDLE backBuffer = CurrentBackBufferView();
+	m_commandList->ClearRenderTargetView(backBuffer, DirectX::Colors::DimGray, 0, nullptr);
+	D3D12_CPU_DESCRIPTOR_HANDLE depthStencil = DepthStencilView();
+	m_commandList->ClearDepthStencilView(depthStencil, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+
+	// Specify the buffers we are going to render to.
+	m_commandList->OMSetRenderTargets(1, &backBuffer, true, &depthStencil);
+
+#if GIZMO
+	m_gizmo.PreRender(m_commandList.Get());
+#endif
+
+	m_commandList->SetGraphicsRootSignature(m_spRootSignature.Get());
+
+	ID3D12DescriptorHeap* descriptorHeaps[] = { m_spHeapSRV.Get() };
+	m_commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+
+	auto passCB = m_pCurrFrameResource->RenderPassCB->GetBuffer();
+	m_commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
+
+	// render logic
 	{
-		for (int j = 0; j < n - 1; ++j)
-		{
-			indices[k] = i * n + j;
-			indices[k + 1] = i * n + j + 1;
-			indices[k + 2] = (i + 1) * n + j;
+		m_commandList->SetPipelineState(m_mapPSO["opaque"].Get());
+		DrawGameObjects(m_commandList.Get(), m_vecGameObjects[(int)RenderLayer::Opaque]);
 
-			indices[k + 3] = (i + 1) * n + j;
-			indices[k + 4] = i * n + j + 1;
-			indices[k + 5] = (i + 1) * n + j + 1;
+		// Mark the visible mirror pixels in the stencil buffer with the value 1
+		m_commandList->OMSetStencilRef(1);
+		m_commandList->SetPipelineState(m_mapPSO["stencil"].Get());
+		DrawGameObjects(m_commandList.Get(), m_vecGameObjects[(int)RenderLayer::Mirror]);
 
-			k += 6; // next quad
-		}
+		// Draw the reflection into the mirror only (only for pixels where the stencil buffer is 1).
+		// Note that we must supply a different per-pass constant buffer--one with the lights reflected.
+		UINT passCBByteSize = D3DUtils::CalcConstBufferByteSize(sizeof(RenderPassConstants));
+		m_commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress() + passCBByteSize);
+		m_commandList->SetPipelineState(m_mapPSO["stencilReflections"].Get());
+		DrawGameObjects(m_commandList.Get(), m_vecGameObjects[(int)RenderLayer::Reflected]);
+
+		//// Restore main pass constants and stencil ref.
+		m_commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
+		m_commandList->OMSetStencilRef(0);
+
+		//// Draw mirror with transparency so reflection blends through.
+		m_commandList->SetPipelineState(m_mapPSO["transparent"].Get());
+		DrawGameObjects(m_commandList.Get(), m_vecGameObjects[(int)RenderLayer::Transparent]);
+
+		//// Draw shadows
+		//m_commandList->SetPipelineState(m_mapPSO["shadow"].Get());
+		//DrawGameObjects(m_commandList.Get(), m_vecGameObjects[(int)RenderLayer::Shadow]);
 	}
 
-	UINT vbByteSize = m_waves->VertexCount() * sizeof(Vertex);
-	UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+	CD3DX12_RESOURCE_BARRIER present = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	m_commandList->ResourceBarrier(1, &present);
 
-	std::unique_ptr<MeshBuffer<Vertex>> meshWave = std::make_unique<MeshBuffer<Vertex>>();
+	m_commandList->Close();
 
-	meshWave->IndexBuffer = D3DUtils::CreateDefaultBuffer(m_d3dDevice.Get(), m_commandList.Get(), indices.data(), ibByteSize, meshWave->IndexUploadBuffer);
+	ID3D12CommandList* cmdLists[] = { m_commandList.Get() };
+	m_commandQueue->ExecuteCommandLists(_countof(cmdLists), cmdLists);
 
-	meshWave->VertexByteStride = sizeof(Vertex);
-	meshWave->VertexBufferByteSize = vbByteSize;
-	meshWave->IndexBufferByteSize = ibByteSize;
-	meshWave->IndexFormat = DXGI_FORMAT_R16_UINT;
+	m_swapChain->Present(0, 0);
+	m_nCurrBackBuffer = (m_nCurrBackBuffer + 1) % SWAP_CHAIN_BUFFER_COUNT;
 
-	MeshSection section;
-	section.IndexCount = (UINT)indices.size();
-	section.StartIndexLocation = 0;
-	section.BaseVertexLocation = 0;
+	m_pCurrFrameResource->Fence = ++m_ullCurrentFence;
+	m_commandQueue->Signal(m_fence.Get(), m_ullCurrentFence);
 
-	meshWave->MeshSections["wave"] = section;
-	m_vecMeshBuffers.push_back(std::move(meshWave));
-}
-
-void DK::ExTexture::CreateMaterial()
-{
-	std::unique_ptr<Material> matWood = std::make_unique<Material>();
-	matWood->Name = "wood";
-	matWood->MatCBIndex = 0;
-	matWood->DiffuseSrvHeapIndex = 0;
-	matWood->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	matWood->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
-	matWood->Roughness = 0.2f;
-	matWood->NumFramesDirty = m_nFrameReesourceCount;
-
-	std::unique_ptr<Material> matGrass = std::make_unique<Material>();
-	matGrass->Name = "grass";
-	matGrass->MatCBIndex = 1;
-	matGrass->DiffuseSrvHeapIndex = 1;
-	matGrass->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	matGrass->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
-	matGrass->Roughness = 0.125f;
-	matGrass->NumFramesDirty = m_nFrameReesourceCount;
-
-	std::unique_ptr<Material> matWater = std::make_unique<Material>();
-	matWater->Name = "water";
-	matWater->MatCBIndex = 2;
-	matWater->DiffuseSrvHeapIndex = 2;
-	matWater->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 0.25f);
-	matWater->FresnelR0 = XMFLOAT3(0.2f, 0.2f, 0.2f);
-	matWater->Roughness = 0.0f;
-	matWater->NumFramesDirty = m_nFrameReesourceCount;
-
-	std::unique_ptr<Material> matWirefence = std::make_unique<Material>();
-	matWirefence->Name = "wirefence";
-	matWirefence->MatCBIndex = 1;
-	matWirefence->DiffuseSrvHeapIndex = 0;
-	matWirefence->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	matWirefence->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
-	matWirefence->Roughness = 0.25f;
-	matWirefence->NumFramesDirty = m_nFrameReesourceCount;
-
-	m_mapMaterials[matWood->Name] = std::move(matWood);
-	m_mapMaterials[matGrass->Name] = std::move(matGrass);
-	m_mapMaterials[matWater->Name] = std::move(matWater);
-	m_mapMaterials[matWirefence->Name] = std::move(matWirefence);
-}
-
-void DK::ExTexture::CreateGameObject()
-{
-	MeshBuffer<Vertex>* pMeshBuffer = m_vecMeshBuffers[0].get();
-	MeshSection section;
-	RenderItem renderItem;
-
-	// box
-	GameObject* goBox = new GameObject();
-
-	if (pMeshBuffer->GetMeshSection("box", section))
-		goBox->SetMeshData(pMeshBuffer, section);
-	goBox->SetMaterial(m_mapMaterials["wirefence"].get());
-	goBox->GetTransform().SetScale(3, 3, 3);
-
-	m_vecGameObjects.push_back(goBox);
-
-	renderItem.pGameObject = goBox;
-	renderItem.NumFramesDirty = m_nFrameReesourceCount;
-	renderItem.nCBIndex = 0;
-	m_vecRenderItem.push_back(renderItem);
-
-	// grid
-	GameObject* goGrid = new GameObject();
-
-	if (pMeshBuffer->GetMeshSection("grid", section))
-		goGrid->SetMeshData(pMeshBuffer, section);
-	goGrid->SetMaterial(m_mapMaterials["grass"].get());
-
-	m_vecGameObjects.push_back(goGrid);
-
-	renderItem.pGameObject = goGrid;
-	XMStoreFloat4x4(&renderItem.TexTransform, XMMatrixScaling(5.0f, 5.0f, 1.0f));
-	renderItem.nCBIndex = 1;
-
-	m_vecRenderItem.push_back(renderItem);
-
-	// water
-	pMeshBuffer = m_vecMeshBuffers[1].get();
-	GameObject* goWater = new GameObject();
-
-	if (pMeshBuffer->GetMeshSection("wave", section))
-		goWater->SetMeshData(pMeshBuffer, section);
-	goWater->SetMaterial(m_mapMaterials["water"].get());
-
-	m_pGoWave = goWater;
-	m_vecGameObjects.push_back(goWater);
-
-	renderItem.pGameObject = goWater;
-	renderItem.nCBIndex = 1;
-	XMStoreFloat4x4(&renderItem.TexTransform, XMMatrixScaling(10.0f, 10.0f, 1.0f));
-	m_vecRenderItemTransparent.push_back(renderItem);
-}
-
-void DK::ExTexture::CreateFrameResource()
-{
-	for (int i = 0; i < m_nFrameReesourceCount; ++i)
-	{
-		m_vecFrameResoruce.push_back(std::make_unique<FrameResource>(
-			m_d3dDevice.Get(), 1, m_vecGameObjects.size(), m_mapMaterials.size(), m_waves->VertexCount()));
-	}
+	return true;
 }
 
 void DK::ExTexture::LoadTexture()
 {
-	LoadTexture(L"Textures/WireFence.dds");
-	LoadTexture(L"Textures/grass.dds");
-	LoadTexture(L"Textures/water1.dds");
+	LoadTexture(L"Textures/bricks3.dds", 0);
+	LoadTexture(L"Textures/checkboard.dds", 1);
+	LoadTexture(L"Textures/ice.dds", 2);
+	LoadTexture(L"Textures/white1x1.dds", 3);
 }
 
-void DK::ExTexture::LoadTexture(std::wstring path)
+void DK::ExTexture::LoadTexture(std::wstring path, int texCBIndex)
 {
 	size_t firstIdx = path.rfind(L'/') + 1;
 	size_t lastIdx = path.rfind(L'.');
@@ -234,6 +145,7 @@ void DK::ExTexture::LoadTexture(std::wstring path)
 	std::unique_ptr<Texture> spTexture = std::make_unique<Texture>();
 
 	spTexture->FileName = path;
+	spTexture->TexCBIndex = texCBIndex;
 
 	DirectX::CreateDDSTextureFromFile12(m_d3dDevice.Get(),
 		m_commandList.Get(), spTexture->FileName.c_str(),
@@ -242,24 +154,312 @@ void DK::ExTexture::LoadTexture(std::wstring path)
 	m_mapTextures[name] = std::move(spTexture);
 }
 
+void DK::ExTexture::CreateMaterial()
+{
+	std::unique_ptr<Material> matBrick = std::make_unique<Material>();
+	matBrick->Name = "bricks";
+	matBrick->MatCBIndex = 0;
+	matBrick->DiffuseSrvHeapIndex = m_mapTextures["bricks3"]->TexCBIndex;
+	matBrick->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
+	matBrick->Roughness = 0.25f;
+	matBrick->NumFramesDirty = m_nFrameReesourceCount;
+
+	std::unique_ptr<Material> matTile = std::make_unique<Material>();
+	matTile->Name = "checkertile";
+	matTile->MatCBIndex = 1;
+	matTile->DiffuseSrvHeapIndex = m_mapTextures["checkboard"]->TexCBIndex;
+	matTile->FresnelR0 = XMFLOAT3(0.07f, 0.07f, 0.07f);
+	matTile->Roughness = 0.3f;
+	matTile->NumFramesDirty = m_nFrameReesourceCount;
+
+	std::unique_ptr<Material> matIce = std::make_unique<Material>();
+	matIce->Name = "ice";
+	matIce->MatCBIndex = 2;
+	matIce->DiffuseSrvHeapIndex = m_mapTextures["ice"]->TexCBIndex;
+	matIce->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 0.25f);
+	matIce->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
+	matIce->Roughness = 0.5f;
+	matIce->NumFramesDirty = m_nFrameReesourceCount;
+
+	std::unique_ptr<Material> matSkull = std::make_unique<Material>();
+	matSkull->Name = "skull";
+	matSkull->MatCBIndex = 3;
+	matSkull->DiffuseSrvHeapIndex = m_mapTextures["white1x1"]->TexCBIndex;
+	matSkull->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
+	matSkull->Roughness = 0.3f;
+	matSkull->NumFramesDirty = m_nFrameReesourceCount;
+
+	std::unique_ptr<Material> matShadow = std::make_unique<Material>();
+	matShadow->Name = "shadow";
+	matShadow->MatCBIndex = 4;
+	matShadow->DiffuseSrvHeapIndex = m_mapTextures["white1x1"]->TexCBIndex;;
+	matShadow->DiffuseAlbedo = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f);
+	matShadow->FresnelR0 = XMFLOAT3(0.001f, 0.001f, 0.001f);
+	matShadow->Roughness = 0.0f;
+	matShadow->NumFramesDirty = m_nFrameReesourceCount;
+
+	m_mapMaterials[matBrick->Name] = std::move(matBrick);
+	m_mapMaterials[matTile->Name] = std::move(matTile);
+	m_mapMaterials[matIce->Name] = std::move(matIce);
+	m_mapMaterials[matSkull->Name] = std::move(matSkull);
+	m_mapMaterials[matShadow->Name] = std::move(matShadow);
+}
+
+void DK::ExTexture::CreateGeometry()
+{
+	std::array<Vertex, 20> vertices =
+	{
+		// Floor: Observe we tile texture coordinates.
+		Vertex(-3.5f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 4.0f), // 0
+		Vertex(-3.5f, 0.0f,   0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f),
+		Vertex(7.5f, 0.0f,   0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 4.0f, 0.0f),
+		Vertex(7.5f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 4.0f, 4.0f),
+
+		// Wall: Observe we tile texture coordinates, and that we
+		// leave a gap in the middle for the mirror.
+		Vertex(-3.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 2.0f), // 4
+		Vertex(-3.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f),
+		Vertex(-2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f),
+		Vertex(-2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.5f, 2.0f),
+
+		Vertex(2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 2.0f), // 8 
+		Vertex(2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f),
+		Vertex(7.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 2.0f, 0.0f),
+		Vertex(7.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 2.0f, 2.0f),
+
+		Vertex(-3.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f), // 12
+		Vertex(-3.5f, 6.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f),
+		Vertex(7.5f, 6.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 6.0f, 0.0f),
+		Vertex(7.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 6.0f, 1.0f),
+
+		// Mirror
+		Vertex(-2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f), // 16
+		Vertex(-2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f),
+		Vertex(2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f),
+		Vertex(2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f)
+	};
+
+	std::array<std::int16_t, 30> indices =
+	{
+		// Floor
+		0, 1, 2,
+		0, 2, 3,
+
+		// Walls
+		4, 5, 6,
+		4, 6, 7,
+
+		8, 9, 10,
+		8, 10, 11,
+
+		12, 13, 14,
+		12, 14, 15,
+
+		// Mirror
+		16, 17, 18,
+		16, 18, 19
+	};
+
+	MeshSection floorSection;
+	floorSection.IndexCount = 6;
+	floorSection.StartIndexLocation = 0;
+	floorSection.BaseVertexLocation = 0;
+
+	MeshSection wallSection;
+	wallSection.IndexCount = 18;
+	wallSection.StartIndexLocation = 6;
+	wallSection.BaseVertexLocation = 0;
+
+	MeshSection mirrorSectioin;
+	mirrorSectioin.IndexCount = 6;
+	mirrorSectioin.StartIndexLocation = 24;
+	mirrorSectioin.BaseVertexLocation = 0;
+
+	auto meshBuffer = std::make_unique<MeshBuffer<Vertex>>();
+
+	meshBuffer->Vertices.resize(vertices.size());
+	std::copy(vertices.begin(), vertices.end(), meshBuffer->Vertices.begin());
+
+	meshBuffer->Indices.resize(indices.size());
+	std::copy(indices.begin(), indices.end(), meshBuffer->Indices.begin());
+
+	meshBuffer->MeshSections["floor"] = floorSection;
+	meshBuffer->MeshSections["wall"] = wallSection;
+	meshBuffer->MeshSections["mirror"] = mirrorSectioin;
+
+	meshBuffer->CreateMeshBuffer(m_d3dDevice.Get(), m_commandList.Get());
+
+	m_mapMeshBuffer["room"] = std::move(meshBuffer);
+
+	{
+		std::ifstream fin("Models/skull.txt");
+
+		if (!fin)
+		{
+			MessageBox(0, L"Models/skull.txt not found.", 0, 0);
+			return;
+		}
+
+		UINT vcount = 0;
+		UINT tcount = 0;
+		std::string ignore;
+
+		fin >> ignore >> vcount;
+		fin >> ignore >> tcount;
+		fin >> ignore >> ignore >> ignore >> ignore;
+
+		std::vector<Vertex> vertices2(vcount);
+		for (UINT i = 0; i < vcount; ++i)
+		{
+			fin >> vertices2[i].Position.x >> vertices2[i].Position.y >> vertices2[i].Position.z;
+			fin >> vertices2[i].Normal.x >> vertices2[i].Normal.y >> vertices2[i].Normal.z;
+
+			// Model does not have texture coordinates, so just zero them out.
+			vertices2[i].TexC = { 0.0f, 0.0f };
+		}
+
+		fin >> ignore;
+		fin >> ignore;
+		fin >> ignore;
+
+		std::vector<std::int32_t> indices2(3 * tcount);
+		for (UINT i = 0; i < tcount; ++i)
+		{
+			fin >> indices2[i * 3 + 0] >> indices2[i * 3 + 1] >> indices2[i * 3 + 2];
+		}
+
+		fin.close();
+
+		//
+		// Pack the indices of all the meshes into one index buffer.
+		//
+
+		auto geo = std::make_unique<MeshBuffer<Vertex>>();
+		
+		geo->Vertices.resize(vertices2.size());
+		std::copy(vertices2.begin(), vertices2.end(), geo->Vertices.begin());
+
+		geo->Indices.resize(indices2.size());
+		std::copy(indices2.begin(), indices2.end(), geo->Indices.begin());
+
+		MeshSection submesh;
+		submesh.IndexCount = (UINT)indices2.size();
+		submesh.StartIndexLocation = 0;
+		submesh.BaseVertexLocation = 0;
+
+		geo->MeshSections["skull"] = submesh;
+		geo->CreateMeshBuffer(m_d3dDevice.Get(), m_commandList.Get());
+
+		m_mapMeshBuffer["skull"] = std::move(geo);
+	}
+}
+
+void DK::ExTexture::CreateGameObject()
+{
+	int nCBIndex = 0;
+
+	// floor
+	auto objFloor = new GameObject();
+	objFloor->m_nCBIndex = nCBIndex++;
+	objFloor->m_nFrameDirty = m_nFrameReesourceCount;
+	objFloor->SetMaterial(m_mapMaterials["checkertile"].get());
+	
+	MeshBuffer<Vertex>* pMeshBuffer = m_mapMeshBuffer["room"].get();
+	MeshSection meshSection;
+
+	if (pMeshBuffer->GetMeshSection("floor", meshSection))
+		objFloor->SetMeshData(pMeshBuffer, meshSection);
+
+	m_vecGameObjects[(int)RenderLayer::Opaque].push_back(objFloor);
+
+	// wall
+	auto objWall = new GameObject();
+	objWall->m_nCBIndex = nCBIndex++;
+	objWall->m_nFrameDirty = m_nFrameReesourceCount;
+	objWall->SetMaterial(m_mapMaterials["bricks"].get());
+
+	if (pMeshBuffer->GetMeshSection("wall", meshSection))
+		objWall->SetMeshData(pMeshBuffer, meshSection);
+
+	m_vecGameObjects[(int)RenderLayer::Opaque].push_back(objWall);
+
+	// skull
+	auto objSkull = new GameObject();
+	objSkull->GetTransform().SetPosition(0, 0, -5);
+	objSkull->GetTransform().SetScale(0.45f, 0.45f, 0.45f);
+	objSkull->GetTransform().SetRotation(0, 90, 0);
+	objSkull->m_nCBIndex = nCBIndex++;
+	objSkull->m_nFrameDirty = m_nFrameReesourceCount;
+	objSkull->SetMaterial(m_mapMaterials["skull"].get());
+
+	pMeshBuffer = m_mapMeshBuffer["skull"].get();
+	if (pMeshBuffer->GetMeshSection("skull", meshSection))
+		objSkull->SetMeshData(pMeshBuffer, meshSection);
+
+	m_vecGameObjects[(int)RenderLayer::Opaque].push_back(objSkull);
+
+	auto objSkullReflection = new GameObject();
+	//XMVECTOR mirrorPlane = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f); // xy plane
+	//XMMATRIX R = XMMatrixReflect(mirrorPlane);
+	objSkullReflection->GetTransform().SetPosition(0, 0, 5);
+	objSkullReflection->GetTransform().SetScale(0.45f, 0.45f, 0.45f);
+	objSkullReflection->GetTransform().SetRotation(0, 90, 0);
+	objSkullReflection->m_nCBIndex = nCBIndex++;
+	objSkullReflection->m_nFrameDirty = m_nFrameReesourceCount;
+	objSkullReflection->SetMaterial(m_mapMaterials["skull"].get());
+
+	pMeshBuffer = m_mapMeshBuffer["skull"].get();
+	if (pMeshBuffer->GetMeshSection("skull", meshSection))
+		objSkullReflection->SetMeshData(pMeshBuffer, meshSection);
+
+	m_vecGameObjects[(int)RenderLayer::Reflected].push_back(objSkullReflection);
+
+	// mirror
+	pMeshBuffer = m_mapMeshBuffer["room"].get();
+	auto objMirror = new GameObject();
+	objMirror->m_nCBIndex = nCBIndex++;
+	objMirror->m_nFrameDirty = m_nFrameReesourceCount;
+	objMirror->SetMaterial(m_mapMaterials["ice"].get());
+
+	if (pMeshBuffer->GetMeshSection("mirror", meshSection))
+		objMirror->SetMeshData(pMeshBuffer, meshSection);
+
+	m_vecGameObjects[(int)RenderLayer::Mirror].push_back(objMirror);
+	m_vecGameObjects[(int)RenderLayer::Transparent].push_back(objMirror);
+}
+
+void DK::ExTexture::CreateFrameResource()
+{
+	int objectCount = 0;
+	for (int i = 0; i < (int)RenderLayer::Count; ++i)
+		objectCount += m_vecGameObjects[i].size();
+
+	for (int i = 0; i < m_nFrameReesourceCount; ++i)
+	{
+		m_vecFrameResoruce.push_back(std::make_unique<FrameResource>(
+			m_d3dDevice.Get(), 2, objectCount, m_mapMaterials.size(), 1));
+	}
+}
+
 void DK::ExTexture::BuildDescriptor()
 {
 	int nTextureCount = m_mapTextures.size();
 
 	// create descriptor heap
 	D3D12_DESCRIPTOR_HEAP_DESC heapDesc;
-	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	heapDesc.NumDescriptors = nTextureCount;
+	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	heapDesc.NodeMask = 0;
 	THROW_IF_FAILED(m_d3dDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_spHeapSRV)));
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE descriptorHandle(m_spHeapSRV->GetCPUDescriptorHandleForHeapStart());
 
 	for(auto iter = m_mapTextures.begin(); iter != m_mapTextures.end(); ++iter)
 	{
 		Texture* texture = iter->second.get();
 		D3D12_RESOURCE_DESC rscDesc = texture->Resource->GetDesc();
+
+		CD3DX12_CPU_DESCRIPTOR_HANDLE descriptorHandle(m_spHeapSRV->GetCPUDescriptorHandleForHeapStart());
+		descriptorHandle.Offset(texture->TexCBIndex, m_uCbvSrvUavDescriptorSize);
 
 		// texture2D俊 措茄 view 积己
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
@@ -272,12 +472,24 @@ void DK::ExTexture::BuildDescriptor()
 		srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 
 		m_d3dDevice->CreateShaderResourceView(texture->Resource.Get(), &srvDesc, descriptorHandle);
-		descriptorHandle.ptr += m_uCbvSrvUavDescriptorSize;
 	}
 }
 
 void DK::ExTexture::BuildInputLayoutAndShader()
 {
+	/*const D3D_SHADER_MACRO defines[] =
+	{
+		"FOG", "1",
+		NULL, NULL
+	};
+
+	const D3D_SHADER_MACRO alphaTestDefines[] =
+	{
+		"FOG", "1",
+		"ALPHA_TEST", "1",
+		NULL, NULL
+	};*/
+
 	m_mapShaders["VS"] = D3DUtils::CompileShader(L"Shaders\\color.hlsl", nullptr, "VS", "vs_5_0");
 	m_mapShaders["PS"] = D3DUtils::CompileShader(L"Shaders\\color.hlsl", nullptr, "PS", "ps_5_0");
 
@@ -287,7 +499,7 @@ void DK::ExTexture::BuildInputLayoutAndShader()
 void DK::ExTexture::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE descriptorRange;
-	descriptorRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, m_mapTextures.size(), 0);
+	descriptorRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
 	CD3DX12_ROOT_PARAMETER rootParameters[4];
 	rootParameters[0].InitAsDescriptorTable(1, &descriptorRange, D3D12_SHADER_VISIBILITY_PIXEL);
@@ -325,6 +537,8 @@ void DK::ExTexture::BuildPSO()
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
 	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 
+	// opaque
+	psoDesc.InputLayout = { m_vecInputLayout.data(), (UINT)m_vecInputLayout.size() };
 	psoDesc.pRootSignature = m_spRootSignature.Get();
 	psoDesc.VS = 
 	{
@@ -336,27 +550,22 @@ void DK::ExTexture::BuildPSO()
 		m_mapShaders["PS"]->GetBufferPointer(),
 		m_mapShaders["PS"]->GetBufferSize()
 	};
-	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	psoDesc.SampleMask = UINT_MAX;
 	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-	psoDesc.InputLayout = { m_vecInputLayout.data(), (UINT)m_vecInputLayout.size() };
+	psoDesc.SampleMask = UINT_MAX;
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	psoDesc.NumRenderTargets = 1;
 	psoDesc.RTVFormats[0] = m_eBackBufferFormat;
-	psoDesc.DSVFormat = m_eDepthStencilFormat;
 	psoDesc.SampleDesc.Count = m_b4xMsaaState ? 4 : 1;
 	psoDesc.SampleDesc.Quality = m_b4xMsaaState ? (m_u4xMsaaQuality - 1) : 0;
+	psoDesc.DSVFormat = m_eDepthStencilFormat;
 
-	m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_mapPSO["std"]));
+	m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_mapPSO["opaque"]));
+	
+	// transparent
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC transparentPsoDesc = psoDesc;
 
-	// alpha test
-	psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-	m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_mapPSO["alphatest"]));
-
-	psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
-
-	// ** blend pso
 	D3D12_RENDER_TARGET_BLEND_DESC rtBlendDesc;
 	rtBlendDesc.BlendEnable = true;
 	rtBlendDesc.LogicOpEnable = false;
@@ -369,50 +578,98 @@ void DK::ExTexture::BuildPSO()
 	rtBlendDesc.LogicOp = D3D12_LOGIC_OP_NOOP;
 	rtBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
-	psoDesc.BlendState.RenderTarget[0] = rtBlendDesc;
-	m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_mapPSO["transparent"]));
-}
+	transparentPsoDesc.BlendState.RenderTarget[0] = rtBlendDesc;
+	m_d3dDevice->CreateGraphicsPipelineState(&transparentPsoDesc, IID_PPV_ARGS(&m_mapPSO["transparent"]));
 
-bool DK::ExTexture::OnResize(int width, int height, bool force)
-{
-	if (GraphicEngine::OnResize(width, height, force) == false)
-		return false;
+	// alpha test
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC alphaTest = psoDesc;
+	alphaTest.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	m_d3dDevice->CreateGraphicsPipelineState(&alphaTest, IID_PPV_ARGS(&m_mapPSO["alphatest"]));
+	
 
-	return true;
-}
+	// stencil
+	CD3DX12_BLEND_DESC blendDesc(D3D12_DEFAULT);
+	blendDesc.RenderTarget[0].RenderTargetWriteMask = 0;
 
-bool DK::ExTexture::Update()
-{
-	if (GraphicEngine::Update() == false)
-		return false;
+	D3D12_DEPTH_STENCIL_DESC dsDesc;
+	dsDesc.DepthEnable = true;
+	dsDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	dsDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	dsDesc.StencilEnable = true;
+	dsDesc.StencilReadMask = 0xff;
+	dsDesc.StencilWriteMask = 0xff;
 
-	m_nCurrFrameResourceIndex = (m_nCurrFrameResourceIndex + 1) % m_nFrameReesourceCount;
-	m_pCurrFrameResource = m_vecFrameResoruce[m_nCurrFrameResourceIndex].get();
-	if (m_pCurrFrameResource->Fence != 0 && m_fence->GetCompletedValue() < m_pCurrFrameResource->Fence)
-	{
-		HANDLE eventHandle = CreateEventEx(nullptr, nullptr, 0, EVENT_ALL_ACCESS);
-		THROW_IF_FAILED(m_fence->SetEventOnCompletion(m_pCurrFrameResource->Fence, eventHandle));
-		WaitForSingleObject(eventHandle, INFINITE);
-		CloseHandle(eventHandle);
-	}
+	dsDesc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	dsDesc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	dsDesc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_REPLACE;
+	dsDesc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
 
-	AnimateMaterials(m_gameTimer);
-	UpdateWave(m_gameTimer);
-	UpdateRenderPassCB();
-	UpdateObjectCBs();
-	UpdateMaterialCBs();
+	// We are not rendering backfacing polygons, so these settings do not matter.
+	dsDesc.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	dsDesc.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	dsDesc.BackFace.StencilPassOp = D3D12_STENCIL_OP_REPLACE;
+	dsDesc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
 
-	{
-		m_gizmo.Update(&m_camera);
-	}
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC stencilPso = psoDesc;
+	stencilPso.BlendState = blendDesc;
+	stencilPso.DepthStencilState = dsDesc;
+	m_d3dDevice->CreateGraphicsPipelineState(&stencilPso, IID_PPV_ARGS(&m_mapPSO["stencil"]));
 
-	return true;
+	// reflection stencil
+	D3D12_DEPTH_STENCIL_DESC reflectionsDSS;
+	reflectionsDSS.DepthEnable = true;
+	reflectionsDSS.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	reflectionsDSS.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	reflectionsDSS.StencilEnable = true;
+	reflectionsDSS.StencilReadMask = 0xff;
+	reflectionsDSS.StencilWriteMask = 0xff;
+
+	reflectionsDSS.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	reflectionsDSS.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	reflectionsDSS.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	reflectionsDSS.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+
+	// We are not rendering backfacing polygons, so these settings do not matter.
+	reflectionsDSS.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	reflectionsDSS.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	reflectionsDSS.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	reflectionsDSS.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC drawReflectionsPsoDesc = psoDesc;
+	drawReflectionsPsoDesc.DepthStencilState = reflectionsDSS;
+	drawReflectionsPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
+	drawReflectionsPsoDesc.RasterizerState.FrontCounterClockwise = true;
+	m_d3dDevice->CreateGraphicsPipelineState(&drawReflectionsPsoDesc, IID_PPV_ARGS(&m_mapPSO["stencilReflections"]));
+
+	// shadow
+	D3D12_DEPTH_STENCIL_DESC shadowDSS;
+	shadowDSS.DepthEnable = true;
+	shadowDSS.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	shadowDSS.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	shadowDSS.StencilEnable = true;
+	shadowDSS.StencilReadMask = 0xff;
+	shadowDSS.StencilWriteMask = 0xff;
+
+	shadowDSS.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	shadowDSS.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	shadowDSS.FrontFace.StencilPassOp = D3D12_STENCIL_OP_INCR;
+	shadowDSS.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+
+	// We are not rendering backfacing polygons, so these settings do not matter.
+	shadowDSS.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	shadowDSS.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	shadowDSS.BackFace.StencilPassOp = D3D12_STENCIL_OP_INCR;
+	shadowDSS.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC shadowPsoDesc = transparentPsoDesc;
+	shadowPsoDesc.DepthStencilState = shadowDSS;
+	m_d3dDevice->CreateGraphicsPipelineState(&shadowPsoDesc, IID_PPV_ARGS(&m_mapPSO["shadow"]));
 }
 
 void DK::ExTexture::AnimateMaterials(const GameTimer& gt)
 {
-	// Scroll the water material texture coordinates.
-	auto waterMat =  m_mapMaterials["water"].get();
+	{
+	/*auto waterMat =  m_mapMaterials["water"].get();
 
 	float& tu = waterMat->MatTransform(3, 0);
 	float& tv = waterMat->MatTransform(3, 1);
@@ -429,47 +686,102 @@ void DK::ExTexture::AnimateMaterials(const GameTimer& gt)
 	waterMat->MatTransform(3, 0) = tu;
 	waterMat->MatTransform(3, 1) = tv;
 
-	// Material has changed, so need to update cbuffer.
-	waterMat->NumFramesDirty = m_nFrameReesourceCount;
+	waterMat->NumFramesDirty = m_nFrameReesourceCount;*/
+	}
 }
 
 void DK::ExTexture::UpdateWave(const GameTimer& gt)
 {
-	// Every quarter second, generate a random wave.
-	static float t_base = 0.0f;
-	if ((m_gameTimer.TotalTime() - t_base) >= 0.25f)
+	//// Every quarter second, generate a random wave.
+	//static float t_base = 0.0f;
+	//if ((m_gameTimer.TotalTime() - t_base) >= 0.25f)
+	//{
+	//	t_base += 0.25f;
+
+	//	int i = MathUtils::Rand(4, m_waves->RowCount() - 5);
+	//	int j = MathUtils::Rand(4, m_waves->ColumnCount() - 5);
+
+	//	float r = MathUtils::RandF(0.2f, 0.5f);
+
+	//	m_waves->Disturb(i, j, r);
+	//}
+
+	//// Update the wave simulation.
+	//m_waves->Update(gt.DeltaTime());
+
+	//// Update the wave vertex buffer with the new solution.
+	//auto currWavesVB = m_pCurrFrameResource->WaveVB.get();
+	//for (int i = 0; i < m_waves->VertexCount(); ++i)
+	//{
+	//	Vertex v;
+	//	v.Position = m_waves->Position(i);
+	//	v.Normal = m_waves->Normal(i);
+
+	//	// Derive tex-coords from position by 
+	//	// mapping [-w/2,w/2] --> [0,1]
+	//	v.TexC.x = 0.5f + v.Position.x / m_waves->Width();
+	//	v.TexC.y = 0.5f - v.Position.z / m_waves->Depth();
+
+	//	currWavesVB->CopyData(i, v);
+	//}
+
+	//// Set the dynamic VB of the wave renderitem to the current frame VB.
+	//m_pGoWave->GetMeshBuffer()->VertexBuffer = currWavesVB->GetBuffer();
+}
+
+void DK::ExTexture::UpdateObjectCBs()
+{
+	auto objectCB = m_pCurrFrameResource->ObjectCB.get();
+
+	for (int i = 0; i < (int)RenderLayer::Count; ++i)
 	{
-		t_base += 0.25f;
+		int objCount = m_vecGameObjects[i].size();
 
-		int i = MathUtils::Rand(4, m_waves->RowCount() - 5);
-		int j = MathUtils::Rand(4, m_waves->ColumnCount() - 5);
+		for (int j = 0; j < objCount; ++j)
+		{
+			if (m_vecGameObjects[i][j]->m_nFrameDirty <= 0)
+				continue;
 
-		float r = MathUtils::RandF(0.2f, 0.5f);
+			DirectX::XMFLOAT4X4 worldMatrix = m_vecGameObjects[i][j]->GetTransform().GetWorldMatrix();
+			DirectX::XMFLOAT4X4 texTransform = m_vecGameObjects[i][j]->TexTransform;
 
-		m_waves->Disturb(i, j, r);
+			XMMATRIX world = XMLoadFloat4x4(&worldMatrix);
+			XMMATRIX vTexTransform = XMLoadFloat4x4(&texTransform);
+
+			ObjectConstants constants;
+			XMStoreFloat4x4(&constants.WorldMatrix, XMMatrixTranspose(world));
+			XMStoreFloat4x4(&constants.TexTransform, XMMatrixTranspose(vTexTransform));
+
+			objectCB->CopyData(m_vecGameObjects[i][j]->m_nCBIndex, constants);
+
+			m_vecGameObjects[i][j]->m_nFrameDirty -= 1;
+		}
 	}
+}
 
-	// Update the wave simulation.
-	m_waves->Update(gt.DeltaTime());
+void DK::ExTexture::UpdateMaterialCBs()
+{
+	auto meterialCB = m_pCurrFrameResource->MaterialCB.get();
 
-	// Update the wave vertex buffer with the new solution.
-	auto currWavesVB = m_pCurrFrameResource->WaveVB.get();
-	for (int i = 0; i < m_waves->VertexCount(); ++i)
+	for (auto& data : m_mapMaterials)
 	{
-		Vertex v;
-		v.Position = m_waves->Position(i);
-		v.Normal = m_waves->Normal(i);
+		Material* mat = data.second.get();
 
-		// Derive tex-coords from position by 
-		// mapping [-w/2,w/2] --> [0,1]
-		v.TexC.x = 0.5f + v.Position.x / m_waves->Width();
-		v.TexC.y = 0.5f - v.Position.z / m_waves->Depth();
+		if (mat->NumFramesDirty <= 0)
+			continue;
 
-		currWavesVB->CopyData(i, v);
+		XMMATRIX matTransform = XMLoadFloat4x4(&mat->MatTransform);
+
+		MaterialConstants matConstants;
+		matConstants.DiffuseAlbedo = mat->DiffuseAlbedo;
+		matConstants.FresnelR0 = mat->FresnelR0;
+		matConstants.Roughness = mat->Roughness;
+		XMStoreFloat4x4(&matConstants.MatTransform, XMMatrixTranspose(matTransform));
+
+		meterialCB->CopyData(mat->MatCBIndex, matConstants);
+
+		mat->NumFramesDirty -= 1;
 	}
-
-	// Set the dynamic VB of the wave renderitem to the current frame VB.
-	m_pGoWave->GetMeshBuffer()->VertexBuffer = currWavesVB->GetBuffer();
 }
 
 void DK::ExTexture::UpdateRenderPassCB()
@@ -522,150 +834,27 @@ void DK::ExTexture::UpdateRenderPassCB()
 	currPassCB->CopyData(0, m_renderPassCB);
 }
 
-void DK::ExTexture::UpdateObjectCBs()
+void DK::ExTexture::UpdateReflectRenderPassCB()
 {
-	auto objectCB = m_pCurrFrameResource->ObjectCB.get();
+	m_reflectRenderPassCB = m_renderPassCB;
 
-	int objCount = m_vecRenderItem.size();
-	for (int i = 0; i < objCount; ++i)
+	XMVECTOR mirrorPlane = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f); // xy plane
+	XMMATRIX R = XMMatrixReflect(mirrorPlane);
+
+	// Reflect the lighting.
+	for (int i = 0; i < 3; ++i)
 	{
-		DirectX::XMFLOAT4X4 worldMatrix = m_vecRenderItem[i].pGameObject->GetTransform().GetWorldMatrix();
-		DirectX::XMFLOAT4X4 texTransform = m_vecRenderItem[i].TexTransform;
-
-		XMMATRIX world = XMLoadFloat4x4(&worldMatrix);
-		XMMATRIX vTexTransform = XMLoadFloat4x4(&texTransform);
-
-		ObjectConstants constants;
-		XMStoreFloat4x4(&constants.WorldMatrix, XMMatrixTranspose(world));
-		XMStoreFloat4x4(&constants.TexTransform, XMMatrixTranspose(vTexTransform));
-
-		objectCB->CopyData(i, constants);
-	}
-}
-
-void DK::ExTexture::UpdateMaterialCBs()
-{
-	auto meterialCB = m_pCurrFrameResource->MaterialCB.get();
-
-	for (auto& data : m_mapMaterials)
-	{
-		Material* mat = data.second.get();
-
-		if (mat->NumFramesDirty <= 0)
-			continue;
-
-		XMMATRIX matTransform = XMLoadFloat4x4(&mat->MatTransform);
-
-		MaterialConstants matConstants;
-		matConstants.DiffuseAlbedo = mat->DiffuseAlbedo;
-		matConstants.FresnelR0 = mat->FresnelR0;
-		matConstants.Roughness = mat->Roughness;
-		XMStoreFloat4x4(&matConstants.MatTransform, XMMatrixTranspose(matTransform));
-
-		meterialCB->CopyData(mat->MatCBIndex, matConstants);
-	}
-}
-
-bool DK::ExTexture::Render()
-{
-	auto cmdListAlloc = m_pCurrFrameResource->CmdListAlloc;
-
-	cmdListAlloc->Reset();
-	m_commandList->Reset(cmdListAlloc.Get(), nullptr);
-
-	m_commandList->RSSetViewports(1, &m_viewPortScreen);
-	m_commandList->RSSetScissorRects(1, &m_rectScissor);
-
-	CD3DX12_RESOURCE_BARRIER renderTarget = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	m_commandList->ResourceBarrier(1, &renderTarget);
-
-	D3D12_CPU_DESCRIPTOR_HANDLE backBuffer = CurrentBackBufferView();
-	m_commandList->ClearRenderTargetView(backBuffer, DirectX::Colors::DimGray, 0, nullptr);
-	D3D12_CPU_DESCRIPTOR_HANDLE depthStencil = DepthStencilView();
-	m_commandList->ClearDepthStencilView(depthStencil, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-
-	// Specify the buffers we are going to render to.
-	m_commandList->OMSetRenderTargets(1, &backBuffer, true, &depthStencil);
-
-	{
-		m_gizmo.PreRender(m_commandList.Get());
+		XMVECTOR lightDir = XMLoadFloat3(&m_reflectRenderPassCB.Lights[i].Direction);
+		XMVECTOR reflectedLightDir = XMVector3TransformNormal(lightDir, R);
+		XMStoreFloat3(&m_reflectRenderPassCB.Lights[i].Direction, reflectedLightDir);
 	}
 
-	m_commandList->SetGraphicsRootSignature(m_spRootSignature.Get());
-
-	ID3D12DescriptorHeap* descriptorHeaps[] = { m_spHeapSRV.Get() };
-	m_commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-
-	auto passCB = m_pCurrFrameResource->RenderPassCB->GetBuffer();
-	m_commandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
-
-	m_commandList->SetPipelineState(m_mapPSO["std"].Get());
-	DrawRenderItem(m_commandList.Get(), m_vecRenderItem[1]);
-
-	m_commandList->SetPipelineState(m_mapPSO["alphatest"].Get());
-	DrawRenderItem(m_commandList.Get(), m_vecRenderItem[0]);
-
-	m_commandList->SetPipelineState(m_mapPSO["transparent"].Get());
-
-	for (size_t i = 0; i < m_vecRenderItemTransparent.size(); ++i)
-		DrawRenderItem(m_commandList.Get(), m_vecRenderItemTransparent[i]);
-
-	CD3DX12_RESOURCE_BARRIER present = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-	m_commandList->ResourceBarrier(1, &present);
-
-	m_commandList->Close();
-
-	ID3D12CommandList* cmdLists[] = { m_commandList.Get() };
-	m_commandQueue->ExecuteCommandLists(_countof(cmdLists), cmdLists);
-
-	m_swapChain->Present(0, 0);
-	m_nCurrBackBuffer = (m_nCurrBackBuffer + 1) % SWAP_CHAIN_BUFFER_COUNT;
-
-	m_pCurrFrameResource->Fence = ++m_ullCurrentFence;
-	m_commandQueue->Signal(m_fence.Get(), m_ullCurrentFence);
-
-	return true;
+	// Reflected pass stored in index 1
+	auto currPassCB = m_pCurrFrameResource->RenderPassCB.get();
+	currPassCB->CopyData(1, m_reflectRenderPassCB);
 }
 
-void DK::ExTexture::DrawGameObjects(ID3D12GraphicsCommandList* cmdList)
-{
-	/*UINT objCBByteSize = D3DUtils::CalcConstBufferByteSize(sizeof(ObjectConstants));
-	UINT matCBByteSize = D3DUtils::CalcConstBufferByteSize(sizeof(MaterialConstants));
-
-	auto objectCB = m_pCurrFrameResource->ObjectCB->GetBuffer();
-	auto materialCB = m_pCurrFrameResource->MaterialCB->GetBuffer();*/
-
-	for (size_t i = 0; i < m_vecRenderItem.size(); ++i)
-	{
-		DrawRenderItem(cmdList, m_vecRenderItem[i]);
-
-		/*GameObject* pGO = m_vecRenderItem[i].pGameObject;
-
-		auto viewVB = pGO->GetMeshBuffer()->VertexBufferView();
-		auto viewIB = pGO->GetMeshBuffer()->IndexBufferView();
-
-		cmdList->IASetVertexBuffers(0, 1, &viewVB);
-		cmdList->IASetIndexBuffer(&viewIB);
-		cmdList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-		CD3DX12_GPU_DESCRIPTOR_HANDLE tex(m_spHeapSRV->GetGPUDescriptorHandleForHeapStart());
-		tex.Offset(pGO->GetMaterial()->DiffuseSrvHeapIndex, m_uCbvSrvUavDescriptorSize);
-
-		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + (objCBByteSize * i);
-
-		int matCBIndex = pGO->GetMaterial()->MatCBIndex;
-		D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = materialCB->GetGPUVirtualAddress() + (matCBIndex * matCBByteSize);
-
-		cmdList->SetGraphicsRootDescriptorTable(0, tex);
-		cmdList->SetGraphicsRootConstantBufferView(2, objCBAddress);
-		cmdList->SetGraphicsRootConstantBufferView(3, matCBAddress);
-
-		MeshSection meshSection = pGO->GetMeshSection();
-		cmdList->DrawIndexedInstanced(meshSection.IndexCount, 1, meshSection.StartIndexLocation, meshSection.BaseVertexLocation, 0);*/
-	}
-}
-
-void DK::ExTexture::DrawRenderItem(ID3D12GraphicsCommandList* cmdList, RenderItem renderItem)
+void DK::ExTexture::DrawGameObjects(ID3D12GraphicsCommandList* cmdList, std::vector<GameObject*> vecGameObject)
 {
 	UINT objCBByteSize = D3DUtils::CalcConstBufferByteSize(sizeof(ObjectConstants));
 	UINT matCBByteSize = D3DUtils::CalcConstBufferByteSize(sizeof(MaterialConstants));
@@ -673,29 +862,32 @@ void DK::ExTexture::DrawRenderItem(ID3D12GraphicsCommandList* cmdList, RenderIte
 	auto objectCB = m_pCurrFrameResource->ObjectCB->GetBuffer();
 	auto materialCB = m_pCurrFrameResource->MaterialCB->GetBuffer();
 
-	GameObject* pGO = renderItem.pGameObject;
+	for (size_t i = 0; i < vecGameObject.size(); ++i)
+	{
+		GameObject* pGameObject = vecGameObject[i];
 
-	auto viewVB = pGO->GetMeshBuffer()->VertexBufferView();
-	auto viewIB = pGO->GetMeshBuffer()->IndexBufferView();
+		auto viewVB = pGameObject->GetMeshBuffer()->VertexBufferView();
+		auto viewIB = pGameObject->GetMeshBuffer()->IndexBufferView();
 
-	cmdList->IASetVertexBuffers(0, 1, &viewVB);
-	cmdList->IASetIndexBuffer(&viewIB);
-	cmdList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		cmdList->IASetVertexBuffers(0, 1, &viewVB);
+		cmdList->IASetIndexBuffer(&viewIB);
+		cmdList->IASetPrimitiveTopology(pGameObject->PrimitiveType);
 
-	CD3DX12_GPU_DESCRIPTOR_HANDLE tex(m_spHeapSRV->GetGPUDescriptorHandleForHeapStart());
-	tex.Offset(pGO->GetMaterial()->DiffuseSrvHeapIndex, m_uCbvSrvUavDescriptorSize);
+		CD3DX12_GPU_DESCRIPTOR_HANDLE tex(m_spHeapSRV->GetGPUDescriptorHandleForHeapStart());
+		tex.Offset(pGameObject->GetMaterial()->DiffuseSrvHeapIndex, m_uCbvSrvUavDescriptorSize);
 
-	D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + (objCBByteSize * renderItem.nCBIndex);
+		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + (objCBByteSize * pGameObject->m_nCBIndex);
 
-	int matCBIndex = pGO->GetMaterial()->MatCBIndex;
-	D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = materialCB->GetGPUVirtualAddress() + (matCBIndex * matCBByteSize);
+		int matCBIndex = pGameObject->GetMaterial()->MatCBIndex;
+		D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = materialCB->GetGPUVirtualAddress() + (matCBByteSize * matCBIndex);
 
-	cmdList->SetGraphicsRootDescriptorTable(0, tex);
-	cmdList->SetGraphicsRootConstantBufferView(2, objCBAddress);
-	cmdList->SetGraphicsRootConstantBufferView(3, matCBAddress);
+		cmdList->SetGraphicsRootDescriptorTable(0, tex);
+		cmdList->SetGraphicsRootConstantBufferView(1, objCBAddress);
+		cmdList->SetGraphicsRootConstantBufferView(3, matCBAddress);
 
-	MeshSection meshSection = pGO->GetMeshSection();
-	cmdList->DrawIndexedInstanced(meshSection.IndexCount, 1, meshSection.StartIndexLocation, meshSection.BaseVertexLocation, 0);
+		MeshSection meshSection = pGameObject->GetMeshSection();
+		cmdList->DrawIndexedInstanced(meshSection.IndexCount, 1, meshSection.StartIndexLocation, meshSection.BaseVertexLocation, 0);
+	}
 }
 
 DirectX::XMFLOAT3 DK::ExTexture::GetHillNormal(float x, float z)

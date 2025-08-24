@@ -29,6 +29,7 @@ namespace DK
 	{
 		DirectX::XMFLOAT4X4 matrixWorld = MathUtils::Identity4x4();
 		DirectX::XMFLOAT4X4 matrixViewProj = MathUtils::Identity4x4();
+		DirectX::XMFLOAT3 camPos;
 	};
 
 	class Gizmo
@@ -65,6 +66,8 @@ namespace DK
 		DirectX::XMFLOAT4 m_gizmoColor = DirectX::XMFLOAT4(DirectX::Colors::White);
 
 		Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pPSO = nullptr;
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pPSOBlend = nullptr;
+
 		Microsoft::WRL::ComPtr<ID3D12RootSignature> m_pRootSig;
 
 		std::vector<D3D12_INPUT_ELEMENT_DESC> m_vecInputLayout;

@@ -27,7 +27,7 @@ void DK::Gizmo::Update(Camera* pCamera)
 void DK::Gizmo::PreRender(ID3D12GraphicsCommandList* pCmdList)
 {
 	pCmdList->SetGraphicsRootSignature(m_pRootSig.Get());
-	pCmdList->SetPipelineState(m_pPSO.Get());
+	pCmdList->SetPipelineState(m_pPSOBlend.Get());
 
 	DrawBaseGrid(pCmdList);
 }
@@ -132,7 +132,7 @@ void DK::Gizmo::BuildPSO(ID3D12Device* pDevice, DXGI_FORMAT eBackBufferFormat, D
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
 	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 
-
+	// opaque pso
 	psoDesc.pRootSignature = m_pRootSig.Get();
 	psoDesc.VS = 
 	{
@@ -158,6 +158,28 @@ void DK::Gizmo::BuildPSO(ID3D12Device* pDevice, DXGI_FORMAT eBackBufferFormat, D
 	psoDesc.SampleDesc.Quality = 0;
 
 	pDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pPSO));
+
+	// blend pso
+	D3D12_RENDER_TARGET_BLEND_DESC rtBlendDesc;
+	rtBlendDesc.BlendEnable = true;
+	rtBlendDesc.LogicOpEnable = false;
+	rtBlendDesc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+	rtBlendDesc.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+	rtBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
+	rtBlendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
+	rtBlendDesc.DestBlendAlpha = D3D12_BLEND_ZERO;
+	rtBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	rtBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+	D3D12_BLEND_DESC blendDesc;
+	blendDesc.AlphaToCoverageEnable = false;
+	blendDesc.IndependentBlendEnable = false;
+	blendDesc.RenderTarget[0] = rtBlendDesc;
+
+	psoDesc.BlendState = blendDesc;
+
+	pDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_pPSOBlend));
+
 }
 
 void DK::Gizmo::UpdateBaseGridConstant(Camera* pCamera)
@@ -174,6 +196,7 @@ void DK::Gizmo::UpdateBaseGridConstant(Camera* pCamera)
 	GizmoConstant gizmoConstant;
 	XMStoreFloat4x4(&gizmoConstant.matrixWorld, XMMatrixTranspose(matrixWorld));
 	XMStoreFloat4x4(&gizmoConstant.matrixViewProj, XMMatrixTranspose(matrixViewProj));
+	gizmoConstant.camPos = camPosition;
 
 	auto uploadBuffer = m_vecGizmoConstant[m_nCurIndexUploadBuffer].get();
 	uploadBuffer->CopyData(0, gizmoConstant);
