@@ -140,7 +140,7 @@ void DK::ExShape::UpdateWave(const GameTimer& gt)
 	}
 
 	// Set the dynamic VB of the wave renderitem to the current frame VB.
-	m_pGOWave->GetMeshBuffer()->VertexBuffer = currWavesVB->GetBuffer();
+//	m_pGOWave->GetMeshBuffer()->VertexBuffer = currWavesVB->GetBuffer();
 }
 
 void DK::ExShape::UpdateObjectCBs(const GameTimer& gt)
@@ -151,7 +151,7 @@ void DK::ExShape::UpdateObjectCBs(const GameTimer& gt)
 	{
 		if (ro.NumFramesDirty > 0)
 		{
-			DirectX::XMFLOAT4X4 world = ro.pGameObject->GetTransform().GetWorldMatrix();
+			/*DirectX::XMFLOAT4X4 world = ro.pGameObject->GetTransform().GetWorldMatrix();
 			DirectX::XMMATRIX worldMatrix = XMLoadFloat4x4(&world);
 
 			ObjectConstants objConstants;
@@ -160,7 +160,7 @@ void DK::ExShape::UpdateObjectCBs(const GameTimer& gt)
 			currObjectCB->CopyData(i, objConstants);
 
 			ro.NumFramesDirty -= 1;
-			++i;
+			++i;*/
 		}
 	}
 }
@@ -369,10 +369,10 @@ void DK::ExShape::BuildRenderObject()
 	MeshSection section;
 	if (meshLand->GetMeshSection("land", section))
 	{
-		objGrid->SetMeshData(meshLand, section);
+		/*objGrid->SetMeshData(meshLand, section);
 		objGrid->SetMaterial(m_materials["grass"].get());
 
-		m_gameObjects.push_back(std::move(objGrid));
+		m_gameObjects.push_back(std::move(objGrid));*/
 	}
 
 	std::unique_ptr<GameObject> objWave = std::make_unique<GameObject>();
@@ -380,11 +380,11 @@ void DK::ExShape::BuildRenderObject()
 	MeshBuffer<Vertex>* meshWave = m_meshBuffers["wave"].get();
 	if (meshWave->GetMeshSection("wave", section))
 	{
-		objWave->SetMeshData(meshWave, section);
+		/*objWave->SetMeshData(meshWave, section);
 		objWave->SetMaterial(m_materials["water"].get());
 
 		m_pGOWave = objWave.get();
-		m_gameObjects.push_back(std::move(objWave));
+		m_gameObjects.push_back(std::move(objWave));*/
 	}
 
 	for (auto& go : m_gameObjects)
@@ -484,7 +484,7 @@ void DK::ExShape::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std:
 	// For each render item...
 	for (size_t i = 0; i < renderObjects.size(); ++i)
 	{
-		RenderObject renderObject = renderObjects[i];
+		/*RenderObject renderObject = renderObjects[i];
 
 		D3D12_VERTEX_BUFFER_VIEW vbView = renderObject.pGameObject->GetMeshBuffer()->VertexBufferView();
 		D3D12_INDEX_BUFFER_VIEW ibView = renderObject.pGameObject->GetMeshBuffer()->IndexBufferView();
@@ -501,7 +501,7 @@ void DK::ExShape::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std:
 		cmdList->SetGraphicsRootConstantBufferView(1, matCBAddress);
 
 		MeshSection meshSection = renderObject.pGameObject->GetMeshSection();
-		cmdList->DrawIndexedInstanced(meshSection.IndexCount, 1, meshSection.StartIndexLocation, meshSection.BaseVertexLocation, 0);
+		cmdList->DrawIndexedInstanced(meshSection.IndexCount, 1, meshSection.StartIndexLocation, meshSection.BaseVertexLocation, 0);*/
 	}
 }
 

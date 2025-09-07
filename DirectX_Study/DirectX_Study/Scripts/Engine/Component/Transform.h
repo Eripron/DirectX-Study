@@ -1,14 +1,18 @@
 #pragma once
 
+#include "Component.h"
+
 #include <DirectXMath.h>
+
 #include "../Utils/MathUtils.h"
 
 namespace DK
 {
-	class Transform
+	class Transform : public Component
 	{
 	public:
 		Transform();
+		~Transform() = default;
 		
 		DirectX::XMFLOAT3 GetPosition();
 		DirectX::XMFLOAT3 GetRotation();
@@ -38,11 +42,11 @@ namespace DK
 		DirectX::XMFLOAT3 m_up = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
 		DirectX::XMFLOAT3 m_front = DirectX::XMFLOAT3(0.0f, 0.0f, 1.0f);
 
-		DirectX::XMFLOAT4X4 m_worldMatrix = MathUtils::Identity4x4();
-
 		DirectX::XMMATRIX m_positionMatrix;
 		DirectX::XMMATRIX m_rotationMatrix;
 		DirectX::XMMATRIX m_scaleMatrix;
+
+		DirectX::XMFLOAT4X4 m_worldMatrix = MathUtils::Identity4x4();
 
 	};
 }

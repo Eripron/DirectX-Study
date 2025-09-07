@@ -2,6 +2,9 @@
 
 #include "../Engine/GraphicEngine.h"
 
+#include "../Engine/Component/Component.h"
+#include "../Engine/Component/MeshFilter.h"
+
 #include "../Engine/Utils/MathUtils.h"
 #include "../Engine/Utils/GeometryGenerator.h"
 #include "../Engine/Utils/DDSTextureLoader.h"
@@ -17,10 +20,9 @@ namespace DK
 	enum class RenderLayer : int
 	{
 		Opaque = 0,
-		Mirror,
-		Reflected,
 		Transparent,
-		Shadow,
+		AlphaTested,
+		AlphaTestedTreeSprites,
 		Count
 	};
 
@@ -44,8 +46,8 @@ namespace DK
 		void CreateFrameResource();
 
 		void BuildDescriptor();
-		void BuildInputLayoutAndShader();
 		void BuildRootSignature();
+		void BuildInputLayoutAndShader();
 		void BuildPSO();
 
 		void AnimateMaterials(const GameTimer& gt);
@@ -53,7 +55,6 @@ namespace DK
 		void UpdateObjectCBs();
 		void UpdateMaterialCBs();
 		void UpdateRenderPassCB();
-		void UpdateReflectRenderPassCB();
 
 		void DrawGameObjects(ID3D12GraphicsCommandList* cmdList, std::vector<GameObject*> vecGameObject);
 
@@ -67,12 +68,13 @@ namespace DK
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_spHeapSRV;
 
 		std::vector<D3D12_INPUT_ELEMENT_DESC> m_vecInputLayout;
+		std::vector<D3D12_INPUT_ELEMENT_DESC> m_vecInputLayoutTree;
+
 		std::unordered_map<std::string, Microsoft::WRL::ComPtr<ID3DBlob>> m_mapShaders;
 
 		// resource
 		std::unordered_map<std::string, std::unique_ptr<Texture>> m_mapTextures;	// texture
 		std::unordered_map<std::string, std::unique_ptr<Material>> m_mapMaterials;	// material
-		std::unordered_map<std::string, std::unique_ptr<MeshBuffer<Vertex>>> m_mapMeshBuffer; // mesh
 
 		std::vector<GameObject*> m_vecGameObjects[(int)RenderLayer::Count];
 
@@ -84,7 +86,6 @@ namespace DK
 
 		// constants
 		RenderPassConstants m_renderPassCB;
-		RenderPassConstants m_reflectRenderPassCB;
 
 	};
 }

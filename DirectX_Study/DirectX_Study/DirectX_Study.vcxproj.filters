@@ -61,6 +61,12 @@
     <Filter Include="헤더 파일\Engine\Data">
       <UniqueIdentifier>{49c17cf0-a2d1-4f65-a536-5bceaf7bb8e0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\Engine\Manager">
+      <UniqueIdentifier>{db9885b9-c0d4-4140-b56e-f7d017837ebf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\Engine\Manager">
+      <UniqueIdentifier>{65570676-2d66-42c3-84c2-47f92fb91389}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Scripts\Main.cpp">
@@ -116,6 +122,18 @@
     </ClCompile>
     <ClCompile Include="Scripts\Engine\Utils\Gizmo.cpp">
       <Filter>소스 파일\Engine\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Scripts\Ex\ExGeoShader.cpp">
+      <Filter>소스 파일\Ex</Filter>
+    </ClCompile>
+    <ClCompile Include="Scripts\Engine\Component\MeshFilter.cpp">
+      <Filter>소스 파일\Engine\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Scripts\Engine\Component\Component.cpp">
+      <Filter>소스 파일\Engine\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Scripts\Engine\Manager\MeshManager.cpp">
+      <Filter>소스 파일\Engine\Manager</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -181,6 +199,21 @@
     </ClInclude>
     <ClInclude Include="Scripts\Engine\Utils\Gizmo.h">
       <Filter>헤더 파일\Engine\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Scripts\Ex\ExGeoShader.h">
+      <Filter>헤더 파일\Ex</Filter>
+    </ClInclude>
+    <ClInclude Include="Scripts\Engine\Component\MeshFilter.h">
+      <Filter>헤더 파일\Engine\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Scripts\Engine\Component\Component.h">
+      <Filter>헤더 파일\Engine\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Scripts\Engine\Manager\MeshManager.h">
+      <Filter>헤더 파일\Engine\Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="Scripts\Engine\Common\Singleton.h">
+      <Filter>헤더 파일\Engine\Common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

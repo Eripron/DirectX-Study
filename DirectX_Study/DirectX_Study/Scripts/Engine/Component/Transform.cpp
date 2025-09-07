@@ -2,11 +2,12 @@
 
 using namespace DK;
 
-Transform::Transform()
+Transform::Transform() : Component(CT_Transform)
 {
 	UpdatePosition();
 	UpdateRotation();
 	UpdateScale();
+	UpdateWorldMatrix();
 }
 
 DirectX::XMFLOAT3 Transform::GetPosition()

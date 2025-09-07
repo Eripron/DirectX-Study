@@ -95,11 +95,11 @@ namespace DK
 	template <class VERTEX>
 	struct MeshBuffer
 	{
-		Microsoft::WRL::ComPtr<ID3D12Resource> VertexUploadBuffer = nullptr;
-		Microsoft::WRL::ComPtr<ID3D12Resource> IndexUploadBuffer = nullptr;
-
 		Microsoft::WRL::ComPtr<ID3D12Resource> VertexBuffer = nullptr;
 		Microsoft::WRL::ComPtr<ID3D12Resource> IndexBuffer = nullptr;
+
+		Microsoft::WRL::ComPtr<ID3D12Resource> VertexUploadBuffer = nullptr;
+		Microsoft::WRL::ComPtr<ID3D12Resource> IndexUploadBuffer = nullptr;
 
 		UINT VertexByteStride = 0;
 		UINT VertexBufferByteSize = 0;
@@ -120,6 +120,7 @@ namespace DK
 		{
 			if (MeshSections.find(name) != MeshSections.end())
 			{
+				// 예외처리
 				return;
 			}
 
@@ -198,7 +199,7 @@ namespace DK
 	{
 		std::string Name;
 
-		int MatCBIndex = -1;
+		int MatCBIndex = -1;			// Material Const Buffer Index
 		int DiffuseSrvHeapIndex = -1;	// mat view index
 		int NormalSrvHeapIndex = -1;	// shader view index
 
@@ -207,7 +208,7 @@ namespace DK
 		// Material constant buffer data used for shading.
 		DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };	// md: 반사율
 		DirectX::XMFLOAT3 FresnelR0 = { 0.01f, 0.01f, 0.01f };			// Rf(0): 매질
-		float Roughness = 0.25f;										// m: 거칠기
+		float Roughness = 0.0f;											// m: 거칠기
 		DirectX::XMFLOAT4X4 MatTransform = MathUtils::Identity4x4();	// texture uv 변환
 	};
 

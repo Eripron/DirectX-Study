@@ -10,18 +10,21 @@ DK::ExTexture::~ExTexture()
 
 void DK::ExTexture::Init()
 {
+	MeshManager::GetInstance()->Init();
+
 	m_camera.GetTransform().SetPosition(0, 0, -10);
 
 	LoadTexture();
-	CreateMaterial();
 	CreateGeometry();
+	CreateMaterial();
 	CreateGameObject();
 	CreateFrameResource();
-
+	BuildRootSignature();
 	BuildDescriptor();
 	BuildInputLayoutAndShader();
-	BuildRootSignature();
 	BuildPSO();
+
+	MeshManager::GetInstance()->CreateMeshBuffer(m_d3dDevice.Get(), m_commandList.Get());
 }
 
 bool DK::ExTexture::Update()
@@ -43,7 +46,6 @@ bool DK::ExTexture::Update()
 	UpdateObjectCBs();
 	UpdateMaterialCBs();
 	UpdateRenderPassCB();
-	UpdateReflectRenderPassCB();
 
 	return true;
 }
@@ -86,29 +88,8 @@ bool DK::ExTexture::Render()
 		m_commandList->SetPipelineState(m_mapPSO["opaque"].Get());
 		DrawGameObjects(m_commandList.Get(), m_vecGameObjects[(int)RenderLayer::Opaque]);
 
-		// Mark the visible mirror pixels in the stencil buffer with the value 1
-		m_commandList->OMSetStencilRef(1);
-		m_commandList->SetPipelineState(m_mapPSO["stencil"].Get());
-		DrawGameObjects(m_commandList.Get(), m_vecGameObjects[(int)RenderLayer::Mirror]);
-
-		// Draw the reflection into the mirror only (only for pixels where the stencil buffer is 1).
-		// Note that we must supply a different per-pass constant buffer--one with the lights reflected.
-		UINT passCBByteSize = D3DUtils::CalcConstBufferByteSize(sizeof(RenderPassConstants));
-		m_commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress() + passCBByteSize);
-		m_commandList->SetPipelineState(m_mapPSO["stencilReflections"].Get());
-		DrawGameObjects(m_commandList.Get(), m_vecGameObjects[(int)RenderLayer::Reflected]);
-
-		//// Restore main pass constants and stencil ref.
-		m_commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
-		m_commandList->OMSetStencilRef(0);
-
-		//// Draw mirror with transparency so reflection blends through.
-		m_commandList->SetPipelineState(m_mapPSO["transparent"].Get());
-		DrawGameObjects(m_commandList.Get(), m_vecGameObjects[(int)RenderLayer::Transparent]);
-
-		//// Draw shadows
-		//m_commandList->SetPipelineState(m_mapPSO["shadow"].Get());
-		//DrawGameObjects(m_commandList.Get(), m_vecGameObjects[(int)RenderLayer::Shadow]);
+		m_commandList->SetPipelineState(m_mapPSO["treeSprites"].Get());
+		DrawGameObjects(m_commandList.Get(), m_vecGameObjects[(int)RenderLayer::AlphaTestedTreeSprites]);
 	}
 
 	CD3DX12_RESOURCE_BARRIER present = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
@@ -130,10 +111,10 @@ bool DK::ExTexture::Render()
 
 void DK::ExTexture::LoadTexture()
 {
-	LoadTexture(L"Textures/bricks3.dds", 0);
-	LoadTexture(L"Textures/checkboard.dds", 1);
-	LoadTexture(L"Textures/ice.dds", 2);
-	LoadTexture(L"Textures/white1x1.dds", 3);
+	//LoadTexture(L"Textures/grass.dds", 0);
+	//LoadTexture(L"Textures/WireFence.dds", 2);
+	LoadTexture(L"Textures/treeArray2.dds", 0);
+	LoadTexture(L"Textures/WoodCrate02.dds", 1);
 }
 
 void DK::ExTexture::LoadTexture(std::wstring path, int texCBIndex)
@@ -156,276 +137,77 @@ void DK::ExTexture::LoadTexture(std::wstring path, int texCBIndex)
 
 void DK::ExTexture::CreateMaterial()
 {
-	std::unique_ptr<Material> matBrick = std::make_unique<Material>();
-	matBrick->Name = "bricks";
-	matBrick->MatCBIndex = 0;
-	matBrick->DiffuseSrvHeapIndex = m_mapTextures["bricks3"]->TexCBIndex;
-	matBrick->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
-	matBrick->Roughness = 0.25f;
-	matBrick->NumFramesDirty = m_nFrameReesourceCount;
+	auto treeSprites = std::make_unique<Material>();
+	treeSprites->Name = "tree";
+	treeSprites->MatCBIndex = 0;
+	treeSprites->DiffuseSrvHeapIndex = m_mapTextures["treeArray2"]->TexCBIndex;
+	treeSprites->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	treeSprites->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
+	treeSprites->Roughness = 0.125f;
+	treeSprites->NumFramesDirty = m_nFrameReesourceCount;
 
-	std::unique_ptr<Material> matTile = std::make_unique<Material>();
-	matTile->Name = "checkertile";
-	matTile->MatCBIndex = 1;
-	matTile->DiffuseSrvHeapIndex = m_mapTextures["checkboard"]->TexCBIndex;
-	matTile->FresnelR0 = XMFLOAT3(0.07f, 0.07f, 0.07f);
-	matTile->Roughness = 0.3f;
-	matTile->NumFramesDirty = m_nFrameReesourceCount;
+	auto matBox = std::make_unique<Material>();
+	matBox->Name = "box";
+	matBox->MatCBIndex = 0;
+	matBox->DiffuseSrvHeapIndex = m_mapTextures["WoodCrate02"]->TexCBIndex;
+	matBox->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	matBox->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
+	matBox->Roughness = 0.125f;
+	matBox->NumFramesDirty = m_nFrameReesourceCount;
 
-	std::unique_ptr<Material> matIce = std::make_unique<Material>();
-	matIce->Name = "ice";
-	matIce->MatCBIndex = 2;
-	matIce->DiffuseSrvHeapIndex = m_mapTextures["ice"]->TexCBIndex;
-	matIce->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 0.25f);
-	matIce->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
-	matIce->Roughness = 0.5f;
-	matIce->NumFramesDirty = m_nFrameReesourceCount;
-
-	std::unique_ptr<Material> matSkull = std::make_unique<Material>();
-	matSkull->Name = "skull";
-	matSkull->MatCBIndex = 3;
-	matSkull->DiffuseSrvHeapIndex = m_mapTextures["white1x1"]->TexCBIndex;
-	matSkull->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
-	matSkull->Roughness = 0.3f;
-	matSkull->NumFramesDirty = m_nFrameReesourceCount;
-
-	std::unique_ptr<Material> matShadow = std::make_unique<Material>();
-	matShadow->Name = "shadow";
-	matShadow->MatCBIndex = 4;
-	matShadow->DiffuseSrvHeapIndex = m_mapTextures["white1x1"]->TexCBIndex;;
-	matShadow->DiffuseAlbedo = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f);
-	matShadow->FresnelR0 = XMFLOAT3(0.001f, 0.001f, 0.001f);
-	matShadow->Roughness = 0.0f;
-	matShadow->NumFramesDirty = m_nFrameReesourceCount;
-
-	m_mapMaterials[matBrick->Name] = std::move(matBrick);
-	m_mapMaterials[matTile->Name] = std::move(matTile);
-	m_mapMaterials[matIce->Name] = std::move(matIce);
-	m_mapMaterials[matSkull->Name] = std::move(matSkull);
-	m_mapMaterials[matShadow->Name] = std::move(matShadow);
+	m_mapMaterials[treeSprites->Name] = std::move(treeSprites);
+	m_mapMaterials[matBox->Name] = std::move(matBox);
 }
 
 void DK::ExTexture::CreateGeometry()
 {
-	std::array<Vertex, 20> vertices =
+	GeometryGenerator geoGen;
+
+	MeshData<Vertex> meshBox = geoGen.CreateBox(4, 4, 4);
+
+	MeshData<Vertex> treePosition;
+	int treeCount = 10;
+	for (int i = 0; i < treeCount; ++i)
 	{
-		// Floor: Observe we tile texture coordinates.
-		Vertex(-3.5f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 4.0f), // 0
-		Vertex(-3.5f, 0.0f,   0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f),
-		Vertex(7.5f, 0.0f,   0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 4.0f, 0.0f),
-		Vertex(7.5f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 4.0f, 4.0f),
+		float x = MathUtils::RandF(-100.0f, 100.0f);
+		float y = MathUtils::RandF(0.0f, 10.0f);
+		float z = MathUtils::RandF(-100.0f, 100.0f);
 
-		// Wall: Observe we tile texture coordinates, and that we
-		// leave a gap in the middle for the mirror.
-		Vertex(-3.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 2.0f), // 4
-		Vertex(-3.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f),
-		Vertex(-2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f),
-		Vertex(-2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.5f, 2.0f),
+		Vertex vertex;
+		vertex.Position = { x, y, z };
 
-		Vertex(2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 2.0f), // 8 
-		Vertex(2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f),
-		Vertex(7.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 2.0f, 0.0f),
-		Vertex(7.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 2.0f, 2.0f),
-
-		Vertex(-3.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f), // 12
-		Vertex(-3.5f, 6.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f),
-		Vertex(7.5f, 6.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 6.0f, 0.0f),
-		Vertex(7.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 6.0f, 1.0f),
-
-		// Mirror
-		Vertex(-2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f), // 16
-		Vertex(-2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f),
-		Vertex(2.5f, 4.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f),
-		Vertex(2.5f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f)
-	};
-
-	std::array<std::int16_t, 30> indices =
-	{
-		// Floor
-		0, 1, 2,
-		0, 2, 3,
-
-		// Walls
-		4, 5, 6,
-		4, 6, 7,
-
-		8, 9, 10,
-		8, 10, 11,
-
-		12, 13, 14,
-		12, 14, 15,
-
-		// Mirror
-		16, 17, 18,
-		16, 18, 19
-	};
-
-	MeshSection floorSection;
-	floorSection.IndexCount = 6;
-	floorSection.StartIndexLocation = 0;
-	floorSection.BaseVertexLocation = 0;
-
-	MeshSection wallSection;
-	wallSection.IndexCount = 18;
-	wallSection.StartIndexLocation = 6;
-	wallSection.BaseVertexLocation = 0;
-
-	MeshSection mirrorSectioin;
-	mirrorSectioin.IndexCount = 6;
-	mirrorSectioin.StartIndexLocation = 24;
-	mirrorSectioin.BaseVertexLocation = 0;
-
-	auto meshBuffer = std::make_unique<MeshBuffer<Vertex>>();
-
-	meshBuffer->Vertices.resize(vertices.size());
-	std::copy(vertices.begin(), vertices.end(), meshBuffer->Vertices.begin());
-
-	meshBuffer->Indices.resize(indices.size());
-	std::copy(indices.begin(), indices.end(), meshBuffer->Indices.begin());
-
-	meshBuffer->MeshSections["floor"] = floorSection;
-	meshBuffer->MeshSections["wall"] = wallSection;
-	meshBuffer->MeshSections["mirror"] = mirrorSectioin;
-
-	meshBuffer->CreateMeshBuffer(m_d3dDevice.Get(), m_commandList.Get());
-
-	m_mapMeshBuffer["room"] = std::move(meshBuffer);
-
-	{
-		std::ifstream fin("Models/skull.txt");
-
-		if (!fin)
-		{
-			MessageBox(0, L"Models/skull.txt not found.", 0, 0);
-			return;
-		}
-
-		UINT vcount = 0;
-		UINT tcount = 0;
-		std::string ignore;
-
-		fin >> ignore >> vcount;
-		fin >> ignore >> tcount;
-		fin >> ignore >> ignore >> ignore >> ignore;
-
-		std::vector<Vertex> vertices2(vcount);
-		for (UINT i = 0; i < vcount; ++i)
-		{
-			fin >> vertices2[i].Position.x >> vertices2[i].Position.y >> vertices2[i].Position.z;
-			fin >> vertices2[i].Normal.x >> vertices2[i].Normal.y >> vertices2[i].Normal.z;
-
-			// Model does not have texture coordinates, so just zero them out.
-			vertices2[i].TexC = { 0.0f, 0.0f };
-		}
-
-		fin >> ignore;
-		fin >> ignore;
-		fin >> ignore;
-
-		std::vector<std::int32_t> indices2(3 * tcount);
-		for (UINT i = 0; i < tcount; ++i)
-		{
-			fin >> indices2[i * 3 + 0] >> indices2[i * 3 + 1] >> indices2[i * 3 + 2];
-		}
-
-		fin.close();
-
-		//
-		// Pack the indices of all the meshes into one index buffer.
-		//
-
-		auto geo = std::make_unique<MeshBuffer<Vertex>>();
-		
-		geo->Vertices.resize(vertices2.size());
-		std::copy(vertices2.begin(), vertices2.end(), geo->Vertices.begin());
-
-		geo->Indices.resize(indices2.size());
-		std::copy(indices2.begin(), indices2.end(), geo->Indices.begin());
-
-		MeshSection submesh;
-		submesh.IndexCount = (UINT)indices2.size();
-		submesh.StartIndexLocation = 0;
-		submesh.BaseVertexLocation = 0;
-
-		geo->MeshSections["skull"] = submesh;
-		geo->CreateMeshBuffer(m_d3dDevice.Get(), m_commandList.Get());
-
-		m_mapMeshBuffer["skull"] = std::move(geo);
+		treePosition.Vertices.push_back(vertex);
+		treePosition.Indices32.push_back(i);
 	}
+	
+	MeshManager::GetInstance()->AddMeshData("box", meshBox);
+	MeshManager::GetInstance()->AddMeshData("tree", treePosition);
 }
 
 void DK::ExTexture::CreateGameObject()
 {
 	int nCBIndex = 0;
 
-	// floor
-	auto objFloor = new GameObject();
-	objFloor->m_nCBIndex = nCBIndex++;
-	objFloor->m_nFrameDirty = m_nFrameReesourceCount;
-	objFloor->SetMaterial(m_mapMaterials["checkertile"].get());
-	
-	MeshBuffer<Vertex>* pMeshBuffer = m_mapMeshBuffer["room"].get();
-	MeshSection meshSection;
+	auto objTree = new GameObject();
+	objTree->m_nCBIndex = nCBIndex++;
+	objTree->m_nFrameDirty = m_nFrameReesourceCount;
+	objTree->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_POINTLIST;
 
-	if (pMeshBuffer->GetMeshSection("floor", meshSection))
-		objFloor->SetMeshData(pMeshBuffer, meshSection);
+	objTree->SetMaterial(m_mapMaterials["tree"].get());
+	objTree->AddComponent(new MeshFilter("tree"));
 
-	m_vecGameObjects[(int)RenderLayer::Opaque].push_back(objFloor);
+	m_vecGameObjects[(int)RenderLayer::AlphaTestedTreeSprites].push_back(objTree);
 
-	// wall
-	auto objWall = new GameObject();
-	objWall->m_nCBIndex = nCBIndex++;
-	objWall->m_nFrameDirty = m_nFrameReesourceCount;
-	objWall->SetMaterial(m_mapMaterials["bricks"].get());
 
-	if (pMeshBuffer->GetMeshSection("wall", meshSection))
-		objWall->SetMeshData(pMeshBuffer, meshSection);
+	auto objBox = new GameObject();
+	objBox->m_nCBIndex = nCBIndex++;
+	objBox->m_nFrameDirty = m_nFrameReesourceCount;
+	objBox->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
-	m_vecGameObjects[(int)RenderLayer::Opaque].push_back(objWall);
+	objBox->SetMaterial(m_mapMaterials["box"].get());
+	objBox->AddComponent(new MeshFilter("box"));
 
-	// skull
-	auto objSkull = new GameObject();
-	objSkull->GetTransform().SetPosition(0, 0, -5);
-	objSkull->GetTransform().SetScale(0.45f, 0.45f, 0.45f);
-	objSkull->GetTransform().SetRotation(0, 90, 0);
-	objSkull->m_nCBIndex = nCBIndex++;
-	objSkull->m_nFrameDirty = m_nFrameReesourceCount;
-	objSkull->SetMaterial(m_mapMaterials["skull"].get());
-
-	pMeshBuffer = m_mapMeshBuffer["skull"].get();
-	if (pMeshBuffer->GetMeshSection("skull", meshSection))
-		objSkull->SetMeshData(pMeshBuffer, meshSection);
-
-	m_vecGameObjects[(int)RenderLayer::Opaque].push_back(objSkull);
-
-	auto objSkullReflection = new GameObject();
-	//XMVECTOR mirrorPlane = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f); // xy plane
-	//XMMATRIX R = XMMatrixReflect(mirrorPlane);
-	objSkullReflection->GetTransform().SetPosition(0, 0, 5);
-	objSkullReflection->GetTransform().SetScale(0.45f, 0.45f, 0.45f);
-	objSkullReflection->GetTransform().SetRotation(0, 90, 0);
-	objSkullReflection->m_nCBIndex = nCBIndex++;
-	objSkullReflection->m_nFrameDirty = m_nFrameReesourceCount;
-	objSkullReflection->SetMaterial(m_mapMaterials["skull"].get());
-
-	pMeshBuffer = m_mapMeshBuffer["skull"].get();
-	if (pMeshBuffer->GetMeshSection("skull", meshSection))
-		objSkullReflection->SetMeshData(pMeshBuffer, meshSection);
-
-	m_vecGameObjects[(int)RenderLayer::Reflected].push_back(objSkullReflection);
-
-	// mirror
-	pMeshBuffer = m_mapMeshBuffer["room"].get();
-	auto objMirror = new GameObject();
-	objMirror->m_nCBIndex = nCBIndex++;
-	objMirror->m_nFrameDirty = m_nFrameReesourceCount;
-	objMirror->SetMaterial(m_mapMaterials["ice"].get());
-
-	if (pMeshBuffer->GetMeshSection("mirror", meshSection))
-		objMirror->SetMeshData(pMeshBuffer, meshSection);
-
-	m_vecGameObjects[(int)RenderLayer::Mirror].push_back(objMirror);
-	m_vecGameObjects[(int)RenderLayer::Transparent].push_back(objMirror);
+	m_vecGameObjects[(int)RenderLayer::Opaque].push_back(objBox);
 }
 
 void DK::ExTexture::CreateFrameResource()
@@ -437,7 +219,7 @@ void DK::ExTexture::CreateFrameResource()
 	for (int i = 0; i < m_nFrameReesourceCount; ++i)
 	{
 		m_vecFrameResoruce.push_back(std::make_unique<FrameResource>(
-			m_d3dDevice.Get(), 2, objectCount, m_mapMaterials.size(), 1));
+			m_d3dDevice.Get(), 1, objectCount, m_mapMaterials.size(), 1));
 	}
 }
 
@@ -477,23 +259,32 @@ void DK::ExTexture::BuildDescriptor()
 
 void DK::ExTexture::BuildInputLayoutAndShader()
 {
-	/*const D3D_SHADER_MACRO defines[] =
+	const D3D_SHADER_MACRO defines[] =
 	{
-		"FOG", "1",
+		"", "1",
 		NULL, NULL
 	};
 
 	const D3D_SHADER_MACRO alphaTestDefines[] =
 	{
-		"FOG", "1",
+		"", "1",
 		"ALPHA_TEST", "1",
 		NULL, NULL
-	};*/
+	};
 
-	m_mapShaders["VS"] = D3DUtils::CompileShader(L"Shaders\\color.hlsl", nullptr, "VS", "vs_5_0");
-	m_mapShaders["PS"] = D3DUtils::CompileShader(L"Shaders\\color.hlsl", nullptr, "PS", "ps_5_0");
+	m_mapShaders["VS"] = D3DUtils::CompileShader(L"Shaders\\Default.hlsl", nullptr, "VS", "vs_5_0");
+	m_mapShaders["PS"] = D3DUtils::CompileShader(L"Shaders\\Default.hlsl", defines, "PS", "ps_5_0");
+	m_mapShaders["alphaTestedPS"] = D3DUtils::CompileShader(L"Shaders\\Default.hlsl", alphaTestDefines, "PS", "ps_5_0");
+
+	m_mapShaders["treeSpriteVS"] = D3DUtils::CompileShader(L"Shaders\\TreeSprite.hlsl", nullptr, "VS", "vs_5_0");
+	m_mapShaders["treeSpriteGS"] = D3DUtils::CompileShader(L"Shaders\\TreeSprite.hlsl", nullptr, "GS", "gs_5_0");
+	m_mapShaders["treeSpritePS"] = D3DUtils::CompileShader(L"Shaders\\TreeSprite.hlsl", alphaTestDefines, "PS", "ps_5_0");
 
 	m_vecInputLayout = Vertex::GetInputLayout();
+	m_vecInputLayoutTree =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+	};
 }
 
 void DK::ExTexture::BuildRootSignature()
@@ -537,7 +328,7 @@ void DK::ExTexture::BuildPSO()
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
 	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 
-	// opaque
+	// opaque pso
 	psoDesc.InputLayout = { m_vecInputLayout.data(), (UINT)m_vecInputLayout.size() };
 	psoDesc.pRootSignature = m_spRootSignature.Get();
 	psoDesc.VS = 
@@ -563,30 +354,34 @@ void DK::ExTexture::BuildPSO()
 
 	m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_mapPSO["opaque"]));
 	
-	// transparent
+	// transparent pso
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC transparentPsoDesc = psoDesc;
 
 	D3D12_RENDER_TARGET_BLEND_DESC rtBlendDesc;
 	rtBlendDesc.BlendEnable = true;
-	rtBlendDesc.LogicOpEnable = false;
 	rtBlendDesc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
 	rtBlendDesc.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
 	rtBlendDesc.BlendOp = D3D12_BLEND_OP_ADD;
 	rtBlendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
 	rtBlendDesc.DestBlendAlpha = D3D12_BLEND_ZERO;
 	rtBlendDesc.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	rtBlendDesc.LogicOpEnable = false;
 	rtBlendDesc.LogicOp = D3D12_LOGIC_OP_NOOP;
 	rtBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
 	transparentPsoDesc.BlendState.RenderTarget[0] = rtBlendDesc;
 	m_d3dDevice->CreateGraphicsPipelineState(&transparentPsoDesc, IID_PPV_ARGS(&m_mapPSO["transparent"]));
 
-	// alpha test
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC alphaTest = psoDesc;
-	alphaTest.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-	m_d3dDevice->CreateGraphicsPipelineState(&alphaTest, IID_PPV_ARGS(&m_mapPSO["alphatest"]));
+	// alpha tested pso
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC alphaTestedPsoDesc = psoDesc;
+	alphaTestedPsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(m_mapShaders["alphaTestedPS"]->GetBufferPointer()),
+		m_mapShaders["alphaTestedPS"]->GetBufferSize()
+	};
+	alphaTestedPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	m_d3dDevice->CreateGraphicsPipelineState(&alphaTestedPsoDesc, IID_PPV_ARGS(&m_mapPSO["alphaTested"]));
 	
-
 	// stencil
 	CD3DX12_BLEND_DESC blendDesc(D3D12_DEFAULT);
 	blendDesc.RenderTarget[0].RenderTargetWriteMask = 0;
@@ -595,10 +390,10 @@ void DK::ExTexture::BuildPSO()
 	dsDesc.DepthEnable = true;
 	dsDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
 	dsDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+
 	dsDesc.StencilEnable = true;
 	dsDesc.StencilReadMask = 0xff;
 	dsDesc.StencilWriteMask = 0xff;
-
 	dsDesc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
 	dsDesc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
 	dsDesc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_REPLACE;
@@ -615,60 +410,32 @@ void DK::ExTexture::BuildPSO()
 	stencilPso.DepthStencilState = dsDesc;
 	m_d3dDevice->CreateGraphicsPipelineState(&stencilPso, IID_PPV_ARGS(&m_mapPSO["stencil"]));
 
-	// reflection stencil
-	D3D12_DEPTH_STENCIL_DESC reflectionsDSS;
-	reflectionsDSS.DepthEnable = true;
-	reflectionsDSS.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-	reflectionsDSS.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
-	reflectionsDSS.StencilEnable = true;
-	reflectionsDSS.StencilReadMask = 0xff;
-	reflectionsDSS.StencilWriteMask = 0xff;
+	// tree sprite pso
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC treeSpritePsoDesc = psoDesc;
+	treeSpritePsoDesc.VS =
+	{
+		reinterpret_cast<BYTE*>(m_mapShaders["treeSpriteVS"]->GetBufferPointer()),
+		m_mapShaders["treeSpriteVS"]->GetBufferSize()
+	};
+	treeSpritePsoDesc.GS =
+	{
+		reinterpret_cast<BYTE*>(m_mapShaders["treeSpriteGS"]->GetBufferPointer()),
+		m_mapShaders["treeSpriteGS"]->GetBufferSize()
+	};
+	treeSpritePsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(m_mapShaders["treeSpritePS"]->GetBufferPointer()),
+		m_mapShaders["treeSpritePS"]->GetBufferSize()
+	};
+	treeSpritePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+	treeSpritePsoDesc.InputLayout = { m_vecInputLayoutTree.data(), (UINT)m_vecInputLayoutTree.size() };
+	treeSpritePsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 
-	reflectionsDSS.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
-	reflectionsDSS.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
-	reflectionsDSS.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
-	reflectionsDSS.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
-
-	// We are not rendering backfacing polygons, so these settings do not matter.
-	reflectionsDSS.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
-	reflectionsDSS.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
-	reflectionsDSS.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
-	reflectionsDSS.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
-
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC drawReflectionsPsoDesc = psoDesc;
-	drawReflectionsPsoDesc.DepthStencilState = reflectionsDSS;
-	drawReflectionsPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
-	drawReflectionsPsoDesc.RasterizerState.FrontCounterClockwise = true;
-	m_d3dDevice->CreateGraphicsPipelineState(&drawReflectionsPsoDesc, IID_PPV_ARGS(&m_mapPSO["stencilReflections"]));
-
-	// shadow
-	D3D12_DEPTH_STENCIL_DESC shadowDSS;
-	shadowDSS.DepthEnable = true;
-	shadowDSS.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-	shadowDSS.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
-	shadowDSS.StencilEnable = true;
-	shadowDSS.StencilReadMask = 0xff;
-	shadowDSS.StencilWriteMask = 0xff;
-
-	shadowDSS.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
-	shadowDSS.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
-	shadowDSS.FrontFace.StencilPassOp = D3D12_STENCIL_OP_INCR;
-	shadowDSS.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
-
-	// We are not rendering backfacing polygons, so these settings do not matter.
-	shadowDSS.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
-	shadowDSS.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
-	shadowDSS.BackFace.StencilPassOp = D3D12_STENCIL_OP_INCR;
-	shadowDSS.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
-
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC shadowPsoDesc = transparentPsoDesc;
-	shadowPsoDesc.DepthStencilState = shadowDSS;
-	m_d3dDevice->CreateGraphicsPipelineState(&shadowPsoDesc, IID_PPV_ARGS(&m_mapPSO["shadow"]));
+	m_d3dDevice->CreateGraphicsPipelineState(&treeSpritePsoDesc, IID_PPV_ARGS(&m_mapPSO["treeSprites"]));
 }
 
 void DK::ExTexture::AnimateMaterials(const GameTimer& gt)
 {
-	{
 	/*auto waterMat =  m_mapMaterials["water"].get();
 
 	float& tu = waterMat->MatTransform(3, 0);
@@ -687,7 +454,6 @@ void DK::ExTexture::AnimateMaterials(const GameTimer& gt)
 	waterMat->MatTransform(3, 1) = tv;
 
 	waterMat->NumFramesDirty = m_nFrameReesourceCount;*/
-	}
 }
 
 void DK::ExTexture::UpdateWave(const GameTimer& gt)
@@ -742,15 +508,20 @@ void DK::ExTexture::UpdateObjectCBs()
 			if (m_vecGameObjects[i][j]->m_nFrameDirty <= 0)
 				continue;
 
-			DirectX::XMFLOAT4X4 worldMatrix = m_vecGameObjects[i][j]->GetTransform().GetWorldMatrix();
+			DirectX::XMFLOAT4X4 worldMatrix = MathUtils::Identity4x4();
+
+			Transform* transform = m_vecGameObjects[i][j]->GetComponent<Transform>();
+			if (transform != nullptr)
+				worldMatrix = transform->GetWorldMatrix();
+
 			DirectX::XMFLOAT4X4 texTransform = m_vecGameObjects[i][j]->TexTransform;
 
 			XMMATRIX world = XMLoadFloat4x4(&worldMatrix);
 			XMMATRIX vTexTransform = XMLoadFloat4x4(&texTransform);
 
 			ObjectConstants constants;
-			XMStoreFloat4x4(&constants.WorldMatrix, XMMatrixTranspose(world));
-			XMStoreFloat4x4(&constants.TexTransform, XMMatrixTranspose(vTexTransform));
+			DirectX::XMStoreFloat4x4(&constants.WorldMatrix, XMMatrixTranspose(world));
+			DirectX::XMStoreFloat4x4(&constants.TexTransform, XMMatrixTranspose(vTexTransform));
 
 			objectCB->CopyData(m_vecGameObjects[i][j]->m_nCBIndex, constants);
 
@@ -776,7 +547,7 @@ void DK::ExTexture::UpdateMaterialCBs()
 		matConstants.DiffuseAlbedo = mat->DiffuseAlbedo;
 		matConstants.FresnelR0 = mat->FresnelR0;
 		matConstants.Roughness = mat->Roughness;
-		XMStoreFloat4x4(&matConstants.MatTransform, XMMatrixTranspose(matTransform));
+		DirectX::XMStoreFloat4x4(&matConstants.MatTransform, XMMatrixTranspose(matTransform));
 
 		meterialCB->CopyData(mat->MatCBIndex, matConstants);
 
@@ -802,14 +573,14 @@ void DK::ExTexture::UpdateRenderPassCB()
 	DirectX::XMVECTOR viewprojDetermin = XMMatrixDeterminant(viewProj);
 	DirectX::XMMATRIX invViewProj = XMMatrixInverse(&viewprojDetermin, viewProj);
 
-	XMStoreFloat4x4(&m_renderPassCB.View, XMMatrixTranspose(view));
-	XMStoreFloat4x4(&m_renderPassCB.InvView, XMMatrixTranspose(invView));
+	DirectX::XMStoreFloat4x4(&m_renderPassCB.View, XMMatrixTranspose(view));
+	DirectX::XMStoreFloat4x4(&m_renderPassCB.InvView, XMMatrixTranspose(invView));
 
-	XMStoreFloat4x4(&m_renderPassCB.Proj, XMMatrixTranspose(proj));
-	XMStoreFloat4x4(&m_renderPassCB.InvProj, XMMatrixTranspose(invProj));
+	DirectX::XMStoreFloat4x4(&m_renderPassCB.Proj, XMMatrixTranspose(proj));
+	DirectX::XMStoreFloat4x4(&m_renderPassCB.InvProj, XMMatrixTranspose(invProj));
 
-	XMStoreFloat4x4(&m_renderPassCB.ViewProj, XMMatrixTranspose(viewProj));
-	XMStoreFloat4x4(&m_renderPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
+	DirectX::XMStoreFloat4x4(&m_renderPassCB.ViewProj, XMMatrixTranspose(viewProj));
+	DirectX::XMStoreFloat4x4(&m_renderPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
 
 	m_renderPassCB.EyePosW = m_camera.GetTransform().GetPosition();
 	m_renderPassCB.RenderTargetSize = DirectX::XMFLOAT2((float)m_nClientWidth, (float)m_nClientHeight);
@@ -834,26 +605,6 @@ void DK::ExTexture::UpdateRenderPassCB()
 	currPassCB->CopyData(0, m_renderPassCB);
 }
 
-void DK::ExTexture::UpdateReflectRenderPassCB()
-{
-	m_reflectRenderPassCB = m_renderPassCB;
-
-	XMVECTOR mirrorPlane = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f); // xy plane
-	XMMATRIX R = XMMatrixReflect(mirrorPlane);
-
-	// Reflect the lighting.
-	for (int i = 0; i < 3; ++i)
-	{
-		XMVECTOR lightDir = XMLoadFloat3(&m_reflectRenderPassCB.Lights[i].Direction);
-		XMVECTOR reflectedLightDir = XMVector3TransformNormal(lightDir, R);
-		XMStoreFloat3(&m_reflectRenderPassCB.Lights[i].Direction, reflectedLightDir);
-	}
-
-	// Reflected pass stored in index 1
-	auto currPassCB = m_pCurrFrameResource->RenderPassCB.get();
-	currPassCB->CopyData(1, m_reflectRenderPassCB);
-}
-
 void DK::ExTexture::DrawGameObjects(ID3D12GraphicsCommandList* cmdList, std::vector<GameObject*> vecGameObject)
 {
 	UINT objCBByteSize = D3DUtils::CalcConstBufferByteSize(sizeof(ObjectConstants));
@@ -866,11 +617,19 @@ void DK::ExTexture::DrawGameObjects(ID3D12GraphicsCommandList* cmdList, std::vec
 	{
 		GameObject* pGameObject = vecGameObject[i];
 
-		auto viewVB = pGameObject->GetMeshBuffer()->VertexBufferView();
-		auto viewIB = pGameObject->GetMeshBuffer()->IndexBufferView();
+		MeshFilter* meshFilter = pGameObject->GetComponent<MeshFilter>();
+		if (meshFilter == nullptr)
+			continue;
 
-		cmdList->IASetVertexBuffers(0, 1, &viewVB);
-		cmdList->IASetIndexBuffer(&viewIB);
+		D3D12_VERTEX_BUFFER_VIEW vbView;
+		D3D12_INDEX_BUFFER_VIEW ibView;
+		MeshSection meshSection;
+
+		if (meshFilter->GetMeshInfo(vbView, ibView, meshSection) == false)
+			continue;
+
+		cmdList->IASetVertexBuffers(0, 1, &vbView);
+		cmdList->IASetIndexBuffer(&ibView);
 		cmdList->IASetPrimitiveTopology(pGameObject->PrimitiveType);
 
 		CD3DX12_GPU_DESCRIPTOR_HANDLE tex(m_spHeapSRV->GetGPUDescriptorHandleForHeapStart());
@@ -885,7 +644,6 @@ void DK::ExTexture::DrawGameObjects(ID3D12GraphicsCommandList* cmdList, std::vec
 		cmdList->SetGraphicsRootConstantBufferView(1, objCBAddress);
 		cmdList->SetGraphicsRootConstantBufferView(3, matCBAddress);
 
-		MeshSection meshSection = pGameObject->GetMeshSection();
 		cmdList->DrawIndexedInstanced(meshSection.IndexCount, 1, meshSection.StartIndexLocation, meshSection.BaseVertexLocation, 0);
 	}
 }

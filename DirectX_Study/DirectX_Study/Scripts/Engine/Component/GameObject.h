@@ -1,7 +1,9 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
+#include "Component.h"
 #include "Transform.h"
 #include "../Data/DataTypes.h"
 
@@ -10,15 +12,10 @@ namespace DK
 	class GameObject
 	{
 	public:
-		GameObject() = default;
+		GameObject();
 		~GameObject();
-
-		Transform& GetTransform();
-		MeshBuffer<Vertex>* GetMeshBuffer();
-		MeshSection GetMeshSection();
+		
 		Material* GetMaterial();
-
-		void SetMeshData(MeshBuffer<Vertex>* pMeshBuffer, MeshSection meshSection);
 		void SetMaterial(Material* pMat);
 
 	public:
@@ -28,12 +25,32 @@ namespace DK
 		XMFLOAT4X4 TexTransform = MathUtils::Identity4x4();
 
 	private:
-		Transform m_transform;
-
-		MeshBuffer<Vertex>* m_pMeshBuffer = nullptr;
-		MeshSection m_meshSection;
-
 		Material* m_pMaterial = nullptr;
+
+
+		// -------------------------
+	public:
+		void AddComponent(Component* pComponent);
+		//void RemoveComponent(ComponentType eType);
+
+		template <class T>
+		T* GetComponent();
+
+	private:
+		std::vector<Component*> m_listComponent;
+
 	};
+
+	template<class T>
+	inline T* GameObject::GetComponent()
+	{
+		for (int i = 0; i < m_listComponent.size(); ++i)
+		{
+			if (typeid(*m_listComponent[i]) == typeid(T))
+				return static_cast<T*>(m_listComponent[i]);
+		}
+
+		return nullptr;
+	}
 
 }

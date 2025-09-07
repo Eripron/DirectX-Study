@@ -21,7 +21,13 @@
 #include "LightUtils.hlsl" 
 
 Texture2D gDiffuseMap : register(t0);
-SamplerState gsamLinear : register(s0);
+
+SamplerState gsamPointWrap : register(s0);
+SamplerState gsamPointClamp : register(s1);
+SamplerState gsamLinearWrap : register(s2);
+SamplerState gsamLinearClamp : register(s3);
+SamplerState gsamAnisotropicWrap : register(s4);
+SamplerState gsamAnisotropicClamp : register(s5);
 
 // Constant data that varies per frame.
 cbuffer cbPerObject : register(b0)
@@ -140,9 +146,14 @@ VertexOut VS(VertexIn vin)
 
 float4 PS(VertexOut pin) : SV_Target
 {
-    float4 diffuseAlbedo = gDiffuseMap.Sample(gsamLinear, pin.TexC) * gDiffuseAlbedo;
+    float4 diffuseAlbedo = gDiffuseMap.Sample(gsamAnisotropicWrap, pin.TexC) * gDiffuseAlbedo;
     
-    clip(diffuseAlbedo.a - 0.1f);
+   #ifdef ALPHA_TEST
+	// Discard pixel if texture alpha < 0.1.  We do this test as soon 
+	// as possible in the shader so that we can potentially exit the
+	// shader early, thereby skipping the rest of the shader code.
+	clip(diffuseAlbedo.a - 0.1f);
+#endif
     
     // Vector from point being lit to eye. 
     float3 toEyeW = gEyePosW - pin.PosW;
@@ -159,8 +170,10 @@ float4 PS(VertexOut pin) : SV_Target
 
     float4 litColor = ambient + directLight;
 
+#ifdef FOG
     float fogAmount = saturate((distToEye - gFogStart) / gFogRange);
     litColor = lerp(litColor, gFogColor, fogAmount);
+  #endif
     
     // Common convention to take alpha from diffuse material.
     litColor.a = diffuseAlbedo.a;
