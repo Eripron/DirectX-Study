@@ -111,10 +111,8 @@ bool DK::ExTexture::Render()
 
 void DK::ExTexture::LoadTexture()
 {
-	//LoadTexture(L"Textures/grass.dds", 0);
-	//LoadTexture(L"Textures/WireFence.dds", 2);
-	LoadTexture(L"Textures/treeArray2.dds", 0);
-	LoadTexture(L"Textures/WoodCrate02.dds", 1);
+	LoadTexture(L"Textures/WoodCrate02.dds", 0);
+	LoadTexture(L"Textures/treeArray2.dds", 1);
 }
 
 void DK::ExTexture::LoadTexture(std::wstring path, int texCBIndex)
@@ -148,7 +146,7 @@ void DK::ExTexture::CreateMaterial()
 
 	auto matBox = std::make_unique<Material>();
 	matBox->Name = "box";
-	matBox->MatCBIndex = 0;
+	matBox->MatCBIndex = 1;
 	matBox->DiffuseSrvHeapIndex = m_mapTextures["WoodCrate02"]->TexCBIndex;
 	matBox->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	matBox->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
@@ -166,7 +164,7 @@ void DK::ExTexture::CreateGeometry()
 	MeshData<Vertex> meshBox = geoGen.CreateBox(4, 4, 4);
 
 	MeshData<Vertex> treePosition;
-	int treeCount = 10;
+	int treeCount = 20;
 	for (int i = 0; i < treeCount; ++i)
 	{
 		float x = MathUtils::RandF(-100.0f, 100.0f);
@@ -228,33 +226,57 @@ void DK::ExTexture::BuildDescriptor()
 	int nTextureCount = m_mapTextures.size();
 
 	// create descriptor heap
-	D3D12_DESCRIPTOR_HEAP_DESC heapDesc;
+	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
 	heapDesc.NumDescriptors = nTextureCount;
 	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	heapDesc.NodeMask = 0;
 	THROW_IF_FAILED(m_d3dDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_spHeapSRV)));
 
-	for(auto iter = m_mapTextures.begin(); iter != m_mapTextures.end(); ++iter)
-	{
-		Texture* texture = iter->second.get();
-		D3D12_RESOURCE_DESC rscDesc = texture->Resource->GetDesc();
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+	srvDesc.Texture2D.MipLevels = -1;
 
-		CD3DX12_CPU_DESCRIPTOR_HANDLE descriptorHandle(m_spHeapSRV->GetCPUDescriptorHandleForHeapStart());
-		descriptorHandle.Offset(texture->TexCBIndex, m_uCbvSrvUavDescriptorSize);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE descriptorHandle(m_spHeapSRV->GetCPUDescriptorHandleForHeapStart());
 
-		// texture2D에 대한 view 생성
-		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
-		srvDesc.Format = rscDesc.Format;
-		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		srvDesc.Texture2D.MostDetailedMip = 0;
-		srvDesc.Texture2D.MipLevels = rscDesc.MipLevels;
-		srvDesc.Texture2D.PlaneSlice = 0;
-		srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+	// woodCreate2에 대한 view 생성
+	auto tex = m_mapTextures["WoodCrate02"]->Resource;
+	srvDesc.Format = tex->GetDesc().Format;
+	m_d3dDevice->CreateShaderResourceView(tex.Get(), &srvDesc, descriptorHandle);
 
-		m_d3dDevice->CreateShaderResourceView(texture->Resource.Get(), &srvDesc, descriptorHandle);
-	}
+	auto texArray = m_mapTextures["treeArray2"]->Resource;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+	srvDesc.Format = texArray->GetDesc().Format;
+	srvDesc.Texture2DArray.MostDetailedMip = 0;
+	srvDesc.Texture2DArray.MipLevels = -1;
+	srvDesc.Texture2DArray.FirstArraySlice = 0;
+	srvDesc.Texture2DArray.ArraySize = texArray->GetDesc().DepthOrArraySize;
+	descriptorHandle.Offset(1, m_uCbvSrvUavDescriptorSize);
+
+	m_d3dDevice->CreateShaderResourceView(texArray.Get(), &srvDesc, descriptorHandle);
+
+	//for(auto iter = m_mapTextures.begin(); iter != m_mapTextures.end(); ++iter)
+	//{
+	//	Texture* texture = iter->second.get();
+	//	D3D12_RESOURCE_DESC rscDesc = texture->Resource->GetDesc();
+
+	//	CD3DX12_CPU_DESCRIPTOR_HANDLE descriptorHandle(m_spHeapSRV->GetCPUDescriptorHandleForHeapStart());
+	//	descriptorHandle.Offset(texture->TexCBIndex, m_uCbvSrvUavDescriptorSize);
+
+	//	// texture2D에 대한 view 생성
+	//	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
+	//	srvDesc.Format = rscDesc.Format;
+	//	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	//	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	//	srvDesc.Texture2D.MostDetailedMip = 0;
+	//	srvDesc.Texture2D.MipLevels = rscDesc.MipLevels;
+	//	srvDesc.Texture2D.PlaneSlice = 0;
+	//	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+
+	//	m_d3dDevice->CreateShaderResourceView(texture->Resource.Get(), &srvDesc, descriptorHandle);
+	//}
 }
 
 void DK::ExTexture::BuildInputLayoutAndShader()
@@ -277,7 +299,9 @@ void DK::ExTexture::BuildInputLayoutAndShader()
 	m_mapShaders["alphaTestedPS"] = D3DUtils::CompileShader(L"Shaders\\Default.hlsl", alphaTestDefines, "PS", "ps_5_0");
 
 	m_mapShaders["treeSpriteVS"] = D3DUtils::CompileShader(L"Shaders\\TreeSprite.hlsl", nullptr, "VS", "vs_5_0");
+
 	m_mapShaders["treeSpriteGS"] = D3DUtils::CompileShader(L"Shaders\\TreeSprite.hlsl", nullptr, "GS", "gs_5_0");
+
 	m_mapShaders["treeSpritePS"] = D3DUtils::CompileShader(L"Shaders\\TreeSprite.hlsl", alphaTestDefines, "PS", "ps_5_0");
 
 	m_vecInputLayout = Vertex::GetInputLayout();
