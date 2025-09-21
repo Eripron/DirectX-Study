@@ -19,6 +19,7 @@ namespace DK
 		MeshBuffer<Vertex>* GetMeshData(std::string name, MeshSection& meshSection);
 
 	private:
+		bool m_bInit = false;
 		std::unique_ptr<MeshBuffer<Vertex>> m_pMeshBuffer;
 	};
 	

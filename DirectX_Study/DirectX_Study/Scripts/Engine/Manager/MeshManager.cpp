@@ -10,16 +10,34 @@ void DK::MeshManager::Init()
 
 void DK::MeshManager::AddMeshData(std::string name, MeshData<Vertex>& meshData)
 {
+	if (m_bInit == false)
+	{
+		m_bInit = true;
+		Init();
+	}
+
 	m_pMeshBuffer->AddMeshData(name, meshData);
 }
 
 void DK::MeshManager::CreateMeshBuffer(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList)
 {
+	if (m_bInit == false)
+	{
+		m_bInit = true;
+		Init();
+	}
+
 	m_pMeshBuffer->CreateMeshBuffer(device, cmdList);
 }
 
 MeshBuffer<Vertex>* DK::MeshManager::GetMeshData(std::string name, MeshSection& meshSection)
 {
+	if (m_bInit == false)
+	{
+		m_bInit = true;
+		Init();
+	}
+
 	if (m_pMeshBuffer->GetMeshSection(name, meshSection))
 		return m_pMeshBuffer.get();
 

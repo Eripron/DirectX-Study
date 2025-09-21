@@ -15,6 +15,15 @@
 
 namespace DK
 {
+	enum class RenderLayer : int
+	{
+		Opaque = 0,
+		Transparent,
+		AlphaTested,
+		AlphaTestedTreeSprites,
+		Count
+	};
+
 	class GraphicEngine
 	{
 	public:

@@ -17,15 +17,6 @@
 
 namespace DK
 {
-	enum class RenderLayer : int
-	{
-		Opaque = 0,
-		Transparent,
-		AlphaTested,
-		AlphaTestedTreeSprites,
-		Count
-	};
-
 	class ExTexture : public GraphicEngine
 	{
 	public:
@@ -86,6 +77,5 @@ namespace DK
 
 		// constants
 		RenderPassConstants m_renderPassCB;
-
 	};
 }

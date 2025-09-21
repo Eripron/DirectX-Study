@@ -1,7 +1,7 @@
 #include <Windows.h>
 
 #include "Window/MainWindow.h"
-#include "Ex/ExTexture.h"
+#include "Ex/Blur.h"
 
 using namespace DK;
 
@@ -16,7 +16,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstace, LPSTR lpszCmdP
 
 	HWND hWnd = mainWindow.GetHandle();
 
-	ExTexture engine(hWnd);
+	ExBlur engine(hWnd);
 	engine.Initialize();
 
 	while (mainWindow.Run())

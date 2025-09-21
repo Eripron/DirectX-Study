@@ -142,6 +142,8 @@
     <ClCompile Include="Scripts\Engine\Utils\GeometryGenerator.cpp" />
     <ClCompile Include="Scripts\Engine\Utils\Gizmo.cpp" />
     <ClCompile Include="Scripts\Engine\Utils\MathUtils.cpp" />
+    <ClCompile Include="Scripts\Ex\Blur.cpp" />
+    <ClCompile Include="Scripts\Ex\BlurFilter.cpp" />
     <ClCompile Include="Scripts\Ex\ExBox.cpp" />
     <ClCompile Include="Scripts\Ex\ExGeoShader.cpp" />
     <ClCompile Include="Scripts\Ex\ExShape.cpp" />
@@ -169,6 +171,8 @@
     <ClInclude Include="Scripts\Engine\Utils\GeometryGenerator.h" />
     <ClInclude Include="Scripts\Engine\Utils\Gizmo.h" />
     <ClInclude Include="Scripts\Engine\Utils\MathUtils.h" />
+    <ClInclude Include="Scripts\Ex\Blur.h" />
+    <ClInclude Include="Scripts\Ex\BlurFilter.h" />
     <ClInclude Include="Scripts\Ex\ExBox.h" />
     <ClInclude Include="Scripts\Ex\ExGeoShader.h" />
     <ClInclude Include="Scripts\Ex\ExShape.h" />

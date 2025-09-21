@@ -135,6 +135,12 @@
     <ClCompile Include="Scripts\Engine\Manager\MeshManager.cpp">
       <Filter>소스 파일\Engine\Manager</Filter>
     </ClCompile>
+    <ClCompile Include="Scripts\Ex\Blur.cpp">
+      <Filter>소스 파일\Ex</Filter>
+    </ClCompile>
+    <ClCompile Include="Scripts\Ex\BlurFilter.cpp">
+      <Filter>소스 파일\Ex</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Scripts\Window\MainWindow.h">
@@ -214,6 +220,12 @@
     </ClInclude>
     <ClInclude Include="Scripts\Engine\Common\Singleton.h">
       <Filter>헤더 파일\Engine\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Scripts\Ex\Blur.h">
+      <Filter>헤더 파일\Ex</Filter>
+    </ClInclude>
+    <ClInclude Include="Scripts\Ex\BlurFilter.h">
+      <Filter>헤더 파일\Ex</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
