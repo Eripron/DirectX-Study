@@ -59,7 +59,6 @@ void HorzBlurCS(int3 groupThreadID : SV_GroupThreadID, int3 dispatchThreadID : S
     gOutput[dispatchThreadID.xy] = blurColor;
 }
 
-
 [numthreads(1, N, 1)]
 void VertBlurCS(int3 groupThreadID : SV_GroupThreadID,
 				int3 dispatchThreadID : SV_DispatchThreadID)

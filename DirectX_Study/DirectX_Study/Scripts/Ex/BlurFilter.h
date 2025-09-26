@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include "../Engine/Utils/D3DUtils.h"
 
 namespace DK
@@ -50,21 +51,21 @@ namespace DK
 		UINT m_height = 0;
 		DXGI_FORMAT m_format = DXGI_FORMAT_R8G8B8A8_UNORM;
 
-		CD3DX12_CPU_DESCRIPTOR_HANDLE m_blur0CpuSrv;
-		CD3DX12_CPU_DESCRIPTOR_HANDLE m_blur0CpuUav;
+		CD3DX12_CPU_DESCRIPTOR_HANDLE m_srvHandleBlur0;
+		CD3DX12_CPU_DESCRIPTOR_HANDLE m_uavHandleBlur0;
 
-		CD3DX12_CPU_DESCRIPTOR_HANDLE m_blur1CpuSrv;
-		CD3DX12_CPU_DESCRIPTOR_HANDLE m_blur1CpuUav;
+		CD3DX12_CPU_DESCRIPTOR_HANDLE m_srvHandleBlur1;
+		CD3DX12_CPU_DESCRIPTOR_HANDLE m_uavHandleBlur1;
 
-		CD3DX12_GPU_DESCRIPTOR_HANDLE m_blur0GpuSrv;
-		CD3DX12_GPU_DESCRIPTOR_HANDLE m_blur0GpuUav;
+		CD3DX12_GPU_DESCRIPTOR_HANDLE m_srvGPUHandleBlur0;
+		CD3DX12_GPU_DESCRIPTOR_HANDLE m_uavGPUHandleBlur0;
 
-		CD3DX12_GPU_DESCRIPTOR_HANDLE m_blur1GpuSrv;
-		CD3DX12_GPU_DESCRIPTOR_HANDLE m_blur1GpuUav;
+		CD3DX12_GPU_DESCRIPTOR_HANDLE m_srvGPUHandleBlur1;
+		CD3DX12_GPU_DESCRIPTOR_HANDLE m_uavGPUHandleBlur1;
 
 		// Two for ping-ponging the textures.
-		Microsoft::WRL::ComPtr<ID3D12Resource> m_blurMap0 = nullptr;
-		Microsoft::WRL::ComPtr<ID3D12Resource> m_blurMap1 = nullptr;
+		Microsoft::WRL::ComPtr<ID3D12Resource> m_blurMap0 = nullptr;	// uav
+		Microsoft::WRL::ComPtr<ID3D12Resource> m_blurMap1 = nullptr;	// uav
 
 	};
 }

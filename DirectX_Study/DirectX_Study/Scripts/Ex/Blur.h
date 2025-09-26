@@ -48,8 +48,10 @@ namespace DK
 
 		void BuildDescriptorHeap();
 		void BuildRootSignature();
+		void BuildPostProcessRootSignature();
 		void BuildInputLayoutAndShader();
 		void BuildPSO();
+
 
 		// update
 		void UpdateObjectCBs();
@@ -84,6 +86,8 @@ namespace DK
 	private:
 		void LoadTexture(std::wstring path);
 
+		std::unique_ptr<BlurFilter> m_blurFilter;
+		ComPtr<ID3D12RootSignature> m_postProcessRootSignature;
 
 	};
 }

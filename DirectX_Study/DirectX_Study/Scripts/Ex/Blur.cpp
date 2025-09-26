@@ -12,6 +12,8 @@ void DK::ExBlur::Init()
 {
 	m_camera.GetTransform().SetPosition(0, 5, -20);
 
+	m_blurFilter = std::make_unique<BlurFilter>(m_d3dDevice.Get(), m_nClientWidth, m_nClientHeight, DXGI_FORMAT_R8G8B8A8_UNORM);
+
 	LoadTextures();
 
 	CreateMesh();
@@ -21,6 +23,7 @@ void DK::ExBlur::Init()
 
 	BuildDescriptorHeap();
 	BuildRootSignature();
+	BuildPostProcessRootSignature();
 	BuildInputLayoutAndShader();
 	BuildPSO();
 }
@@ -85,9 +88,14 @@ bool DK::ExBlur::Render()
 		m_commandList->SetPipelineState(m_mapPSO["opaque"].Get());
 		RenderGameObjects(m_commandList.Get(), m_vecGameObject[(int)RenderLayer::Opaque]);
 
-		// todo
-		/*mBlurFilter->Execute(mCommandList.Get(), mPostProcessRootSignature.Get(),
-			mPSOs["horzBlur"].Get(), mPSOs["vertBlur"].Get(), CurrentBackBuffer(), 4);*/
+		m_blurFilter->Execute(m_commandList.Get(), m_postProcessRootSignature.Get(),
+			m_mapPSO["horzBlur"].Get(), m_mapPSO["vertBlur"].Get(), CurrentBackBuffer(), 4);
+
+		auto CS2CD = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+		m_commandList->ResourceBarrier(1, &CS2CD);
+		m_commandList->CopyResource(CurrentBackBuffer(), m_blurFilter->Output());
+		auto CD2RT = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		m_commandList->ResourceBarrier(1, &CD2RT);
 	}
 
 	CD3DX12_RESOURCE_BARRIER present = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
@@ -111,7 +119,8 @@ bool DK::ExBlur::OnResize(int width, int height, bool force)
 {
 	GraphicEngine::OnResize(width, height, force);
 
-	// todo
+	if (m_blurFilter != nullptr)
+		m_blurFilter->OnResize(width, height);
 
 	return true;
 }
@@ -237,8 +246,9 @@ void DK::ExBlur::BuildDescriptorHeap()
 		m_d3dDevice->CreateShaderResourceView(pTexture->Resource.Get(), &srvDesc, heapHandle);
 	}
 
-	// todo
-	// bulr descriptor
+	m_blurFilter->BuildDescriptors(CD3DX12_CPU_DESCRIPTOR_HANDLE(m_spHeapCbvSrvUav->GetCPUDescriptorHandleForHeapStart(), 4, m_uCbvSrvUavDescriptorSize),
+		CD3DX12_GPU_DESCRIPTOR_HANDLE(m_spHeapCbvSrvUav->GetGPUDescriptorHandleForHeapStart(), 4, m_uCbvSrvUavDescriptorSize),
+		m_uCbvSrvUavDescriptorSize);
 }
 
 void DK::ExBlur::BuildRootSignature()
@@ -281,6 +291,44 @@ void DK::ExBlur::BuildRootSignature()
 		IID_PPV_ARGS(&m_spRootSignature));
 }
 
+void DK::ExBlur::BuildPostProcessRootSignature()
+{
+	CD3DX12_DESCRIPTOR_RANGE srvTable;
+	srvTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+
+	CD3DX12_DESCRIPTOR_RANGE uavTable;
+	uavTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0);
+
+	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
+
+	slotRootParameter[0].InitAsConstants(12, 0);
+	slotRootParameter[1].InitAsDescriptorTable(1, &srvTable);
+	slotRootParameter[2].InitAsDescriptorTable(1, &uavTable);
+
+	// A root signature is an array of root parameters.
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3, slotRootParameter,
+		0, nullptr,
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
+	ComPtr<ID3DBlob> serializedRootSig = nullptr;
+	ComPtr<ID3DBlob> errorBlob = nullptr;
+	HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
+		serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
+
+	if (errorBlob != nullptr)
+	{
+		::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
+	}
+	THROW_IF_FAILED(hr);
+
+	THROW_IF_FAILED(m_d3dDevice->CreateRootSignature(
+		0,
+		serializedRootSig->GetBufferPointer(),
+		serializedRootSig->GetBufferSize(),
+		IID_PPV_ARGS(m_postProcessRootSignature.GetAddressOf())));
+}
+
 void DK::ExBlur::BuildInputLayoutAndShader()
 {
 	const D3D_SHADER_MACRO defines[] =
@@ -299,6 +347,7 @@ void DK::ExBlur::BuildInputLayoutAndShader()
 	m_mapShaders["standardVS"] = D3DUtils::CompileShader(L"Shaders\\Default.hlsl", nullptr, "VS", "vs_5_0");
 	m_mapShaders["opaquePS"] = D3DUtils::CompileShader(L"Shaders\\Default.hlsl", defines, "PS", "ps_5_0");
 	m_mapShaders["alphaTestedPS"] = D3DUtils::CompileShader(L"Shaders\\Default.hlsl", alphaTestDefines, "PS", "ps_5_0");
+
 	m_mapShaders["horzBlurCS"] = D3DUtils::CompileShader(L"Shaders\\Blur.hlsl", nullptr, "HorzBlurCS", "cs_5_0");
 	m_mapShaders["vertBlurCS"] = D3DUtils::CompileShader(L"Shaders\\Blur.hlsl", nullptr, "VertBlurCS", "cs_5_0");
 
@@ -366,28 +415,27 @@ void DK::ExBlur::BuildPSO()
 	THROW_IF_FAILED(m_d3dDevice->CreateGraphicsPipelineState(&alphaTestedPsoDesc, IID_PPV_ARGS(&m_mapPSO["alphaTested"])));
 
 
-	// todo
-	//// PSO for horizontal blur
-	//D3D12_COMPUTE_PIPELINE_STATE_DESC horzBlurPSO = {};
-	//horzBlurPSO.pRootSignature = mPostProcessRootSignature.Get();
-	//horzBlurPSO.CS =
-	//{
-	//	reinterpret_cast<BYTE*>(m_mapShaders["horzBlurCS"]->GetBufferPointer()),
-	//	m_mapShaders["horzBlurCS"]->GetBufferSize()
-	//};
-	//horzBlurPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
-	//THROW_IF_FAILED(m_d3dDevice->CreateComputePipelineState(&horzBlurPSO, IID_PPV_ARGS(&m_mapPSO["horzBlur"])));
+	// PSO for horizontal blur
+	D3D12_COMPUTE_PIPELINE_STATE_DESC horzBlurPSO = {};
+	horzBlurPSO.pRootSignature = m_postProcessRootSignature.Get();
+	horzBlurPSO.CS =
+	{
+		reinterpret_cast<BYTE*>(m_mapShaders["horzBlurCS"]->GetBufferPointer()),
+		m_mapShaders["horzBlurCS"]->GetBufferSize()
+	};
+	horzBlurPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+	THROW_IF_FAILED(m_d3dDevice->CreateComputePipelineState(&horzBlurPSO, IID_PPV_ARGS(&m_mapPSO["horzBlur"])));
 
-	//// PSO for vertical blur
-	//D3D12_COMPUTE_PIPELINE_STATE_DESC vertBlurPSO = {};
-	//vertBlurPSO.pRootSignature = mPostProcessRootSignature.Get();
-	//vertBlurPSO.CS =
-	//{
-	//	reinterpret_cast<BYTE*>(m_mapShaders["vertBlurCS"]->GetBufferPointer()),
-	//	m_mapShaders["vertBlurCS"]->GetBufferSize()
-	//};
-	//vertBlurPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
-	//THROW_IF_FAILED(m_d3dDevice->CreateComputePipelineState(&vertBlurPSO, IID_PPV_ARGS(&m_mapPSO["vertBlur"])));
+	// PSO for vertical blur
+	D3D12_COMPUTE_PIPELINE_STATE_DESC vertBlurPSO = {};
+	vertBlurPSO.pRootSignature = m_postProcessRootSignature.Get();
+	vertBlurPSO.CS =
+	{
+		reinterpret_cast<BYTE*>(m_mapShaders["vertBlurCS"]->GetBufferPointer()),
+		m_mapShaders["vertBlurCS"]->GetBufferSize()
+	};
+	vertBlurPSO.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+	THROW_IF_FAILED(m_d3dDevice->CreateComputePipelineState(&vertBlurPSO, IID_PPV_ARGS(&m_mapPSO["vertBlur"])));
 }
 
 void DK::ExBlur::UpdateObjectCBs()
