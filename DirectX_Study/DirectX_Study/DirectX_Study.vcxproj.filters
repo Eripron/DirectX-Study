@@ -141,6 +141,12 @@
     <ClCompile Include="Scripts\Ex\BlurFilter.cpp">
       <Filter>소스 파일\Ex</Filter>
     </ClCompile>
+    <ClCompile Include="Scripts\Engine\EngineBase.cpp">
+      <Filter>소스 파일\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Scripts\Ex\Tesselation.cpp">
+      <Filter>소스 파일\Ex</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Scripts\Window\MainWindow.h">
@@ -225,6 +231,12 @@
       <Filter>헤더 파일\Ex</Filter>
     </ClInclude>
     <ClInclude Include="Scripts\Ex\BlurFilter.h">
+      <Filter>헤더 파일\Ex</Filter>
+    </ClInclude>
+    <ClInclude Include="Scripts\Engine\EngineBase.h">
+      <Filter>헤더 파일\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Scripts\Ex\Tesselation.h">
       <Filter>헤더 파일\Ex</Filter>
     </ClInclude>
   </ItemGroup>

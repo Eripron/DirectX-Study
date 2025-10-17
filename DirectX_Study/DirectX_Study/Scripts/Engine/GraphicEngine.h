@@ -21,6 +21,8 @@ namespace DK
 		Transparent,
 		AlphaTested,
 		AlphaTestedTreeSprites,
+		Patch,
+
 		Count
 	};
 

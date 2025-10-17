@@ -134,6 +134,7 @@
     <ClCompile Include="Scripts\Engine\Component\GameObject.cpp" />
     <ClCompile Include="Scripts\Engine\Component\MeshFilter.cpp" />
     <ClCompile Include="Scripts\Engine\Component\Transform.cpp" />
+    <ClCompile Include="Scripts\Engine\EngineBase.cpp" />
     <ClCompile Include="Scripts\Engine\GraphicEngine.cpp" />
     <ClCompile Include="Scripts\Engine\Manager\MeshManager.cpp" />
     <ClCompile Include="Scripts\Engine\Resource\FrameResource.cpp" />
@@ -148,6 +149,7 @@
     <ClCompile Include="Scripts\Ex\ExGeoShader.cpp" />
     <ClCompile Include="Scripts\Ex\ExShape.cpp" />
     <ClCompile Include="Scripts\Ex\ExTexture.cpp" />
+    <ClCompile Include="Scripts\Ex\Tesselation.cpp" />
     <ClCompile Include="Scripts\Main.cpp" />
     <ClCompile Include="Scripts\Window\MainWindow.cpp" />
     <ClCompile Include="Scripts\Window\WindowsUtils.cpp" />
@@ -162,6 +164,7 @@
     <ClInclude Include="Scripts\Engine\Component\MeshFilter.h" />
     <ClInclude Include="Scripts\Engine\Component\Transform.h" />
     <ClInclude Include="Scripts\Engine\Data\DataTypes.h" />
+    <ClInclude Include="Scripts\Engine\EngineBase.h" />
     <ClInclude Include="Scripts\Engine\GraphicEngine.h" />
     <ClInclude Include="Scripts\Engine\Manager\MeshManager.h" />
     <ClInclude Include="Scripts\Engine\Resource\FrameResource.h" />
@@ -177,6 +180,7 @@
     <ClInclude Include="Scripts\Ex\ExGeoShader.h" />
     <ClInclude Include="Scripts\Ex\ExShape.h" />
     <ClInclude Include="Scripts\Ex\ExTexture.h" />
+    <ClInclude Include="Scripts\Ex\Tesselation.h" />
     <ClInclude Include="Scripts\Header\d3dx12.h" />
     <ClInclude Include="Scripts\Window\MainWindow.h" />
     <ClInclude Include="Scripts\Window\resource.h" />

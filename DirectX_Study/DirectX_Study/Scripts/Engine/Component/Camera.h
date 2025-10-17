@@ -26,6 +26,9 @@ namespace DK
 		void SetFovAngle(float fFovAngle);
 		void SetAspect(float fAspect);
 
+		void Move(DirectX::XMFLOAT3 move);
+		void Rotate(DirectX::XMFLOAT3 rotate);
+
 	private:
 		void UpdateViewMatrix();
 		void UpdateProjMatrix();
@@ -33,13 +36,12 @@ namespace DK
 	private:
 		Transform m_transform;
 
-		XMFLOAT4X4 m_f4x4ViewMatrix;
-		XMFLOAT4X4 m_f4x4ProjMatrix;
+		XMFLOAT4X4 m_viewMatrix;
+		XMFLOAT4X4 m_projMatrix;
 
 		float m_fNear = 1.0f;
 		float m_fFar = 1000.0f;
 		float m_fFovAngle = 60.0f;
 		float m_fAspect = 1.0f;
-
 	};
 }

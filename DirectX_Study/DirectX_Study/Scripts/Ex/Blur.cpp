@@ -88,6 +88,7 @@ bool DK::ExBlur::Render()
 		m_commandList->SetPipelineState(m_mapPSO["opaque"].Get());
 		RenderGameObjects(m_commandList.Get(), m_vecGameObject[(int)RenderLayer::Opaque]);
 
+		// blur ÄÚµå
 		m_blurFilter->Execute(m_commandList.Get(), m_postProcessRootSignature.Get(),
 			m_mapPSO["horzBlur"].Get(), m_mapPSO["vertBlur"].Get(), CurrentBackBuffer(), 4);
 

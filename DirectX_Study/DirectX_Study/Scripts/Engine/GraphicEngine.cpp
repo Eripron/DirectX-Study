@@ -432,31 +432,30 @@ void DK::GraphicEngine::UpdateCamera()
 		POINT curCursorPos;
 		GetCursorPos(&curCursorPos);
 
-		float rotSpeed = 0.2f;
-		DirectX::XMFLOAT3 camRot = m_camera.GetTransform().GetRotation();
-		camRot.x += static_cast<float>(curCursorPos.y - m_preCursorPos.y) * rotSpeed;
-		camRot.y += static_cast<float>(curCursorPos.x - m_preCursorPos.x) * rotSpeed;
+		//DirectX::XMFLOAT3 camRot = m_camera.GetTransform().GetRotation();
+		// 마우스 이동을 회전 값으로 세팅
+		float sensitivity = 0.1f;
+		float dx = XMConvertToRadians(static_cast<float>(curCursorPos.y - m_preCursorPos.y) * sensitivity);
+		float dy = XMConvertToRadians(static_cast<float>(curCursorPos.x - m_preCursorPos.x) * sensitivity);
 
-		m_camera.GetTransform().SetRotation(camRot.x, camRot.y, camRot.z);
+		DirectX::XMFLOAT3 rotation(dx, dy, 0.0f);
+		m_camera.Rotate(rotation);
+		//m_camera.GetTransform().SetRotation(camRot.x, camRot.y, camRot.z);
 
 		m_preCursorPos = curCursorPos;
 
 		// move
-		DirectX::XMFLOAT3 move =
+		DirectX::XMFLOAT3 dir =
 		{
 			GetKeyDownValue('a', -1.0f, 'd', 1.0f),
 			GetKeyDownValue('q', -1.0f, 'e', 1.0f),
 			GetKeyDownValue('s', -1.0f, 'w', 1.0f)
 		};
 
-		DirectX::XMFLOAT3 dirMove = (m_camera.GetTransform().Right() * move.x) + (m_camera.GetTransform().Front() * move.z) + (m_camera.GetTransform().Up() * move.y);
-		DirectX::XMFLOAT3 cameraPos = m_camera.GetTransform().GetPosition();
 		float speed = 0.005f;
-		if (GetKeyDown(VK_SHIFT))
-			speed *= 2.5f;
+		if (GetKeyDown(VK_SHIFT)) speed *= 2.5f;
 
-		cameraPos = cameraPos + (dirMove * speed);
-		m_camera.GetTransform().SetPosition(cameraPos.x, cameraPos.y, cameraPos.z);
+		m_camera.Move(dir * speed);
 	}
 }
 
