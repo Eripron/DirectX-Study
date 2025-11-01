@@ -22,6 +22,25 @@ using namespace Microsoft::WRL;
 
 namespace DK
 {
+	struct RenderItem
+	{
+		RenderItem() = default;
+		RenderItem(const RenderItem& rhs) = delete;
+
+		int ObjBufferIndex = -1;
+
+		GameObject* pGameObject = nullptr;
+		XMFLOAT4X4 TexTransform = MathUtils::Identity4x4();
+		D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+		int DirtyCount = 0;
+
+		std::vector<InstanceData> InstanceDatas;
+		int RenderInstanceCount = 0;
+
+		DirectX::BoundingBox BoundBox;
+	};
+
 	class EngineBase : public GraphicEngine
 	{
 	public:
@@ -34,10 +53,13 @@ namespace DK
 		virtual bool Render() override;
 		virtual void Render(ID3D12GraphicsCommandList* cmdList);
 
+		virtual bool OnResize(int width, int height, bool force);
+
 		// init
 		virtual void CreateMesh();
 		virtual void CreateMaterial();
 		virtual void CreateGameObject();
+		virtual void CreateRenderItem();
 
 		virtual void BuildFrameResource();
 		virtual void BuildDescriptorHeap();
@@ -51,7 +73,7 @@ namespace DK
 		void UpdateMainPassCB();
 
 		// render
-		void RenderGameObjects(ID3D12GraphicsCommandList* cmdList, std::vector<GameObject*> vecGameObject);
+		void RenderRenderItems(ID3D12GraphicsCommandList* cmdList, std::vector<RenderItem*> renderItems);
 
 	protected:
 		virtual void LoadTextures();
@@ -63,12 +85,18 @@ namespace DK
 		unordered_map<string, ComPtr<ID3DBlob>> m_shaders;
 		unordered_map<int, ComPtr<ID3D12PipelineState>> m_psos;	
 
-		unordered_map<string, unique_ptr<Texture>> m_textures;	// 텍스처 데이터
+		// texture data
 		ComPtr<ID3D12DescriptorHeap> m_heapCbvSrvUav;
+		unordered_map<string, unique_ptr<Texture>> m_textures;
 
+		// material
 		unordered_map<string, unique_ptr<Material>> m_materials;
 
+		// object
 		vector<GameObject*> m_gameObjects[(int)RenderLayer::Count];
+
+		// render object info list
+		vector<std::unique_ptr<RenderItem>> m_renderItems;
 
 		// frame resource
 		const int FrameResourceCount = 3;
@@ -77,6 +105,8 @@ namespace DK
 		int m_curFrameResourceIndex = 0;
 
 		RenderPassConstants m_renderPassCB;
+
+		DirectX::BoundingFrustum m_camFrustum;
 	};
 
 }

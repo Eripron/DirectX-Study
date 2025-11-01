@@ -199,11 +199,12 @@ namespace DK
 	{
 		std::string Name;
 
-		int MatCBIndex = -1;			// Material Const Buffer Index
+		int SrvHeapIndex = -1;			// Material Const Buffer Index
 		int DiffuseSrvHeapIndex = -1;	// mat view index
-		int NormalSrvHeapIndex = -1;	// shader view index
+		int MaskSrvHeapIndex = -1;		// mask view index
+		int NormalSrvHeapIndex = -1;	// normal map view index
 
-		int NumFramesDirty;
+		int DirtyCount = 0;
 
 		// Material constant buffer data used for shading.
 		DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };	// md: 반사율
@@ -219,11 +220,10 @@ namespace DK
 	struct Texture
 	{
 		std::wstring FileName;
-		UINT TexCBIndex = -1;
+		UINT SrvHeapIndex = -1;
 
 		Microsoft::WRL::ComPtr<ID3D12Resource> Resource = nullptr;
 		Microsoft::WRL::ComPtr<ID3D12Resource> UploadHeap = nullptr;
-
 
 		static std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers()
 		{
@@ -328,5 +328,31 @@ namespace DK
 	};
 
 #pragma endregion
+
+	// Instacing을 호출해서 출력할 object에 필요한 데이터
+	struct InstanceData
+	{
+		DirectX::XMFLOAT4X4 World = MathUtils::Identity4x4();
+		DirectX::XMFLOAT4X4 TexTransform = MathUtils::Identity4x4();
+		UINT MaterialIndex;
+
+		// Q. 아래의 변수들은 무엇을 위해서?
+		UINT InstancePad0;
+		UINT InstancePad1;
+		UINT InstancePad2;
+	};
+
+	struct MaterialData
+	{
+		DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
+		DirectX::XMFLOAT3 FresnelR0 = { 0.01f, 0.01f, 0.01f };
+		float Roughness = 64.0f;
+		DirectX::XMFLOAT4X4 MatTransform = MathUtils::Identity4x4();
+
+		UINT DiffuseSrvHeapIndex = -1;
+		UINT MaterialPad0;
+		UINT MaterialPad1;
+		UINT MaterialPad2;
+	};
 
 }

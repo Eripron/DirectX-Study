@@ -147,6 +147,7 @@
     <ClCompile Include="Scripts\Ex\BlurFilter.cpp" />
     <ClCompile Include="Scripts\Ex\ExBox.cpp" />
     <ClCompile Include="Scripts\Ex\ExGeoShader.cpp" />
+    <ClCompile Include="Scripts\Ex\ExInstancing.cpp" />
     <ClCompile Include="Scripts\Ex\ExShape.cpp" />
     <ClCompile Include="Scripts\Ex\ExTexture.cpp" />
     <ClCompile Include="Scripts\Ex\Tesselation.cpp" />
@@ -178,6 +179,7 @@
     <ClInclude Include="Scripts\Ex\BlurFilter.h" />
     <ClInclude Include="Scripts\Ex\ExBox.h" />
     <ClInclude Include="Scripts\Ex\ExGeoShader.h" />
+    <ClInclude Include="Scripts\Ex\ExInstancing.h" />
     <ClInclude Include="Scripts\Ex\ExShape.h" />
     <ClInclude Include="Scripts\Ex\ExTexture.h" />
     <ClInclude Include="Scripts\Ex\Tesselation.h" />

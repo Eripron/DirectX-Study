@@ -14,8 +14,14 @@ namespace DK
 
 		Transform& GetTransform();
 
-		XMFLOAT4X4 GetViewMatrix();
-		XMFLOAT4X4 GetProjMatrix();
+		XMFLOAT4X4 GetViewMatrixf4();
+		XMFLOAT4X4 GetProjMatrixf4();
+
+		XMMATRIX GetViewMatrix();
+		XMMATRIX GetProjMatrix();
+
+		XMMATRIX GetInvViewMatrix();
+		XMMATRIX GetInvProjMatrix();
 
 		float GetNear();
 		float GetFar();

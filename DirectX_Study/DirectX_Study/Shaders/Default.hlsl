@@ -20,7 +20,27 @@
 // Include structures and functions for lighting.
 #include "LightUtils.hlsl" 
 
-Texture2D gDiffuseMap : register(t0);
+struct InstanceData
+{
+    float4x4 World;
+    float4x4 TexTransform;
+    uint MaterialIndex;
+    uint InstPad0;
+    uint InstPad1;
+    uint InstPad2;
+};
+
+struct MaterialData
+{
+    float4 DiffuseAlbedo;
+    float3 FresnelR0;
+    float Roughness;
+    float4x4 MatTransform;
+    uint DiffuseMapIndex;
+    uint MatPad0;
+    uint MatPad1;
+    uint MatPad2;
+};
 
 SamplerState gsamPointWrap : register(s0);
 SamplerState gsamPointClamp : register(s1);
@@ -29,15 +49,13 @@ SamplerState gsamLinearClamp : register(s3);
 SamplerState gsamAnisotropicWrap : register(s4);
 SamplerState gsamAnisotropicClamp : register(s5);
 
-// Constant data that varies per frame.
-cbuffer cbPerObject : register(b0)
-{
-    float4x4 gWorld;
-    float4x4 gTexTransform;
-};
+Texture2D gDiffuseMap[7] : register(t0);
+
+StructuredBuffer<InstanceData> gInstanceData : register(t0, space1);
+StructuredBuffer<MaterialData> gMaterialData : register(t1, space1);
 
 // Constant data that varies per material.
-cbuffer cbPass : register(b1)
+cbuffer cbPass : register(b0)
 {
     float4x4 gView;
     float4x4 gInvView;
@@ -55,23 +73,11 @@ cbuffer cbPass : register(b1)
     float gDeltaTime;
     float4 gAmbientLight;
 
-    // Indices [0, NUM_DIR_LIGHTS) are directional lights;
-    // indices [NUM_DIR_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHTS) are point lights;
-    // indices [NUM_DIR_LIGHTS+NUM_POINT_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHT+NUM_SPOT_LIGHTS)
-    // are spot lights for a maximum of MaxLights per object.
     Light gLights[MaxLights];
     
     float4 gFogColor;
     float gFogStart;
     float gFogRange;
-};
-
-cbuffer cbMaterial : register(b2)
-{
-	float4 gDiffuseAlbedo;  // 반사율(md)
-    float3 gFresnelR0;      // 매질(R0)
-    float  gRoughness;      // 거칠기(m)
-	float4x4 gMatTransform;
 };
  
 struct VertexIn
@@ -88,6 +94,8 @@ struct VertexOut
     float3 PosW    : POSITION;
     float3 NormalW : NORMAL;
     float2 TexC : TEXCOORD;
+    
+	nointerpolation uint MatIndex  : MATINDEX;
 };
 
 float3x3 cofactor(float3x3 m)
@@ -122,33 +130,50 @@ float3x3 inverse(float3x3 m)
     return adj / det;
 }
 
-VertexOut VS(VertexIn vin)
+VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
 {
 	VertexOut vout = (VertexOut)0.0f;
 	
+    // Fetch the instance data.
+    InstanceData instData = gInstanceData[instanceID];
+    float4x4 world = instData.World;
+    float4x4 texTransform = instData.TexTransform;
+    uint matIndex = instData.MaterialIndex;
+    
+    vout.MatIndex = matIndex;
+    
+    MaterialData matData = gMaterialData[matIndex];
+    
     // * 월드 변환
-    float4 posW = mul(float4(vin.PosL, 1.0f), gWorld);
+    float4 posW = mul(float4(vin.PosL, 1.0f), world);
     vout.PosW = posW.xyz;
 
     // * 뷰, 투영 변환
     vout.PosH = mul(posW, gViewProj);
     
     // * normal vector 변환
-    float3x3 invTrans = transpose(inverse((float3x3) gWorld));
+    float3x3 invTrans = transpose(inverse((float3x3) world));
     vout.NormalW = normalize(mul(vin.NormalL, invTrans));
 
     // Output vertex attributes for interpolation across triangle.
-    float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gTexTransform);
-    vout.TexC = mul(texC, gMatTransform).xy;
+    float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), texTransform);
+    vout.TexC = mul(texC, matData.MatTransform).xy;
     
     return vout;
 }
 
 float4 PS(VertexOut pin) : SV_Target
 {
-    float4 diffuseAlbedo = gDiffuseMap.Sample(gsamAnisotropicWrap, pin.TexC) * gDiffuseAlbedo;
+    // Fetch the material data.
+    MaterialData matData = gMaterialData[pin.MatIndex];
+    float4 diffuseAlbedo = matData.DiffuseAlbedo;
+    float3 fresnelR0 = matData.FresnelR0;
+    float roughness = matData.Roughness;
+    uint diffuseTexIndex = matData.DiffuseMapIndex;
     
-   #ifdef ALPHA_TEST
+    diffuseAlbedo *= gDiffuseMap[diffuseTexIndex].Sample(gsamLinearWrap, pin.TexC);
+    
+  #ifdef ALPHA_TEST
 	// Discard pixel if texture alpha < 0.1.  We do this test as soon 
 	// as possible in the shader so that we can potentially exit the
 	// shader early, thereby skipping the rest of the shader code.
@@ -163,8 +188,8 @@ float4 PS(VertexOut pin) : SV_Target
 	//  ambient 계산 = 간접광의 양 * 반사율
     float4 ambient = gAmbientLight * diffuseAlbedo;
 
-    const float shininess = 1.0f - gRoughness;
-    Material mat = { diffuseAlbedo, gFresnelR0, shininess };
+    const float shininess = 1.0f - roughness;
+    Material mat = { diffuseAlbedo, fresnelR0, shininess };
     float3 shadowFactor = 1.0f;
     float4 directLight = ComputeLighting(gLights, mat, pin.PosW, pin.NormalW, toEyeW, shadowFactor);
 
@@ -173,7 +198,7 @@ float4 PS(VertexOut pin) : SV_Target
 #ifdef FOG
     float fogAmount = saturate((distToEye - gFogStart) / gFogRange);
     litColor = lerp(litColor, gFogColor, fogAmount);
-  #endif
+ #endif
     
     // Common convention to take alpha from diffuse material.
     litColor.a = diffuseAlbedo.a;

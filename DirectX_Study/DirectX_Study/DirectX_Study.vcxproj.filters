@@ -147,6 +147,9 @@
     <ClCompile Include="Scripts\Ex\Tesselation.cpp">
       <Filter>소스 파일\Ex</Filter>
     </ClCompile>
+    <ClCompile Include="Scripts\Ex\ExInstancing.cpp">
+      <Filter>소스 파일\Ex</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Scripts\Window\MainWindow.h">
@@ -237,6 +240,9 @@
       <Filter>헤더 파일\Engine</Filter>
     </ClInclude>
     <ClInclude Include="Scripts\Ex\Tesselation.h">
+      <Filter>헤더 파일\Ex</Filter>
+    </ClInclude>
+    <ClInclude Include="Scripts\Ex\ExInstancing.h">
       <Filter>헤더 파일\Ex</Filter>
     </ClInclude>
   </ItemGroup>

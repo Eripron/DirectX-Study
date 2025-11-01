@@ -18,18 +18,46 @@ Transform& DK::Camera::GetTransform()
 	return m_transform;
 }
 
-XMFLOAT4X4 DK::Camera::GetViewMatrix()
+XMFLOAT4X4 DK::Camera::GetViewMatrixf4()
 {
 	UpdateViewMatrix();
 
 	return m_viewMatrix;
 }
 
-XMFLOAT4X4 DK::Camera::GetProjMatrix()
+XMFLOAT4X4 DK::Camera::GetProjMatrixf4()
 {
 	UpdateProjMatrix();
 
 	return m_projMatrix;
+}
+
+XMMATRIX DK::Camera::GetViewMatrix()
+{
+	XMFLOAT4X4 viewf4 = GetViewMatrixf4();
+	return XMLoadFloat4x4(&viewf4);
+}
+
+XMMATRIX DK::Camera::GetProjMatrix()
+{
+	XMFLOAT4X4 projf4 = GetProjMatrixf4();
+	return XMLoadFloat4x4(&projf4);
+}
+
+XMMATRIX DK::Camera::GetInvViewMatrix()
+{
+	XMMATRIX view = GetViewMatrix();
+	DirectX::XMVECTOR viewDetermin = XMMatrixDeterminant(view);
+
+	return XMMatrixInverse(&viewDetermin, view);
+}
+
+XMMATRIX DK::Camera::GetInvProjMatrix()
+{
+	XMMATRIX proj = GetProjMatrix();
+	DirectX::XMVECTOR projDetermin = XMMatrixDeterminant(proj);
+
+	return XMMatrixInverse(&projDetermin, proj);
 }
 
 float DK::Camera::GetNear()

@@ -1,14 +1,13 @@
 #include <Windows.h>
 
 #include "Window/MainWindow.h"
-#include "Ex/Tesselation.h"
-//#include "Ex/Blur.h"
+#include "Ex/ExInstancing.h"
 
 using namespace DK;
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstace, LPSTR lpszCmdParam, int nCmdShow)
 {
-	LPCTSTR strClassName = TEXT("Tesselation");
+	LPCTSTR strClassName = TEXT("Instacing & Culling");
 	MainWindow mainWindow;
 	if (mainWindow.Create(hInstance, strClassName, strClassName, nCmdShow) == false)
 	{
@@ -17,7 +16,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstace, LPSTR lpszCmdP
 
 	HWND hWnd = mainWindow.GetHandle();
 
-	ExTesselation engine(hWnd);
+	ExInstancing engine(hWnd);
 	engine.Initialize();
 
 	while (mainWindow.Run())

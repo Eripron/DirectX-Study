@@ -150,19 +150,19 @@ void DK::ExBlur::CreateMaterial()
 	std::unique_ptr<Material> boxMat = std::make_unique<Material>();
 
 	boxMat->Name = "box";
-	boxMat->MatCBIndex = 0;
-	boxMat->DiffuseSrvHeapIndex = m_mapTextures["bricks"]->TexCBIndex;
+	boxMat->SrvHeapIndex = 0;
+	boxMat->DiffuseSrvHeapIndex = m_mapTextures["bricks"]->SrvHeapIndex;
 	boxMat->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	boxMat->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
 	boxMat->Roughness = 0.125f;
-	boxMat->NumFramesDirty = FRAME_RESOURCE_COUNT;
+	boxMat->DirtyCount = FRAME_RESOURCE_COUNT;
 
 	m_mapMaterials[boxMat->Name] = std::move(boxMat);
 }
 
 void DK::ExBlur::CreateGameObject()
 {
-	GameObject* go = new GameObject();
+	/*GameObject* go = new GameObject();
 	go->m_nCBIndex = 0;
 	go->m_nFrameDirty = FRAME_RESOURCE_COUNT;
 	go->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -177,7 +177,7 @@ void DK::ExBlur::CreateGameObject()
 	go->SetMaterial(m_mapMaterials["box"].get());
 	go->AddComponent(new MeshFilter("box"));
 
-	m_vecGameObject[(int)RenderLayer::Opaque].push_back(go);
+	m_vecGameObject[(int)RenderLayer::Opaque].push_back(go);*/
 }
 
 void DK::ExBlur::CreateFrameResource()
@@ -188,7 +188,7 @@ void DK::ExBlur::CreateFrameResource()
 
 	for (int i = 0; i < FRAME_RESOURCE_COUNT; ++i)
 	{
-		m_vecFrameResoruce.push_back(std::make_unique<FrameResource>(m_d3dDevice.Get(), 1, objectCount, m_mapMaterials.size(), 1));
+		//m_vecFrameResoruce.push_back(std::make_unique<FrameResource>(m_d3dDevice.Get(), 1, objectCount, m_mapMaterials.size(), 1));
 	}
 }
 
@@ -203,7 +203,7 @@ void DK::ExBlur::LoadTexture(std::wstring path)
 	int texCBIndex = m_mapTextures.size();
 
 	spTexture->FileName = path;
-	spTexture->TexCBIndex = texCBIndex;
+	spTexture->SrvHeapIndex = texCBIndex;
 
 	HRESULT hr = DirectX::CreateDDSTextureFromFile12(m_d3dDevice.Get(),
 		m_commandList.Get(), spTexture->FileName.c_str(),
@@ -242,7 +242,7 @@ void DK::ExBlur::BuildDescriptorHeap()
 		srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 
 		CD3DX12_CPU_DESCRIPTOR_HANDLE heapHandle(m_spHeapCbvSrvUav->GetCPUDescriptorHandleForHeapStart());
-		heapHandle.Offset(pTexture->TexCBIndex, m_uCbvSrvUavDescriptorSize);
+		heapHandle.Offset(pTexture->SrvHeapIndex, m_uCbvSrvUavDescriptorSize);
 
 		m_d3dDevice->CreateShaderResourceView(pTexture->Resource.Get(), &srvDesc, heapHandle);
 	}
@@ -441,7 +441,7 @@ void DK::ExBlur::BuildPSO()
 
 void DK::ExBlur::UpdateObjectCBs()
 {
-	auto objectCB = m_pCurrFrameResource->ObjectCB.get();
+	/*auto objectCB = m_pCurrFrameResource->ObjectCB.get();
 
 	for (int i = 0; i < (int)RenderLayer::Count; ++i)
 	{
@@ -471,12 +471,12 @@ void DK::ExBlur::UpdateObjectCBs()
 
 			m_vecGameObject[i][j]->m_nFrameDirty -= 1;
 		}
-	}
+	}*/
 }
 
 void DK::ExBlur::UpdateMaterialCBs()
 {
-	auto meterialCB = m_pCurrFrameResource->MaterialCB.get();
+	/*auto meterialCB = m_pCurrFrameResource->MaterialCB.get();
 
 	for (auto& data : m_mapMaterials)
 	{
@@ -496,13 +496,13 @@ void DK::ExBlur::UpdateMaterialCBs()
 		meterialCB->CopyData(mat->MatCBIndex, matConstants);
 
 		mat->NumFramesDirty -= 1;
-	}
+	}*/
 }
 
 void DK::ExBlur::UpdateMainPassCB()
 {
-	DirectX::XMFLOAT4X4 viewMatrix = m_camera.GetViewMatrix();
-	DirectX::XMFLOAT4X4 projMatrix = m_camera.GetProjMatrix();
+	DirectX::XMFLOAT4X4 viewMatrix = m_camera.GetViewMatrixf4();
+	DirectX::XMFLOAT4X4 projMatrix = m_camera.GetProjMatrixf4();
 
 	DirectX::XMMATRIX view = XMLoadFloat4x4(&viewMatrix);
 	DirectX::XMMATRIX proj = XMLoadFloat4x4(&projMatrix);
@@ -551,7 +551,7 @@ void DK::ExBlur::UpdateMainPassCB()
 
 void DK::ExBlur::RenderGameObjects(ID3D12GraphicsCommandList* cmdList, std::vector<GameObject*> vecGameObject)
 {
-	UINT objCBByteSize = D3DUtils::CalcConstBufferByteSize(sizeof(ObjectConstants));
+	/*UINT objCBByteSize = D3DUtils::CalcConstBufferByteSize(sizeof(ObjectConstants));
 	UINT matCBByteSize = D3DUtils::CalcConstBufferByteSize(sizeof(MaterialConstants));
 
 	auto objectCB = m_pCurrFrameResource->ObjectCB->GetBuffer();
@@ -589,5 +589,5 @@ void DK::ExBlur::RenderGameObjects(ID3D12GraphicsCommandList* cmdList, std::vect
 		cmdList->SetGraphicsRootConstantBufferView(3, matCBAddress);
 
 		cmdList->DrawIndexedInstanced(meshSection.IndexCount, 1, meshSection.StartIndexLocation, meshSection.BaseVertexLocation, 0);
-	}
+	}*/
 }

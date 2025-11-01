@@ -12,14 +12,14 @@ DK::EngineBase::~EngineBase()
 
 void DK::EngineBase::Init()
 {
-	LoadTextures();
-
 	CreateMesh();
+	LoadTextures();
 	CreateMaterial();
+
 	CreateGameObject();
 
-	BuildFrameResource();
 	BuildDescriptorHeap();
+	BuildFrameResource();
 	BuildRootSignature();
 	BuildInputLayoutAndShader();
 	BuildPSO();
@@ -79,8 +79,13 @@ bool DK::EngineBase::Render()
 
 		m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
 
+		auto matBuffer = m_curFrameResource->MaterialBuffer->GetBuffer();
+		m_commandList->SetGraphicsRootShaderResourceView(1, matBuffer->GetGPUVirtualAddress());
+
 		auto passCB = m_curFrameResource->RenderPassCB->GetBuffer();
 		m_commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
+
+		m_commandList->SetGraphicsRootDescriptorTable(3, m_heapCbvSrvUav->GetGPUDescriptorHandleForHeapStart());
 
 		Render(m_commandList.Get());
 	}
@@ -106,6 +111,16 @@ void DK::EngineBase::Render(ID3D12GraphicsCommandList* cmdList)
 {
 }
 
+bool DK::EngineBase::OnResize(int width, int height, bool force)
+{
+	GraphicEngine::OnResize(width, height, force);
+
+	DirectX::XMMATRIX proj = m_camera.GetProjMatrix();
+	DirectX::BoundingFrustum::CreateFromMatrix(m_camFrustum, proj);
+
+	return true;
+}
+
 // init
 void DK::EngineBase::LoadTextures()
 {
@@ -123,15 +138,22 @@ void DK::EngineBase::CreateGameObject()
 {
 }
 
+void DK::EngineBase::CreateRenderItem()
+{
+}
+
 void DK::EngineBase::BuildFrameResource()
 {
-	int objectCount = 0;
-	for (int i = 0; i < (int)RenderLayer::Count; ++i)
-		objectCount += m_gameObjects[i].size();
+	int totalInstCount = 0;
+	for (int i = 0; i < m_renderItems.size(); ++i)
+	{
+		int instCount = m_renderItems[i]->InstanceDatas.size();
+		totalInstCount += (instCount > 0 ? instCount : 1);
+	}
 
 	for (int i = 0; i < FrameResourceCount; ++i)
 	{
-		m_frameResources.push_back(std::make_unique<FrameResource>(m_d3dDevice.Get(), 1, objectCount, m_materials.size(), 0));
+		m_frameResources.push_back(std::make_unique<FrameResource>(m_d3dDevice.Get(), 1, totalInstCount, m_materials.size()));
 	}
 }
 
@@ -143,10 +165,10 @@ void DK::EngineBase::BuildDescriptorHeap()
 	// Create Descriptor
 	D3D12_DESCRIPTOR_HEAP_DESC heapDesc;
 	ZeroMemory(&heapDesc, sizeof(D3D12_DESCRIPTOR_HEAP_DESC));
-	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;	// srv + uav
 	heapDesc.NumDescriptors = m_textures.size();
-	heapDesc.NodeMask = 0;
+	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	heapDesc.NodeMask = 0;
 
 	THROW_IF_FAILED(m_d3dDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_heapCbvSrvUav)));
 
@@ -167,7 +189,7 @@ void DK::EngineBase::BuildDescriptorHeap()
 		srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 
 		CD3DX12_CPU_DESCRIPTOR_HANDLE heapHandle(m_heapCbvSrvUav->GetCPUDescriptorHandleForHeapStart());
-		heapHandle.Offset(pTexture->TexCBIndex, m_uCbvSrvUavDescriptorSize);
+		heapHandle.Offset(pTexture->SrvHeapIndex, m_uCbvSrvUavDescriptorSize);
 
 		m_d3dDevice->CreateShaderResourceView(pTexture->Resource.Get(), &srvDesc, heapHandle);
 	}
@@ -175,18 +197,18 @@ void DK::EngineBase::BuildDescriptorHeap()
 
 void DK::EngineBase::BuildRootSignature()
 {
-	CD3DX12_DESCRIPTOR_RANGE texTable;
-	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
-
 	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
+	ZeroMemory(slotRootParameter, sizeof(CD3DX12_ROOT_PARAMETER) * 4);
+
+	slotRootParameter[0].InitAsShaderResourceView(0, 1);
+	slotRootParameter[1].InitAsShaderResourceView(1, 1);
+
+	slotRootParameter[2].InitAsConstantBufferView(0);
 
 	// PS에서 사용할 table 1개 설정
-	slotRootParameter[0].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
-
-	// 상수 버퍼 설정 3개
-	slotRootParameter[1].InitAsConstantBufferView(0);
-	slotRootParameter[2].InitAsConstantBufferView(1);
-	slotRootParameter[3].InitAsConstantBufferView(2);
+	CD3DX12_DESCRIPTOR_RANGE textureTable;
+	textureTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, m_textures.size(), 0);
+	slotRootParameter[3].InitAsDescriptorTable(1, &textureTable, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	auto staticSamplers = Texture::GetStaticSamplers();
 
@@ -217,20 +239,20 @@ void DK::EngineBase::BuildInputLayoutAndShader()
 {
 	const D3D_SHADER_MACRO defines[] =
 	{
-		"FOG", "1",
+		"1",
 		NULL, NULL
 	};
 
 	const D3D_SHADER_MACRO alphaTestDefines[] =
 	{
-		"FOG", "1",
+		"1",
 		"ALPHA_TEST", "1",
 		NULL, NULL
 	};
 
-	m_shaders["standardVS"] = D3DUtils::CompileShader(L"Shaders\\Default.hlsl", nullptr, "VS", "vs_5_0");
-	m_shaders["opaquePS"] = D3DUtils::CompileShader(L"Shaders\\Default.hlsl", defines, "PS", "ps_5_0");
-	m_shaders["alphaTestedPS"] = D3DUtils::CompileShader(L"Shaders\\Default.hlsl", alphaTestDefines, "PS", "ps_5_0");
+	m_shaders["standardVS"] = D3DUtils::CompileShader(L"Shaders\\Default.hlsl", nullptr, "VS", "vs_5_1");
+	m_shaders["opaquePS"] = D3DUtils::CompileShader(L"Shaders\\Default.hlsl", defines, "PS", "ps_5_1");
+	m_shaders["alphaTestedPS"] = D3DUtils::CompileShader(L"Shaders\\Default.hlsl", alphaTestDefines, "PS", "ps_5_1");
 
 	m_inputLayouts = Vertex::GetInputLayout();
 }
@@ -265,7 +287,6 @@ void DK::EngineBase::BuildPSO()
 	psoDesOpaque.DSVFormat = m_eDepthStencilFormat;
 	THROW_IF_FAILED(m_d3dDevice->CreateGraphicsPipelineState(&psoDesOpaque, IID_PPV_ARGS(&m_psos[(int)RenderLayer::Opaque])));
 
-
 	// PSO for transparent objects
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesctransparent = psoDesOpaque;
 
@@ -284,7 +305,6 @@ void DK::EngineBase::BuildPSO()
 	psoDesctransparent.BlendState.RenderTarget[0] = transparencyBlendDesc;
 	THROW_IF_FAILED(m_d3dDevice->CreateGraphicsPipelineState(&psoDesctransparent, IID_PPV_ARGS(&m_psos[(int)RenderLayer::Transparent])));
 
-
 	// PSO for alpha tested objects
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC alphaTestedPsoDesc = psoDesOpaque;
 	alphaTestedPsoDesc.PS =
@@ -298,84 +318,88 @@ void DK::EngineBase::BuildPSO()
 
 void DK::EngineBase::UpdateObjectCBs()
 {
-	if (m_curFrameResource->ObjectCB == nullptr)
+	if (m_renderItems.size() <= 0)
 		return;
 
-	auto objectCB = m_curFrameResource->ObjectCB.get();
+	DirectX::XMMATRIX invView = m_camera.GetInvViewMatrix();
 
-	for (int i = 0; i < (int)RenderLayer::Count; ++i)
+	auto currInstanceBuffer = m_curFrameResource->InstanceBuffer.get();
+	int renderInstanceCount = 0;
+
+	for (auto& e : m_renderItems)
 	{
-		int objCount = m_gameObjects[i].size();
+		const auto& instanceData = e->InstanceDatas;
 
-		for (int j = 0; j < objCount; ++j)
+		for (UINT i = 0; i < (UINT)instanceData.size(); ++i)
 		{
-			if (m_gameObjects[i][j]->m_nFrameDirty <= 0)
-				continue;
+			XMMATRIX world = XMLoadFloat4x4(&instanceData[i].World);
+			XMMATRIX texTransform = XMLoadFloat4x4(&instanceData[i].TexTransform);
 
-			DirectX::XMFLOAT4X4 worldMatrix = MathUtils::Identity4x4();
+			XMVECTOR determin = XMMatrixDeterminant(world);
+			XMMATRIX invWorld = XMMatrixInverse(&determin, world);
 
-			Transform* transform = m_gameObjects[i][j]->GetComponent<Transform>();
-			if (transform != nullptr)
-				worldMatrix = transform->GetWorldMatrix();
+			XMMATRIX viewToLocal = XMMatrixMultiply(invView, invWorld);
 
-			DirectX::XMFLOAT4X4 texTransform = m_gameObjects[i][j]->TexTransform;
+			DirectX::BoundingFrustum localSpaceFrustum;
+			m_camFrustum.Transform(localSpaceFrustum, viewToLocal);
 
-			XMMATRIX world = XMLoadFloat4x4(&worldMatrix);
-			XMMATRIX vTexTransform = XMLoadFloat4x4(&texTransform);
+			if (localSpaceFrustum.Contains(e->BoundBox) != DirectX::DISJOINT)
+			{
+				InstanceData data;
+				XMStoreFloat4x4(&data.World, XMMatrixTranspose(world));
+				XMStoreFloat4x4(&data.TexTransform, XMMatrixTranspose(texTransform));
+				data.MaterialIndex = instanceData[i].MaterialIndex;
 
-			ObjectConstants constants;
-			DirectX::XMStoreFloat4x4(&constants.WorldMatrix, XMMatrixTranspose(world));
-			DirectX::XMStoreFloat4x4(&constants.TexTransform, XMMatrixTranspose(vTexTransform));
-
-			objectCB->CopyData(m_gameObjects[i][j]->m_nCBIndex, constants);
-
-			m_gameObjects[i][j]->m_nFrameDirty -= 1;
+				// Write the instance data to structured buffer for the visible objects.
+				currInstanceBuffer->CopyData(renderInstanceCount, data);
+				++renderInstanceCount;
+			}
 		}
+
+		e->RenderInstanceCount = renderInstanceCount;
 	}
 }
 
 void DK::EngineBase::UpdateMaterialCBs()
 {
-	if (m_curFrameResource->MaterialCB == nullptr)
+	if (m_curFrameResource->MaterialBuffer == nullptr)
 		return;
 
-	auto meterialCB = m_curFrameResource->MaterialCB.get();
+	auto matBuffer = m_curFrameResource->MaterialBuffer.get();
 
 	for (auto& data : m_materials)
 	{
 		Material* mat = data.second.get();
 
-		if (mat->NumFramesDirty <= 0)
+		if (mat->DirtyCount <= 0) 
 			continue;
 
 		XMMATRIX matTransform = XMLoadFloat4x4(&mat->MatTransform);
 
-		MaterialConstants matConstants;
-		matConstants.DiffuseAlbedo = mat->DiffuseAlbedo;
-		matConstants.FresnelR0 = mat->FresnelR0;
-		matConstants.Roughness = mat->Roughness;
-		DirectX::XMStoreFloat4x4(&matConstants.MatTransform, XMMatrixTranspose(matTransform));
+		// gpu에게 넘겨줄 material data 복사
+		MaterialData metData;
+		metData.DiffuseAlbedo = mat->DiffuseAlbedo;
+		metData.FresnelR0 = mat->FresnelR0;
+		metData.Roughness = mat->Roughness;
+		DirectX::XMStoreFloat4x4(&metData.MatTransform, XMMatrixTranspose(matTransform));
 
-		meterialCB->CopyData(mat->MatCBIndex, matConstants);
+		metData.DiffuseSrvHeapIndex = mat->DiffuseSrvHeapIndex;
 
-		mat->NumFramesDirty -= 1;
+		matBuffer->CopyData(mat->SrvHeapIndex, metData);
+
+		mat->DirtyCount -= 1;
 	}
 }
 
 void DK::EngineBase::UpdateMainPassCB()
 {
-	DirectX::XMFLOAT4X4 viewMatrix = m_camera.GetViewMatrix();
-	DirectX::XMFLOAT4X4 projMatrix = m_camera.GetProjMatrix();
+	DirectX::XMMATRIX view = m_camera.GetViewMatrix();
+	DirectX::XMMATRIX invView = m_camera.GetInvViewMatrix();
 
-	DirectX::XMMATRIX view = XMLoadFloat4x4(&viewMatrix);
-	DirectX::XMMATRIX proj = XMLoadFloat4x4(&projMatrix);
+	DirectX::XMMATRIX proj = m_camera.GetProjMatrix();
+	DirectX::XMMATRIX invProj = m_camera.GetInvProjMatrix();
+
 	DirectX::XMMATRIX viewProj = XMMatrixMultiply(view, proj);
-
-	DirectX::XMVECTOR viewDetermin = XMMatrixDeterminant(view);
-	DirectX::XMMATRIX invView = XMMatrixInverse(&viewDetermin, view);
-
-	DirectX::XMVECTOR projDetermin = XMMatrixDeterminant(proj);
-	DirectX::XMMATRIX invProj = XMMatrixInverse(&projDetermin, proj);
 
 	DirectX::XMVECTOR viewprojDetermin = XMMatrixDeterminant(viewProj);
 	DirectX::XMMATRIX invViewProj = XMMatrixInverse(&viewprojDetermin, viewProj);
@@ -412,46 +436,50 @@ void DK::EngineBase::UpdateMainPassCB()
 	currPassCB->CopyData(0, m_renderPassCB);
 }
 
-void DK::EngineBase::RenderGameObjects(ID3D12GraphicsCommandList* cmdList, std::vector<GameObject*> vecGameObject)
+void DK::EngineBase::RenderRenderItems(ID3D12GraphicsCommandList* cmdList, std::vector<RenderItem*> renderItems)
 {
-	UINT objCBByteSize = D3DUtils::CalcConstBufferByteSize(sizeof(ObjectConstants));
-	UINT matCBByteSize = D3DUtils::CalcConstBufferByteSize(sizeof(MaterialConstants));
-
-	auto objectCB = m_curFrameResource->ObjectCB->GetBuffer();
-	auto materialCB = m_curFrameResource->MaterialCB->GetBuffer();
-
-	for (size_t i = 0; i < vecGameObject.size(); ++i)
+	for (int i = 0; i < renderItems.size(); ++i)
 	{
-		GameObject* pGameObject = vecGameObject[i];
-
-		MeshFilter* meshFilter = pGameObject->GetComponent<MeshFilter>();
-		if (meshFilter == nullptr)
-			continue;
+		RenderItem* curRender = renderItems[i];
+		MeshFilter* meshInfo = curRender->pGameObject->GetComponent<MeshFilter>();
 
 		D3D12_VERTEX_BUFFER_VIEW vbView;
 		D3D12_INDEX_BUFFER_VIEW ibView;
 		MeshSection meshSection;
 
-		if (meshFilter->GetMeshInfo(vbView, ibView, meshSection) == false)
+		if (meshInfo->GetMeshInfo(vbView, ibView, meshSection) == false)
 			continue;
 
 		cmdList->IASetVertexBuffers(0, 1, &vbView);
 		cmdList->IASetIndexBuffer(&ibView);
-		cmdList->IASetPrimitiveTopology(pGameObject->PrimitiveType);
+		cmdList->IASetPrimitiveTopology(curRender->PrimitiveType);
 
-		CD3DX12_GPU_DESCRIPTOR_HANDLE tex(m_heapCbvSrvUav->GetGPUDescriptorHandleForHeapStart());
-		tex.Offset(pGameObject->GetMaterial()->DiffuseSrvHeapIndex, m_uCbvSrvUavDescriptorSize);
+		int instanceCount = 0;
+		if (curRender->InstanceDatas.size() > 0)
+		{
+			instanceCount = curRender->RenderInstanceCount;
 
-		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + (objCBByteSize * pGameObject->m_nCBIndex);
+			auto instanceBuffer = m_curFrameResource->InstanceBuffer->GetBuffer();
+			cmdList->SetGraphicsRootShaderResourceView(0, instanceBuffer->GetGPUVirtualAddress());
+		}
+		else
+			instanceCount = 1;
 
-		int matCBIndex = pGameObject->GetMaterial()->MatCBIndex;
-		D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = materialCB->GetGPUVirtualAddress() + (matCBByteSize * matCBIndex);
+		if (instanceCount <= 0)
+			continue;
 
-		cmdList->SetGraphicsRootDescriptorTable(0, tex);
-		cmdList->SetGraphicsRootConstantBufferView(1, objCBAddress);
-		cmdList->SetGraphicsRootConstantBufferView(3, matCBAddress);
+		cmdList->DrawIndexedInstanced(meshSection.IndexCount, 
+									  instanceCount, 
+									  meshSection.StartIndexLocation, 
+									  meshSection.BaseVertexLocation, 0);
 
-		cmdList->DrawIndexedInstanced(meshSection.IndexCount, 1, meshSection.StartIndexLocation, meshSection.BaseVertexLocation, 0);
+		WCHAR title[60];
+		GetWindowText(GetHandleWindow(), title, 49);
+
+		std::wstring wstrCount = L"출력 instance count: " + std::to_wstring(instanceCount);
+		std::wstring newTitle = std::wstring(title) + wstrCount;
+
+		SetWindowText(GetHandleWindow(), newTitle.c_str());
 	}
 }
 
@@ -459,19 +487,19 @@ void DK::EngineBase::LoadTexture(std::wstring path)
 {
 	size_t firstIdx = path.rfind(L'/') + 1;
 	size_t lastIdx = path.rfind(L'.');
-	std::string textureName = WStringToAnsi(path.substr(firstIdx, lastIdx - firstIdx));
+	std::wstring fileName = path.substr(firstIdx, lastIdx - firstIdx);
 
 	std::unique_ptr<Texture> spTexture = std::make_unique<Texture>();
 
-	int texCBIndex = m_textures.size();
+	int srvHeapIndex = m_textures.size();
 
-	spTexture->FileName = path;
-	spTexture->TexCBIndex = texCBIndex;
+	spTexture->FileName = fileName;
+	spTexture->SrvHeapIndex = srvHeapIndex;
 
 	HRESULT hr = DirectX::CreateDDSTextureFromFile12(m_d3dDevice.Get(),
-		m_commandList.Get(), spTexture->FileName.c_str(),
+		m_commandList.Get(), path.c_str(),
 		spTexture->Resource, spTexture->UploadHeap);
 
 	if (SUCCEEDED(hr))
-		m_textures[textureName] = std::move(spTexture);
+		m_textures[WStringToAnsi(fileName)] = std::move(spTexture);
 }

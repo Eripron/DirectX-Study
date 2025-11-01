@@ -10,8 +10,6 @@ DK::ExTexture::~ExTexture()
 
 void DK::ExTexture::Init()
 {
-	MeshManager::GetInstance()->Init();
-
 	m_camera.GetTransform().SetPosition(0, 0, -10);
 
 	LoadTexture();
@@ -124,7 +122,7 @@ void DK::ExTexture::LoadTexture(std::wstring path, int texCBIndex)
 	std::unique_ptr<Texture> spTexture = std::make_unique<Texture>();
 
 	spTexture->FileName = path;
-	spTexture->TexCBIndex = texCBIndex;
+	spTexture->SrvHeapIndex = texCBIndex;
 
 	DirectX::CreateDDSTextureFromFile12(m_d3dDevice.Get(),
 		m_commandList.Get(), spTexture->FileName.c_str(),
@@ -137,21 +135,21 @@ void DK::ExTexture::CreateMaterial()
 {
 	auto treeSprites = std::make_unique<Material>();
 	treeSprites->Name = "tree";
-	treeSprites->MatCBIndex = 0;
-	treeSprites->DiffuseSrvHeapIndex = m_mapTextures["treeArray2"]->TexCBIndex;
+	treeSprites->SrvHeapIndex = 0;
+	treeSprites->DiffuseSrvHeapIndex = m_mapTextures["treeArray2"]->SrvHeapIndex;
 	treeSprites->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	treeSprites->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
 	treeSprites->Roughness = 0.125f;
-	treeSprites->NumFramesDirty = m_nFrameReesourceCount;
+	treeSprites->DirtyCount = m_nFrameReesourceCount;
 
 	auto matBox = std::make_unique<Material>();
 	matBox->Name = "box";
-	matBox->MatCBIndex = 1;
-	matBox->DiffuseSrvHeapIndex = m_mapTextures["WoodCrate02"]->TexCBIndex;
+	matBox->SrvHeapIndex = 1;
+	matBox->DiffuseSrvHeapIndex = m_mapTextures["WoodCrate02"]->SrvHeapIndex;
 	matBox->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	matBox->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
 	matBox->Roughness = 0.125f;
-	matBox->NumFramesDirty = m_nFrameReesourceCount;
+	matBox->DirtyCount = m_nFrameReesourceCount;
 
 	m_mapMaterials[treeSprites->Name] = std::move(treeSprites);
 	m_mapMaterials[matBox->Name] = std::move(matBox);
@@ -184,7 +182,7 @@ void DK::ExTexture::CreateGeometry()
 
 void DK::ExTexture::CreateGameObject()
 {
-	int nCBIndex = 0;
+	/*int nCBIndex = 0;
 
 	auto objTree = new GameObject();
 	objTree->m_nCBIndex = nCBIndex++;
@@ -205,7 +203,7 @@ void DK::ExTexture::CreateGameObject()
 	objBox->SetMaterial(m_mapMaterials["box"].get());
 	objBox->AddComponent(new MeshFilter("box"));
 
-	m_vecGameObjects[(int)RenderLayer::Opaque].push_back(objBox);
+	m_vecGameObjects[(int)RenderLayer::Opaque].push_back(objBox);*/
 }
 
 void DK::ExTexture::CreateFrameResource()
@@ -214,11 +212,11 @@ void DK::ExTexture::CreateFrameResource()
 	for (int i = 0; i < (int)RenderLayer::Count; ++i)
 		objectCount += m_vecGameObjects[i].size();
 
-	for (int i = 0; i < m_nFrameReesourceCount; ++i)
+	/*for (int i = 0; i < m_nFrameReesourceCount; ++i)
 	{
 		m_vecFrameResoruce.push_back(std::make_unique<FrameResource>(
 			m_d3dDevice.Get(), 1, objectCount, m_mapMaterials.size(), 1));
-	}
+	}*/
 }
 
 void DK::ExTexture::BuildDescriptor()
@@ -521,7 +519,7 @@ void DK::ExTexture::UpdateWave(const GameTimer& gt)
 
 void DK::ExTexture::UpdateObjectCBs()
 {
-	auto objectCB = m_pCurrFrameResource->ObjectCB.get();
+	/*auto objectCB = m_pCurrFrameResource->ObjectCB.get();
 
 	for (int i = 0; i < (int)RenderLayer::Count; ++i)
 	{
@@ -551,12 +549,12 @@ void DK::ExTexture::UpdateObjectCBs()
 
 			m_vecGameObjects[i][j]->m_nFrameDirty -= 1;
 		}
-	}
+	}*/
 }
 
 void DK::ExTexture::UpdateMaterialCBs()
 {
-	auto meterialCB = m_pCurrFrameResource->MaterialCB.get();
+	/*auto meterialCB = m_pCurrFrameResource->MaterialCB.get();
 
 	for (auto& data : m_mapMaterials)
 	{
@@ -576,13 +574,13 @@ void DK::ExTexture::UpdateMaterialCBs()
 		meterialCB->CopyData(mat->MatCBIndex, matConstants);
 
 		mat->NumFramesDirty -= 1;
-	}
+	}*/
 }
 
 void DK::ExTexture::UpdateRenderPassCB()
 {
-	DirectX::XMFLOAT4X4 viewMatrix = m_camera.GetViewMatrix();
-	DirectX::XMFLOAT4X4 projMatrix = m_camera.GetProjMatrix();
+	DirectX::XMFLOAT4X4 viewMatrix = m_camera.GetViewMatrixf4();
+	DirectX::XMFLOAT4X4 projMatrix = m_camera.GetProjMatrixf4();
 
 	DirectX::XMMATRIX view = XMLoadFloat4x4(&viewMatrix);
 	DirectX::XMMATRIX proj = XMLoadFloat4x4(&projMatrix);
@@ -631,7 +629,7 @@ void DK::ExTexture::UpdateRenderPassCB()
 
 void DK::ExTexture::DrawGameObjects(ID3D12GraphicsCommandList* cmdList, std::vector<GameObject*> vecGameObject)
 {
-	UINT objCBByteSize = D3DUtils::CalcConstBufferByteSize(sizeof(ObjectConstants));
+	/*UINT objCBByteSize = D3DUtils::CalcConstBufferByteSize(sizeof(ObjectConstants));
 	UINT matCBByteSize = D3DUtils::CalcConstBufferByteSize(sizeof(MaterialConstants));
 
 	auto objectCB = m_pCurrFrameResource->ObjectCB->GetBuffer();
@@ -669,7 +667,7 @@ void DK::ExTexture::DrawGameObjects(ID3D12GraphicsCommandList* cmdList, std::vec
 		cmdList->SetGraphicsRootConstantBufferView(3, matCBAddress);
 
 		cmdList->DrawIndexedInstanced(meshSection.IndexCount, 1, meshSection.StartIndexLocation, meshSection.BaseVertexLocation, 0);
-	}
+	}*/
 }
 
 DirectX::XMFLOAT3 DK::ExTexture::GetHillNormal(float x, float z)

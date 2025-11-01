@@ -12,9 +12,9 @@ DK::ExTesselation::~ExTesselation()
 
 void DK::ExTesselation::Render(ID3D12GraphicsCommandList* cmdList)
 {
-	cmdList->SetPipelineState(m_psos[(int)RenderLayer::Patch].Get());
+	/*cmdList->SetPipelineState(m_psos[(int)RenderLayer::Patch].Get());
 
-	RenderGameObjects(cmdList, m_gameObjects[(int)RenderLayer::Patch]);
+	RenderRenderItems(cmdList, m_gameObjects[(int)RenderLayer::Patch]);*/
 }
 
 void DK::ExTesselation::LoadTextures()
@@ -46,19 +46,19 @@ void DK::ExTesselation::CreateMaterial()
 	std::unique_ptr<Material> mat = std::make_unique<Material>();
 
 	mat->Name = "grid";
-	mat->MatCBIndex = 0;
+	mat->SrvHeapIndex = 0;
 	mat->DiffuseSrvHeapIndex = 0;
 	mat->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	mat->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
 	mat->Roughness = 0.5f;
-	mat->NumFramesDirty = FrameResourceCount;
+	mat->DirtyCount = FrameResourceCount;
 
 	m_materials[mat->Name] = std::move(mat);
 }
 
 void DK::ExTesselation::CreateGameObject()
 {
-	GameObject* go = new GameObject();
+	/*GameObject* go = new GameObject();
 	go->m_nCBIndex = 0;
 	go->m_nFrameDirty = FrameResourceCount;
 	go->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_2_CONTROL_POINT_PATCHLIST;
@@ -66,7 +66,7 @@ void DK::ExTesselation::CreateGameObject()
 	go->SetMaterial(m_materials["grid"].get());
 	go->AddComponent(new MeshFilter("grid"));
 
-	m_gameObjects[(int)RenderLayer::Patch].push_back(go);
+	m_gameObjects[(int)RenderLayer::Patch].push_back(go);*/
 }
 
 void DK::ExTesselation::BuildInputLayoutAndShader()

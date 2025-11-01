@@ -187,8 +187,8 @@ void DK::Gizmo::UpdateBaseGridConstant(Camera* pCamera)
 	DirectX::XMFLOAT3 camPosition = pCamera->GetTransform().GetPosition();
 	XMMATRIX matrixWorld = DirectX::XMMatrixTranslation((int)camPosition.x / 10 * 10, 0, (int)camPosition.z / 10 * 10);
 
-	DirectX::XMFLOAT4X4 viewMatrix = pCamera->GetViewMatrix();
-	DirectX::XMFLOAT4X4 projMatrix = pCamera->GetProjMatrix();
+	DirectX::XMFLOAT4X4 viewMatrix = pCamera->GetViewMatrixf4();
+	DirectX::XMFLOAT4X4 projMatrix = pCamera->GetProjMatrixf4();
 	DirectX::XMMATRIX view = XMLoadFloat4x4(&viewMatrix);
 	DirectX::XMMATRIX proj = XMLoadFloat4x4(&projMatrix);
 	DirectX::XMMATRIX matrixViewProj = XMMatrixMultiply(view, proj);

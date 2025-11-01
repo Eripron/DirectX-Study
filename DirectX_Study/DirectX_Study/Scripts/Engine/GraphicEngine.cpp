@@ -434,7 +434,7 @@ void DK::GraphicEngine::UpdateCamera()
 
 		//DirectX::XMFLOAT3 camRot = m_camera.GetTransform().GetRotation();
 		// 마우스 이동을 회전 값으로 세팅
-		float sensitivity = 0.1f;
+		float sensitivity = 0.05f;
 		float dx = XMConvertToRadians(static_cast<float>(curCursorPos.y - m_preCursorPos.y) * sensitivity);
 		float dy = XMConvertToRadians(static_cast<float>(curCursorPos.x - m_preCursorPos.x) * sensitivity);
 

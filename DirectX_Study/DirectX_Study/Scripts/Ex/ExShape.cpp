@@ -111,33 +111,33 @@ bool DK::ExShape::Render()
 
 void DK::ExShape::UpdateWave(const GameTimer& gt)
 {
-	// Every quarter second, generate a random wave.
-	static float t_base = 0.0f;
-	if ((m_gameTimer.TotalTime() - t_base) >= 0.25f)
-	{
-		t_base += 0.25f;
+	//// Every quarter second, generate a random wave.
+	//static float t_base = 0.0f;
+	//if ((m_gameTimer.TotalTime() - t_base) >= 0.25f)
+	//{
+	//	t_base += 0.25f;
 
-		int i = MathUtils::Rand(4, m_waves->RowCount() - 5);
-		int j = MathUtils::Rand(4, m_waves->ColumnCount() - 5);
+	//	int i = MathUtils::Rand(4, m_waves->RowCount() - 5);
+	//	int j = MathUtils::Rand(4, m_waves->ColumnCount() - 5);
 
-		float r = MathUtils::RandF(0.2f, 0.5f);
+	//	float r = MathUtils::RandF(0.2f, 0.5f);
 
-		m_waves->Disturb(i, j, r);
-	}
+	//	m_waves->Disturb(i, j, r);
+	//}
 
-	// Update the wave simulation.
-	m_waves->Update(gt.DeltaTime());
+	//// Update the wave simulation.
+	//m_waves->Update(gt.DeltaTime());
 
-	// Update the wave vertex buffer with the new solution.
-	auto currWavesVB = m_pCurrFrameResource->WaveVB.get();
-	for (int i = 0; i < m_waves->VertexCount(); ++i)
-	{
-		Vertex v;
-		v.Position = m_waves->Position(i);
-		v.Normal = m_waves->Normal(i);
+	//// Update the wave vertex buffer with the new solution.
+	//auto currWavesVB = m_pCurrFrameResource->WaveVB.get();
+	//for (int i = 0; i < m_waves->VertexCount(); ++i)
+	//{
+	//	Vertex v;
+	//	v.Position = m_waves->Position(i);
+	//	v.Normal = m_waves->Normal(i);
 
-		currWavesVB->CopyData(i, v);
-	}
+	//	currWavesVB->CopyData(i, v);
+	//}
 
 	// Set the dynamic VB of the wave renderitem to the current frame VB.
 //	m_pGOWave->GetMeshBuffer()->VertexBuffer = currWavesVB->GetBuffer();
@@ -145,30 +145,30 @@ void DK::ExShape::UpdateWave(const GameTimer& gt)
 
 void DK::ExShape::UpdateObjectCBs(const GameTimer& gt)
 {
-	auto currObjectCB = m_pCurrFrameResource->ObjectCB.get();
-	int i = 0;
-	for (auto& ro : m_vecRenderObject)
-	{
-		if (ro.NumFramesDirty > 0)
-		{
-			/*DirectX::XMFLOAT4X4 world = ro.pGameObject->GetTransform().GetWorldMatrix();
-			DirectX::XMMATRIX worldMatrix = XMLoadFloat4x4(&world);
+	//auto currObjectCB = m_pCurrFrameResource->ObjectCB.get();
+	//int i = 0;
+	//for (auto& ro : m_vecRenderObject)
+	//{
+	//	if (ro.NumFramesDirty > 0)
+	//	{
+	//		/*DirectX::XMFLOAT4X4 world = ro.pGameObject->GetTransform().GetWorldMatrix();
+	//		DirectX::XMMATRIX worldMatrix = XMLoadFloat4x4(&world);
 
-			ObjectConstants objConstants;
-			XMStoreFloat4x4(&objConstants.WorldMatrix, XMMatrixTranspose(worldMatrix));
+	//		ObjectConstants objConstants;
+	//		XMStoreFloat4x4(&objConstants.WorldMatrix, XMMatrixTranspose(worldMatrix));
 
-			currObjectCB->CopyData(i, objConstants);
+	//		currObjectCB->CopyData(i, objConstants);
 
-			ro.NumFramesDirty -= 1;
-			++i;*/
-		}
-	}
+	//		ro.NumFramesDirty -= 1;
+	//		++i;*/
+	//	}
+	//}
 }
 
 void DK::ExShape::UpdateRenderPassCB(const GameTimer& gt)
 {
-	DirectX::XMFLOAT4X4 viewMatrix = m_camera.GetViewMatrix();
-	DirectX::XMFLOAT4X4 projMatrix = m_camera.GetProjMatrix();
+	DirectX::XMFLOAT4X4 viewMatrix = m_camera.GetViewMatrixf4();
+	DirectX::XMFLOAT4X4 projMatrix = m_camera.GetProjMatrixf4();
 
 	DirectX::XMMATRIX view = XMLoadFloat4x4(&viewMatrix);
 	DirectX::XMMATRIX proj = XMLoadFloat4x4(&projMatrix);
@@ -239,27 +239,27 @@ void DK::ExShape::UpdateRenderPassCB(const GameTimer& gt)
 
 void DK::ExShape::UpdateMaterialCB(const GameTimer& gt)
 {
-	auto currMaterialCB = m_pCurrFrameResource->MaterialCB.get();
-	for (auto& data : m_materials)
-	{
-		// Only update the cbuffer data if the constants have changed.  If the cbuffer
-		// data changes, it needs to be updated for each FrameResource.
-		Material* mat = data.second.get();
-		if (mat->NumFramesDirty > 0)
-		{
-			DirectX::XMMATRIX matTransform = XMLoadFloat4x4(&mat->MatTransform);
+	//auto currMaterialCB = m_pCurrFrameResource->MaterialCB.get();
+	//for (auto& data : m_materials)
+	//{
+	//	// Only update the cbuffer data if the constants have changed.  If the cbuffer
+	//	// data changes, it needs to be updated for each FrameResource.
+	//	Material* mat = data.second.get();
+	//	if (mat->NumFramesDirty > 0)
+	//	{
+	//		DirectX::XMMATRIX matTransform = XMLoadFloat4x4(&mat->MatTransform);
 
-			MaterialConstants matConstants;
-			matConstants.DiffuseAlbedo = mat->DiffuseAlbedo;
-			matConstants.FresnelR0 = mat->FresnelR0;
-			matConstants.Roughness = mat->Roughness;
+	//		MaterialConstants matConstants;
+	//		matConstants.DiffuseAlbedo = mat->DiffuseAlbedo;
+	//		matConstants.FresnelR0 = mat->FresnelR0;
+	//		matConstants.Roughness = mat->Roughness;
 
-			currMaterialCB->CopyData(mat->MatCBIndex, matConstants);
+	//		currMaterialCB->CopyData(mat->MatCBIndex, matConstants);
 
-			// Next FrameResource need to be updated too.
-			mat->NumFramesDirty--;
-		}
-	}
+	//		// Next FrameResource need to be updated too.
+	//		mat->NumFramesDirty--;
+	//	}
+	//}
 }
 
 void DK::ExShape::CreateGeometry()
@@ -343,19 +343,19 @@ void DK::ExShape::CreateMaterials()
 {
 	std::unique_ptr<Material> matGrass = std::make_unique<Material>();
 	matGrass->Name = "grass";
-	matGrass->MatCBIndex = 0;
+	matGrass->SrvHeapIndex = 0;
 	matGrass->DiffuseAlbedo = DirectX::XMFLOAT4(0.2f, 0.6f, 0.2f, 1.0f);
 	matGrass->FresnelR0 = DirectX::XMFLOAT3(0.01f, 0.01f, 0.01f);
 	matGrass->Roughness = 0.125f;
-	matGrass->NumFramesDirty = g_NumFrameResources;
+	matGrass->DirtyCount = g_NumFrameResources;
 
 	std::unique_ptr<Material> matWater = std::make_unique<Material>();
 	matWater->Name = "water";
-	matWater->MatCBIndex = 1;
+	matWater->SrvHeapIndex = 1;
 	matWater->DiffuseAlbedo = DirectX::XMFLOAT4(0.0f, 0.2f, 0.6f, 1.0f);
 	matWater->FresnelR0 = DirectX::XMFLOAT3(0.1f, 0.1f, 0.1f);
 	matWater->Roughness = 0.0f;
-	matWater->NumFramesDirty = g_NumFrameResources;
+	matWater->DirtyCount = g_NumFrameResources;
 
 	m_materials[matGrass->Name] = std::move(matGrass);
 	m_materials[matWater->Name] = std::move(matWater);
@@ -406,11 +406,11 @@ void DK::ExShape::BuildShadersAndInputLayout()
 
 void DK::ExShape::BuildFrameResources()
 {
-	for (int i = 0; i < g_NumFrameResources; ++i)
+	/*for (int i = 0; i < g_NumFrameResources; ++i)
 	{
 		m_frameResources.push_back(std::make_unique<FrameResource>(m_d3dDevice.Get(), 
 			1, (UINT)m_gameObjects.size(), (UINT)m_materials.size(), m_waves->VertexCount()));
-	}
+	}*/
 }
 
 void DK::ExShape::BuildRootSignature()
@@ -475,11 +475,11 @@ void DK::ExShape::BuildPSOs()
 
 void DK::ExShape::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderObject>& renderObjects)
 {
-	UINT objCBByteSize = D3DUtils::CalcConstBufferByteSize(sizeof(ObjectConstants));
+	/*UINT objCBByteSize = D3DUtils::CalcConstBufferByteSize(sizeof(ObjectConstants));
 	UINT matCBByteSize = D3DUtils::CalcConstBufferByteSize(sizeof(MaterialConstants));
 
 	auto objectCB = m_pCurrFrameResource->ObjectCB->GetBuffer();
-	auto materialCB = m_pCurrFrameResource->MaterialCB->GetBuffer();
+	auto materialCB = m_pCurrFrameResource->MaterialCB->GetBuffer();*/
 
 	// For each render item...
 	for (size_t i = 0; i < renderObjects.size(); ++i)
