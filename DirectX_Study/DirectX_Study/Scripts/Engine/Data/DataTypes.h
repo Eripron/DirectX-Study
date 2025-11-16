@@ -95,8 +95,8 @@ namespace DK
 	template <class VERTEX>
 	struct MeshBuffer
 	{
-		Microsoft::WRL::ComPtr<ID3D12Resource> VertexBuffer = nullptr;
-		Microsoft::WRL::ComPtr<ID3D12Resource> IndexBuffer = nullptr;
+		Microsoft::WRL::ComPtr<ID3D12Resource> VertexBuffer = nullptr;		// default heap에 저장된 정점 buffer 리소스 포인터
+		Microsoft::WRL::ComPtr<ID3D12Resource> IndexBuffer = nullptr;		// default heap에 저장된 인덱스 buffer 리소스 포인터
 
 		Microsoft::WRL::ComPtr<ID3D12Resource> VertexUploadBuffer = nullptr;
 		Microsoft::WRL::ComPtr<ID3D12Resource> IndexUploadBuffer = nullptr;
@@ -199,7 +199,7 @@ namespace DK
 	{
 		std::string Name;
 
-		int SrvHeapIndex = -1;			// Material Const Buffer Index
+		int SrvHeapIndex = -1;			// Material 리소스를 SRV Heap에 위치시킨 index 정보
 		int DiffuseSrvHeapIndex = -1;	// mat view index
 		int MaskSrvHeapIndex = -1;		// mask view index
 		int NormalSrvHeapIndex = -1;	// normal map view index
@@ -220,6 +220,7 @@ namespace DK
 	struct Texture
 	{
 		std::wstring FileName;
+		// Texture 리소스의 위치를 설명하는 Shader Resource View가 Descriptor Heap에 위치한 index 정보
 		UINT SrvHeapIndex = -1;
 
 		Microsoft::WRL::ComPtr<ID3D12Resource> Resource = nullptr;
@@ -282,12 +283,6 @@ namespace DK
 
 #pragma region Constants
 
-	struct ObjectConstants
-	{
-		DirectX::XMFLOAT4X4 WorldMatrix = MathUtils::Identity4x4();
-		DirectX::XMFLOAT4X4 TexTransform = MathUtils::Identity4x4();
-	};
-
 	struct RenderPassConstants
 	{
 		DirectX::XMFLOAT4X4 View = MathUtils::Identity4x4();
@@ -329,17 +324,11 @@ namespace DK
 
 #pragma endregion
 
-	// Instacing을 호출해서 출력할 object에 필요한 데이터
-	struct InstanceData
+	struct ObjectConstants
 	{
 		DirectX::XMFLOAT4X4 World = MathUtils::Identity4x4();
 		DirectX::XMFLOAT4X4 TexTransform = MathUtils::Identity4x4();
 		UINT MaterialIndex;
-
-		// Q. 아래의 변수들은 무엇을 위해서?
-		UINT InstancePad0;
-		UINT InstancePad1;
-		UINT InstancePad2;
 	};
 
 	struct MaterialData
@@ -350,9 +339,6 @@ namespace DK
 		DirectX::XMFLOAT4X4 MatTransform = MathUtils::Identity4x4();
 
 		UINT DiffuseSrvHeapIndex = -1;
-		UINT MaterialPad0;
-		UINT MaterialPad1;
-		UINT MaterialPad2;
 	};
 
 }

@@ -15,7 +15,6 @@ namespace DK
 		~Transform() = default;
 		
 		DirectX::XMFLOAT3 GetPosition();
-		//DirectX::XMFLOAT3 GetRotation();
 		DirectX::XMFLOAT4 GetQuaternion();
 		DirectX::XMFLOAT3 GetScale();
 		DirectX::XMFLOAT4X4 GetWorldMatrix();
@@ -25,7 +24,6 @@ namespace DK
 		DirectX::XMFLOAT3 Front();
 
 		void SetPosition(float x, float y, float z);
-		//void SetRotation(float x, float y, float z);
 		void SetQuaternion(DirectX::XMFLOAT4 quaternion);
 		void SetScale(float x, float y, float z);
 

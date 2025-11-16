@@ -20,15 +20,12 @@
 // Include structures and functions for lighting.
 #include "LightUtils.hlsl" 
 
-struct InstanceData
-{
-    float4x4 World;
-    float4x4 TexTransform;
-    uint MaterialIndex;
-    uint InstPad0;
-    uint InstPad1;
-    uint InstPad2;
-};
+//struct ObjectConstBuffer
+//{
+//    float4x4 World;
+//    float4x4 TexTransform;
+//    uint MaterialIndex;
+//};
 
 struct MaterialData
 {
@@ -49,10 +46,8 @@ SamplerState gsamLinearClamp : register(s3);
 SamplerState gsamAnisotropicWrap : register(s4);
 SamplerState gsamAnisotropicClamp : register(s5);
 
-Texture2D gDiffuseMap[7] : register(t0);
-
-StructuredBuffer<InstanceData> gInstanceData : register(t0, space1);
-StructuredBuffer<MaterialData> gMaterialData : register(t1, space1);
+Texture2D gDiffuseMap[7] : register(t0);        // texture
+StructuredBuffer<MaterialData> gMaterialData : register(t0, space1);    // material
 
 // Constant data that varies per material.
 cbuffer cbPass : register(b0)
@@ -78,6 +73,13 @@ cbuffer cbPass : register(b0)
     float4 gFogColor;
     float gFogStart;
     float gFogRange;
+};
+
+cbuffer ObjectConstBuffer : register(b1)
+{
+    float4x4 World;
+    float4x4 TexTransform;
+    uint MaterialIndex;
 };
  
 struct VertexIn
@@ -135,10 +137,9 @@ VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
 	VertexOut vout = (VertexOut)0.0f;
 	
     // Fetch the instance data.
-    InstanceData instData = gInstanceData[instanceID];
-    float4x4 world = instData.World;
-    float4x4 texTransform = instData.TexTransform;
-    uint matIndex = instData.MaterialIndex;
+    float4x4 world = World;
+    float4x4 texTransform = TexTransform;
+    uint matIndex = MaterialIndex;
     
     vout.MatIndex = matIndex;
     

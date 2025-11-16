@@ -43,6 +43,7 @@ namespace DK
 		void PreRender(ID3D12GraphicsCommandList* pCmdList);
 
 		DirectX::XMFLOAT4 SetGizmoColor(DirectX::XMFLOAT4 color);
+		//void DrawGizmoLine(DirectX::XMFLOAT3 p1, DirectX::XMFLOAT3 p2);
 
 	private:
 		// init

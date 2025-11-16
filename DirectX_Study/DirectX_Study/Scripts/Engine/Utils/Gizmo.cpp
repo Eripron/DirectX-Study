@@ -87,8 +87,7 @@ void DK::Gizmo::BuildFrameResource(ID3D12Device* pDevice, int nFrameResourceCoun
 {
 	for (int i = 0; i < nFrameResourceCount; ++i)
 	{
-		m_vecGizmoConstant.push_back(
-			std::make_unique<UploadBuffer<GizmoConstant>>(pDevice, 1, true));
+		m_vecGizmoConstant.push_back(std::make_unique<UploadBuffer<GizmoConstant>>(pDevice, 1, true));
 	}
 }
 

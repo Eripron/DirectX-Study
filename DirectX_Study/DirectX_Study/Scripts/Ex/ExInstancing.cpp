@@ -10,22 +10,73 @@ ExInstancing::~ExInstancing()
 {
 }
 
+bool DK::ExInstancing::Update()
+{
+	if (!EngineBase::Update())
+		return false;
+
+	DirectX::XMFLOAT3 rotate(0, m_gameTimer.DeltaTime() * 0.1, 0);
+	m_cameraCullingTest.Rotate(rotate);
+
+	auto objectConstBuffer = m_curFrameResource->ObjectCB.get();
+
+	DirectX::XMMATRIX invView = m_cameraCullingTest.GetInvViewMatrix();
+
+	for (int i = 0; i < m_renderObjectInfos.size(); ++i)
+	{
+		RenderObjectInfo* objectInfo = m_renderObjectInfos[i].get();
+
+		XMMATRIX world = XMLoadFloat4x4(&objectInfo->World);
+		XMMATRIX texTransform = XMLoadFloat4x4(&objectInfo->TexTransform);
+
+		XMVECTOR determin = XMMatrixDeterminant(world);
+		XMMATRIX invWorld = XMMatrixInverse(&determin, world);
+
+		XMMATRIX viewToLocal = XMMatrixMultiply(invView, invWorld);
+
+		DirectX::BoundingFrustum localSpaceFrustum;
+		m_frustomCulTest.Transform(localSpaceFrustum, viewToLocal);
+
+		objectInfo->ObjBufferIndex = i;
+		objectInfo->ignoreRender = true;
+
+		if (localSpaceFrustum.Contains(objectInfo->BoundBox) != DirectX::DISJOINT)
+			objectInfo->ignoreRender = false;
+	}
+
+	return true;
+}
+
 void DK::ExInstancing::Render(ID3D12GraphicsCommandList* cmdList)
 {
 	cmdList->SetPipelineState(m_psos[(int)RenderLayer::Opaque].Get());
 
-	std::vector<RenderItem*> renderItems;
+	std::vector<RenderObjectInfo*> renderItems;
 
-	for (int i = 0; i < m_renderItems.size(); ++i)
-		renderItems.push_back(m_renderItems[i].get());
+	for (int i = 0; i < m_renderObjectInfos.size(); ++i)
+		renderItems.push_back(m_renderObjectInfos[i].get());
+
 	RenderRenderItems(cmdList, renderItems);
+}
+
+bool DK::ExInstancing::OnResize(int width, int height, bool force)
+{
+	if (EngineBase::OnResize(width, height, force) == false)
+		return false;
+
+	m_cameraCullingTest.SetAspect(AspectRatio());
+
+	DirectX::XMMATRIX proj = m_cameraCullingTest.GetProjMatrix();
+	DirectX::BoundingFrustum::CreateFromMatrix(m_frustomCulTest, proj);
+
+	return true;
 }
 
 void DK::ExInstancing::CreateMesh()
 {
 	GeometryGenerator geoGen;
 
-	MeshData<Vertex> box = geoGen.CreateBox(4, 4, 4);
+	MeshData<Vertex> box = geoGen.CreateBox(1, 1, 1);
 	MeshManager::GetInstance()->AddMeshData("box", box);
 
 	MeshManager::GetInstance()->CreateMeshBuffer(m_d3dDevice.Get(), m_commandList.Get());
@@ -111,77 +162,84 @@ void DK::ExInstancing::CreateMaterial()
 
 void DK::ExInstancing::CreateGameObject()
 {
-	GameObject* pGo = new GameObject();
-
-	pGo->AddComponent(new MeshFilter("box"));
-	pGo->SetMaterial(m_materials["ice"].get());
-
-	m_gameObjects[(int)RenderLayer::Opaque].push_back(pGo);
-
-	// render info
-	std::unique_ptr<RenderItem> spRenderItem = std::make_unique<RenderItem>();
-	spRenderItem->ObjBufferIndex = 0;
-	spRenderItem->pGameObject = pGo;
-	spRenderItem->DirtyCount = FrameResourceCount;
-
-	// instance data setting
-	const int n = 5;
-	int instanceCount = n * n * n;
-	spRenderItem->InstanceDatas.resize(instanceCount);
-
-	float width = 200.0f;
-	float height = 200.0f;
-	float depth = 200.0f;
-
-	float x = -0.5f * width;
-	float y = -0.5f * height;
-	float z = -0.5f * depth;
-	float dx = width / (n - 1);
-	float dy = height / (n - 1);
-	float dz = depth / (n - 1);
-	for (int k = 0; k < n; ++k)
+	int x = 5;
+	int y = 5;
+	int z = 5;
+	for (int i = 0; i < x * y * z; ++i)
 	{
-		for (int i = 0; i < n; ++i)
-		{
-			for (int j = 0; j < n; ++j)
-			{
-				int index = k * n * n + i * n + j;
-				// Position instanced along a 3D grid.
-				spRenderItem->InstanceDatas[index].World = XMFLOAT4X4(
-					1.0f, 0.0f, 0.0f, 0.0f,
-					0.0f, 1.0f, 0.0f, 0.0f,
-					0.0f, 0.0f, 1.0f, 0.0f,
-					x + j * dx, y + i * dy, z + k * dz, 1.0f);
+		GameObject* pNewGo = new GameObject();
 
-				XMStoreFloat4x4(&spRenderItem->InstanceDatas[index].TexTransform, XMMatrixScaling(2.0f, 2.0f, 1.0f));
-				spRenderItem->InstanceDatas[index].MaterialIndex = index % m_materials.size();
+		pNewGo->AddComponent(new MeshFilter("box"));
+		pNewGo->SetMaterial(m_materials["bricks"].get());
+
+		Transform* transform = pNewGo->GetComponent<Transform>();
+		if (transform != nullptr)
+		{
+			DirectX::XMFLOAT3 pos = GetPositionByIndex(x, y, z, 20, 20, 20, i);
+			transform->SetPosition(pos.x, pos.y, pos.z);
+		}
+
+		m_gameObjects[(int)RenderLayer::Opaque].push_back(pNewGo);
+	}
+}
+
+void DK::ExInstancing::CreateRenderObjectInfo()
+{
+	for (int i = 0; i < (int)RenderLayer::Count; ++i)
+	{
+		for (int j = 0; j < m_gameObjects[i].size(); ++j)
+		{
+			if (m_gameObjects[i][j] == nullptr) continue;
+
+			GameObject* object = m_gameObjects[i][j];
+			Transform* transform = object->GetComponent<Transform>();
+			Material* mat = object->GetMaterial();
+
+			std::unique_ptr<RenderObjectInfo> renderInfo = std::make_unique<RenderObjectInfo>();
+
+			renderInfo->ObjBufferIndex = i + j;
+			if (transform != nullptr) renderInfo->World = transform->GetWorldMatrix();
+			if (mat != nullptr) renderInfo->MaterialIndex = mat->SrvHeapIndex;
+			renderInfo->meshInfo = object->GetComponent<MeshFilter>();
+
+			std::vector<Vertex> boxVertex(MeshManager::GetInstance()->GetVertexInfo("box"));
+
+			XMFLOAT3 vMinf3(FLT_MAX, FLT_MAX, FLT_MAX);
+			XMFLOAT3 vMaxf3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+
+			XMVECTOR vMin = XMLoadFloat3(&vMinf3);
+			XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
+
+			for (int i = 0; i < boxVertex.size(); ++i)
+			{
+				DirectX::XMFLOAT3 vPosf3 = boxVertex[i].Position;
+				DirectX::XMVECTOR vPos = DirectX::XMLoadFloat3(&vPosf3);
+
+				vMin = DirectX::XMVectorMin(vMin, vPos);
+				vMax = DirectX::XMVectorMax(vMax, vPos);
 			}
+
+			XMVECTOR vCenter = DirectX::XMVectorMultiply(DirectX::XMVectorAdd(vMax, vMin), DirectX::XMVectorReplicate(0.5f));
+			XMStoreFloat3(&renderInfo->BoundBox.Center, vCenter);
+
+			XMVECTOR vExtents = DirectX::XMVectorMultiply(DirectX::XMVectorSubtract(vMax, vMin), DirectX::XMVectorReplicate(0.5f));
+			XMStoreFloat3(&renderInfo->BoundBox.Extents, vExtents);
+
+			m_renderObjectInfos.push_back(std::move(renderInfo));
 		}
 	}
 
-	// bound box setting
-	std::vector<Vertex> boxVertex(MeshManager::GetInstance()->GetVertexInfo("box"));
+}
 
-	XMFLOAT3 vMinf3(FLT_MAX, FLT_MAX, FLT_MAX);
-	XMFLOAT3 vMaxf3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+DirectX::XMFLOAT3 DK::ExInstancing::GetPositionByIndex(int x, int y, int z, float width, float depth, float height, int index)
+{
+	int col = index % x;
+	int row = (index / x) % y;
+	int h = index / (x * y);
 
-	XMVECTOR vMin = XMLoadFloat3(&vMinf3);
-	XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
+	float xGap = width / (x - 1);
+	float zGap = depth / (z - 1);
+	float yGap = height / (y - 1);
 
-	for (int i = 0; i < boxVertex.size(); ++i)
-	{
-		DirectX::XMFLOAT3 vPosf3 = boxVertex[i].Position;
-		DirectX::XMVECTOR vPos = DirectX::XMLoadFloat3(&vPosf3);
-
-		vMin = DirectX::XMVectorMin(vMin, vPos);
-		vMax = DirectX::XMVectorMax(vMax, vPos);
-	}
-
-	XMVECTOR vCenter = DirectX::XMVectorMultiply(DirectX::XMVectorAdd(vMax, vMin), DirectX::XMVectorReplicate(0.5f));
-	XMStoreFloat3(&spRenderItem->BoundBox.Center, vCenter);
-
-	XMVECTOR vExtents = DirectX::XMVectorMultiply(DirectX::XMVectorSubtract(vMax, vMin), DirectX::XMVectorReplicate(0.5f));
-	XMStoreFloat3(&spRenderItem->BoundBox.Extents, vExtents);
-
-	m_renderItems.push_back(std::move(spRenderItem));
+	return DirectX::XMFLOAT3(-width / 2 + xGap * col, -height / 2 + yGap * h, depth / 2 - zGap * row);
 }

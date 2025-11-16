@@ -22,23 +22,23 @@ using namespace Microsoft::WRL;
 
 namespace DK
 {
-	struct RenderItem
+	// 화면에 출력할 Object의 정보
+	struct RenderObjectInfo
 	{
-		RenderItem() = default;
-		RenderItem(const RenderItem& rhs) = delete;
+		RenderObjectInfo() = default;
+		RenderObjectInfo(const RenderObjectInfo& rhs) = delete;
 
 		int ObjBufferIndex = -1;
 
-		GameObject* pGameObject = nullptr;
-		XMFLOAT4X4 TexTransform = MathUtils::Identity4x4();
+		DirectX::XMFLOAT4X4 World = MathUtils::Identity4x4();
+		DirectX::XMFLOAT4X4 TexTransform = MathUtils::Identity4x4();
+		int MaterialIndex = -1;
+
+		MeshFilter* meshInfo = nullptr;
 		D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-
-		int DirtyCount = 0;
-
-		std::vector<InstanceData> InstanceDatas;
-		int RenderInstanceCount = 0;
-
 		DirectX::BoundingBox BoundBox;
+
+		bool ignoreRender = false;
 	};
 
 	class EngineBase : public GraphicEngine
@@ -59,7 +59,7 @@ namespace DK
 		virtual void CreateMesh();
 		virtual void CreateMaterial();
 		virtual void CreateGameObject();
-		virtual void CreateRenderItem();
+		virtual void CreateRenderObjectInfo();
 
 		virtual void BuildFrameResource();
 		virtual void BuildDescriptorHeap();
@@ -73,7 +73,7 @@ namespace DK
 		void UpdateMainPassCB();
 
 		// render
-		void RenderRenderItems(ID3D12GraphicsCommandList* cmdList, std::vector<RenderItem*> renderItems);
+		void RenderRenderItems(ID3D12GraphicsCommandList* cmdList, std::vector<RenderObjectInfo*> renderItems);
 
 	protected:
 		virtual void LoadTextures();
@@ -96,7 +96,7 @@ namespace DK
 		vector<GameObject*> m_gameObjects[(int)RenderLayer::Count];
 
 		// render object info list
-		vector<std::unique_ptr<RenderItem>> m_renderItems;
+		vector<std::unique_ptr<RenderObjectInfo>> m_renderObjectInfos;
 
 		// frame resource
 		const int FrameResourceCount = 3;

@@ -15,8 +15,8 @@ void DK::EngineBase::Init()
 	CreateMesh();
 	LoadTextures();
 	CreateMaterial();
-
 	CreateGameObject();
+	CreateRenderObjectInfo();
 
 	BuildDescriptorHeap();
 	BuildFrameResource();
@@ -80,10 +80,10 @@ bool DK::EngineBase::Render()
 		m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
 
 		auto matBuffer = m_curFrameResource->MaterialBuffer->GetBuffer();
-		m_commandList->SetGraphicsRootShaderResourceView(1, matBuffer->GetGPUVirtualAddress());
+		m_commandList->SetGraphicsRootShaderResourceView(0, matBuffer->GetGPUVirtualAddress());
 
 		auto passCB = m_curFrameResource->RenderPassCB->GetBuffer();
-		m_commandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
+		m_commandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
 
 		m_commandList->SetGraphicsRootDescriptorTable(3, m_heapCbvSrvUav->GetGPUDescriptorHandleForHeapStart());
 
@@ -138,22 +138,19 @@ void DK::EngineBase::CreateGameObject()
 {
 }
 
-void DK::EngineBase::CreateRenderItem()
+void DK::EngineBase::CreateRenderObjectInfo()
 {
 }
 
 void DK::EngineBase::BuildFrameResource()
 {
-	int totalInstCount = 0;
-	for (int i = 0; i < m_renderItems.size(); ++i)
-	{
-		int instCount = m_renderItems[i]->InstanceDatas.size();
-		totalInstCount += (instCount > 0 ? instCount : 1);
-	}
+	int objectCount = 0;
+	for (int i = 0; i < (int)RenderLayer::Count; ++i)
+		objectCount += m_gameObjects[i].size();
 
 	for (int i = 0; i < FrameResourceCount; ++i)
 	{
-		m_frameResources.push_back(std::make_unique<FrameResource>(m_d3dDevice.Get(), 1, totalInstCount, m_materials.size()));
+		m_frameResources.push_back(std::make_unique<FrameResource>(m_d3dDevice.Get(), 1, objectCount, m_materials.size()));
 	}
 }
 
@@ -200,10 +197,9 @@ void DK::EngineBase::BuildRootSignature()
 	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
 	ZeroMemory(slotRootParameter, sizeof(CD3DX12_ROOT_PARAMETER) * 4);
 
-	slotRootParameter[0].InitAsShaderResourceView(0, 1);
-	slotRootParameter[1].InitAsShaderResourceView(1, 1);
-
-	slotRootParameter[2].InitAsConstantBufferView(0);
+	slotRootParameter[0].InitAsShaderResourceView(0, 1);	// material 바인딩
+	slotRootParameter[1].InitAsConstantBufferView(0);		// render pass 바인딩
+	slotRootParameter[2].InitAsConstantBufferView(1);		// object 버퍼 바인딩
 
 	// PS에서 사용할 table 1개 설정
 	CD3DX12_DESCRIPTOR_RANGE textureTable;
@@ -318,45 +314,41 @@ void DK::EngineBase::BuildPSO()
 
 void DK::EngineBase::UpdateObjectCBs()
 {
-	if (m_renderItems.size() <= 0)
+	if (m_renderObjectInfos.size() <= 0)
 		return;
+
+	auto objectConstBuffer = m_curFrameResource->ObjectCB.get();
 
 	DirectX::XMMATRIX invView = m_camera.GetInvViewMatrix();
 
-	auto currInstanceBuffer = m_curFrameResource->InstanceBuffer.get();
-	int renderInstanceCount = 0;
-
-	for (auto& e : m_renderItems)
+	for (int i = 0; i < m_renderObjectInfos.size(); ++i)
 	{
-		const auto& instanceData = e->InstanceDatas;
+		RenderObjectInfo* objectInfo = m_renderObjectInfos[i].get();
 
-		for (UINT i = 0; i < (UINT)instanceData.size(); ++i)
+		XMMATRIX world = XMLoadFloat4x4(&objectInfo->World);
+		XMMATRIX texTransform = XMLoadFloat4x4(&objectInfo->TexTransform);
+
+		XMVECTOR determin = XMMatrixDeterminant(world);
+		XMMATRIX invWorld = XMMatrixInverse(&determin, world);
+
+		XMMATRIX viewToLocal = XMMatrixMultiply(invView, invWorld);
+
+		DirectX::BoundingFrustum localSpaceFrustum;
+		m_camFrustum.Transform(localSpaceFrustum, viewToLocal);
+
+		objectInfo->ObjBufferIndex = i;
+		objectInfo->ignoreRender = true;
+
+		if (localSpaceFrustum.Contains(objectInfo->BoundBox) != DirectX::DISJOINT)
 		{
-			XMMATRIX world = XMLoadFloat4x4(&instanceData[i].World);
-			XMMATRIX texTransform = XMLoadFloat4x4(&instanceData[i].TexTransform);
+			ObjectConstants data;
+			XMStoreFloat4x4(&data.World, XMMatrixTranspose(world));
+			XMStoreFloat4x4(&data.TexTransform, XMMatrixTranspose(texTransform));
+			data.MaterialIndex = objectInfo->MaterialIndex;
+			objectInfo->ignoreRender = false;
 
-			XMVECTOR determin = XMMatrixDeterminant(world);
-			XMMATRIX invWorld = XMMatrixInverse(&determin, world);
-
-			XMMATRIX viewToLocal = XMMatrixMultiply(invView, invWorld);
-
-			DirectX::BoundingFrustum localSpaceFrustum;
-			m_camFrustum.Transform(localSpaceFrustum, viewToLocal);
-
-			if (localSpaceFrustum.Contains(e->BoundBox) != DirectX::DISJOINT)
-			{
-				InstanceData data;
-				XMStoreFloat4x4(&data.World, XMMatrixTranspose(world));
-				XMStoreFloat4x4(&data.TexTransform, XMMatrixTranspose(texTransform));
-				data.MaterialIndex = instanceData[i].MaterialIndex;
-
-				// Write the instance data to structured buffer for the visible objects.
-				currInstanceBuffer->CopyData(renderInstanceCount, data);
-				++renderInstanceCount;
-			}
+			objectConstBuffer->CopyData(i, data);
 		}
-
-		e->RenderInstanceCount = renderInstanceCount;
 	}
 }
 
@@ -436,50 +428,34 @@ void DK::EngineBase::UpdateMainPassCB()
 	currPassCB->CopyData(0, m_renderPassCB);
 }
 
-void DK::EngineBase::RenderRenderItems(ID3D12GraphicsCommandList* cmdList, std::vector<RenderItem*> renderItems)
+void DK::EngineBase::RenderRenderItems(ID3D12GraphicsCommandList* cmdList, std::vector<RenderObjectInfo*> renderInfos)
 {
-	for (int i = 0; i < renderItems.size(); ++i)
+	UINT objCBByteSize = D3DUtils::CalcConstBufferByteSize(sizeof(ObjectConstants));
+
+	for (int i = 0; i < renderInfos.size(); ++i)
 	{
-		RenderItem* curRender = renderItems[i];
-		MeshFilter* meshInfo = curRender->pGameObject->GetComponent<MeshFilter>();
+		RenderObjectInfo* renderInfo = renderInfos[i];
+
+		if (renderInfo->ignoreRender || renderInfo->meshInfo == nullptr) 
+			continue;
 
 		D3D12_VERTEX_BUFFER_VIEW vbView;
 		D3D12_INDEX_BUFFER_VIEW ibView;
 		MeshSection meshSection;
 
-		if (meshInfo->GetMeshInfo(vbView, ibView, meshSection) == false)
+		if (renderInfo->meshInfo->GetMeshInfo(vbView, ibView, meshSection) == false)
 			continue;
 
-		cmdList->IASetVertexBuffers(0, 1, &vbView);
-		cmdList->IASetIndexBuffer(&ibView);
-		cmdList->IASetPrimitiveTopology(curRender->PrimitiveType);
+		cmdList->IASetVertexBuffers(0, 1, &vbView);		// vertex buffer 바인딩
+		cmdList->IASetIndexBuffer(&ibView);				// index buffer 바인딩
+		cmdList->IASetPrimitiveTopology(renderInfo->PrimitiveType);
 
-		int instanceCount = 0;
-		if (curRender->InstanceDatas.size() > 0)
-		{
-			instanceCount = curRender->RenderInstanceCount;
+		auto objCBAddr = m_curFrameResource->ObjectCB->GetBuffer()->GetGPUVirtualAddress();
 
-			auto instanceBuffer = m_curFrameResource->InstanceBuffer->GetBuffer();
-			cmdList->SetGraphicsRootShaderResourceView(0, instanceBuffer->GetGPUVirtualAddress());
-		}
-		else
-			instanceCount = 1;
+		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objCBAddr + (objCBByteSize * renderInfo->ObjBufferIndex);
+		cmdList->SetGraphicsRootConstantBufferView(2, objCBAddress);
 
-		if (instanceCount <= 0)
-			continue;
-
-		cmdList->DrawIndexedInstanced(meshSection.IndexCount, 
-									  instanceCount, 
-									  meshSection.StartIndexLocation, 
-									  meshSection.BaseVertexLocation, 0);
-
-		WCHAR title[60];
-		GetWindowText(GetHandleWindow(), title, 49);
-
-		std::wstring wstrCount = L"출력 instance count: " + std::to_wstring(instanceCount);
-		std::wstring newTitle = std::wstring(title) + wstrCount;
-
-		SetWindowText(GetHandleWindow(), newTitle.c_str());
+		cmdList->DrawIndexedInstanced(meshSection.IndexCount, 1, meshSection.StartIndexLocation, meshSection.BaseVertexLocation, 0);
 	}
 }
 
