@@ -1,13 +1,14 @@
 #include <Windows.h>
 
 #include "Window/MainWindow.h"
+#include "Ex/Testing.h"
 #include "Ex/ExInstancing.h"
 
 using namespace DK;
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstace, LPSTR lpszCmdParam, int nCmdShow)
 {
-	LPCTSTR strClassName = TEXT("Instacing & Culling");
+	LPCTSTR strClassName = TEXT("Rendering");
 	MainWindow mainWindow;
 	if (mainWindow.Create(hInstance, strClassName, strClassName, nCmdShow) == false)
 	{
@@ -16,7 +17,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstace, LPSTR lpszCmdP
 
 	HWND hWnd = mainWindow.GetHandle();
 
-	ExInstancing engine(hWnd);
+	Testing engine(hWnd);
 	engine.Initialize();
 
 	while (mainWindow.Run())

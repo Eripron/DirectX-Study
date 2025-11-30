@@ -78,6 +78,8 @@ namespace DK
 	protected:
 		virtual void LoadTextures();
 		void LoadTexture(std::wstring path);
+		Texture* GetTexture(string textureName);
+		
 
 	protected:
 		ComPtr<ID3D12RootSignature> m_rootSignature;
@@ -97,6 +99,7 @@ namespace DK
 
 		// render object info list
 		vector<std::unique_ptr<RenderObjectInfo>> m_renderObjectInfos;
+		vector<RenderObjectInfo*> m_renderList[(int)RenderLayer::Count];
 
 		// frame resource
 		const int FrameResourceCount = 3;

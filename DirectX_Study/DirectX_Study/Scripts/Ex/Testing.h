@@ -2,13 +2,14 @@
 
 #include "../Engine/EngineBase.h"
 
+
 namespace DK
 {
-	class ExInstancing : public EngineBase
+	class Testing : public EngineBase
 	{
 	public:
-		ExInstancing(HWND hWnd);
-		~ExInstancing();
+		Testing(HWND hWnd);
+		~Testing();
 
 	protected:
 		virtual bool Update() override;
@@ -16,20 +17,17 @@ namespace DK
 
 		virtual bool OnResize(int width, int height, bool force) override;
 
-		virtual void LoadTextures() override;
 		virtual void CreateMesh() override;
+		virtual void LoadTextures() override;
 		virtual void CreateMaterial() override;
 		virtual void CreateGameObject() override;
 		virtual void CreateRenderObjectInfo() override;
 
-		DirectX::XMFLOAT3 GetPositionByIndex(int x, int y, int z, float width, float depth, float height, int index);
-
-		void Raycast(int screenX, int screenY);
+		virtual void BuildRootSignature() override;
+		virtual void BuildPSO() override;
 
 	private:
-		int m_nDrawCallCount[3];
-		Camera m_cameraCullingTest;
-		DirectX::BoundingFrustum m_frustomCulTest;
 
 	};
+
 }

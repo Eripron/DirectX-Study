@@ -18,70 +18,9 @@
 #endif
 
 // Include structures and functions for lighting.
-#include "LightUtils.hlsl" 
+#include "Common.hlsl"
+//#include "LightUtils.hlsl"
 
-//struct ObjectConstBuffer
-//{
-//    float4x4 World;
-//    float4x4 TexTransform;
-//    uint MaterialIndex;
-//};
-
-struct MaterialData
-{
-    float4 DiffuseAlbedo;
-    float3 FresnelR0;
-    float Roughness;
-    float4x4 MatTransform;
-    uint DiffuseMapIndex;
-    uint MatPad0;
-    uint MatPad1;
-    uint MatPad2;
-};
-
-SamplerState gsamPointWrap : register(s0);
-SamplerState gsamPointClamp : register(s1);
-SamplerState gsamLinearWrap : register(s2);
-SamplerState gsamLinearClamp : register(s3);
-SamplerState gsamAnisotropicWrap : register(s4);
-SamplerState gsamAnisotropicClamp : register(s5);
-
-Texture2D gDiffuseMap[7] : register(t0);        // texture
-StructuredBuffer<MaterialData> gMaterialData : register(t0, space1);    // material
-
-// Constant data that varies per material.
-cbuffer cbPass : register(b0)
-{
-    float4x4 gView;
-    float4x4 gInvView;
-    float4x4 gProj;
-    float4x4 gInvProj;
-    float4x4 gViewProj;
-    float4x4 gInvViewProj;
-    float3 gEyePosW;
-    float cbPerObjectPad1;
-    float2 gRenderTargetSize;
-    float2 gInvRenderTargetSize;
-    float gNearZ;
-    float gFarZ;
-    float gTotalTime;
-    float gDeltaTime;
-    float4 gAmbientLight;
-
-    Light gLights[MaxLights];
-    
-    float4 gFogColor;
-    float gFogStart;
-    float gFogRange;
-};
-
-cbuffer ObjectConstBuffer : register(b1)
-{
-    float4x4 World;
-    float4x4 TexTransform;
-    uint MaterialIndex;
-};
- 
 struct VertexIn
 {
 	float3 PosL    : POSITION;
@@ -174,13 +113,6 @@ float4 PS(VertexOut pin) : SV_Target
     
     diffuseAlbedo *= gDiffuseMap[diffuseTexIndex].Sample(gsamLinearWrap, pin.TexC);
     
-  #ifdef ALPHA_TEST
-	// Discard pixel if texture alpha < 0.1.  We do this test as soon 
-	// as possible in the shader so that we can potentially exit the
-	// shader early, thereby skipping the rest of the shader code.
-	clip(diffuseAlbedo.a - 0.1f);
-#endif
-    
     // Vector from point being lit to eye. 
     float3 toEyeW = gEyePosW - pin.PosW;
     float distToEye = length(toEyeW);
@@ -195,13 +127,12 @@ float4 PS(VertexOut pin) : SV_Target
     float4 directLight = ComputeLighting(gLights, mat, pin.PosW, pin.NormalW, toEyeW, shadowFactor);
 
     float4 litColor = ambient + directLight;
-
-#ifdef FOG
-    float fogAmount = saturate((distToEye - gFogStart) / gFogRange);
-    litColor = lerp(litColor, gFogColor, fogAmount);
- #endif
     
-    // Common convention to take alpha from diffuse material.
+    float3 r = reflect(-toEyeW, pin.NormalW);
+    float4 reflectionColor = gCubeMap.Sample(gsamLinearWrap, r);
+    float3 fresnelFactor = SchlickFresnel(fresnelR0, pin.NormalW, r);
+    litColor.rgb += shininess * fresnelFactor * reflectionColor.rgb;
+    
     litColor.a = diffuseAlbedo.a;
     
     return litColor;

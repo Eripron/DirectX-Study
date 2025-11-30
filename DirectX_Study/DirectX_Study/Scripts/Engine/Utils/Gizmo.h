@@ -43,7 +43,7 @@ namespace DK
 		void PreRender(ID3D12GraphicsCommandList* pCmdList);
 
 		DirectX::XMFLOAT4 SetGizmoColor(DirectX::XMFLOAT4 color);
-		//void DrawGizmoLine(DirectX::XMFLOAT3 p1, DirectX::XMFLOAT3 p2);
+		void OnDrawLine(DirectX::XMFLOAT3 p1, DirectX::XMFLOAT3 p2);
 
 	private:
 		// init
@@ -52,22 +52,28 @@ namespace DK
 		void BuildShaderAndInputLayout();
 		void BuildRootSignature(ID3D12Device* pDevice);
 		void BuildPSO(ID3D12Device* pDevice, DXGI_FORMAT eBackBufferFormat, DXGI_FORMAT eDSFormat);
+		void CreateGizmoBuffer(ID3D12Device* pDevice, ID3D12GraphicsCommandList* pCmdList);
 		//
 
 		// update
 		void UpdateBaseGridConstant(Camera* pCamera);
+		void UpdateGizmoBuffer(ID3D12GraphicsCommandList* pCmdList);
 		//
 
 		// render
 		void DrawBaseGrid(ID3D12GraphicsCommandList* pCmdList);
+		void DrawGizmo(ID3D12GraphicsCommandList* pCmdList);
 		//
 
 	private:
+		ID3D12Device* m_device;
+
 		const std::string m_kMeshNameBaseGrid = "BaseGrid";
 		DirectX::XMFLOAT4 m_gizmoColor = DirectX::XMFLOAT4(DirectX::Colors::White);
 
 		Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pPSO = nullptr;
 		Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pPSOBlend = nullptr;
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pPSOGizmo = nullptr;
 
 		Microsoft::WRL::ComPtr<ID3D12RootSignature> m_pRootSig;
 
@@ -75,8 +81,18 @@ namespace DK
 
 		Microsoft::WRL::ComPtr<ID3DBlob> m_pByteVS;
 		Microsoft::WRL::ComPtr<ID3DBlob> m_pBytePS;
+		Microsoft::WRL::ComPtr<ID3DBlob> m_pByteGizmoVS;
 
 		std::unique_ptr<MeshBuffer<GizmoVertex>> m_pMeshBuffer;
+
+		int m_nMaxGizmoVertexCount = 1000;
+		std::vector<GizmoVertex> m_gizmoVertexs;
+		std::vector<uint16_t> m_gizmoIndexs;
+
+		Microsoft::WRL::ComPtr<ID3D12Resource> GizmoBuffer = nullptr;
+		Microsoft::WRL::ComPtr<ID3D12Resource> GizmoIndexBuffer = nullptr;
+		std::unique_ptr<UploadBuffer<GizmoVertex>> GizmoVertexUploadBuffer[3];
+		std::unique_ptr<UploadBuffer<uint16_t>> GizmoIndexUploadBuffer[3];
 
 		// frame resource
 		std::vector<std::unique_ptr<UploadBuffer<GizmoConstant>>> m_vecGizmoConstant;

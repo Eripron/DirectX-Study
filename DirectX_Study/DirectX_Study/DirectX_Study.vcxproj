@@ -150,7 +150,9 @@
     <ClCompile Include="Scripts\Ex\ExInstancing.cpp" />
     <ClCompile Include="Scripts\Ex\ExShape.cpp" />
     <ClCompile Include="Scripts\Ex\ExTexture.cpp" />
+    <ClCompile Include="Scripts\Ex\Raycast.cpp" />
     <ClCompile Include="Scripts\Ex\Tesselation.cpp" />
+    <ClCompile Include="Scripts\Ex\Testing.cpp" />
     <ClCompile Include="Scripts\Main.cpp" />
     <ClCompile Include="Scripts\Window\MainWindow.cpp" />
     <ClCompile Include="Scripts\Window\WindowsUtils.cpp" />
@@ -182,7 +184,9 @@
     <ClInclude Include="Scripts\Ex\ExInstancing.h" />
     <ClInclude Include="Scripts\Ex\ExShape.h" />
     <ClInclude Include="Scripts\Ex\ExTexture.h" />
+    <ClInclude Include="Scripts\Ex\Raycast.h" />
     <ClInclude Include="Scripts\Ex\Tesselation.h" />
+    <ClInclude Include="Scripts\Ex\Testing.h" />
     <ClInclude Include="Scripts\Header\d3dx12.h" />
     <ClInclude Include="Scripts\Window\MainWindow.h" />
     <ClInclude Include="Scripts\Window\resource.h" />

@@ -81,6 +81,13 @@ namespace DK
 			return m_vecIndices16;
 		}
 
+		void Clear()
+		{
+			Vertices.clear();
+			Indices32.clear();
+			m_vecIndices16.clear();
+		}
+
 	private:
 		std::vector<uint16_t> m_vecIndices16;
 	};
@@ -204,7 +211,7 @@ namespace DK
 		int MaskSrvHeapIndex = -1;		// mask view index
 		int NormalSrvHeapIndex = -1;	// normal map view index
 
-		int DirtyCount = 0;
+		int DirtyCount = 3;
 
 		// Material constant buffer data used for shading.
 		DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };	// md: π›ªÁ¿≤
@@ -225,6 +232,8 @@ namespace DK
 
 		Microsoft::WRL::ComPtr<ID3D12Resource> Resource = nullptr;
 		Microsoft::WRL::ComPtr<ID3D12Resource> UploadHeap = nullptr;
+
+		D3D12_SRV_DIMENSION Dimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 
 		static std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers()
 		{

@@ -6,7 +6,11 @@
 #include "Data/DataTypes.h"
 #include "Common/GameTimer.h"
 #include "Resource/FrameResource.h"
+#include <dwrite.h>
+#include <d2d1.h>
 
+#pragma comment(lib, "dwrite.lib")
+#pragma comment(lib, "d2d1.lib")
 #pragma comment(lib,"d3dcompiler.lib")
 #pragma comment(lib, "D3D12.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -22,8 +26,15 @@ namespace DK
 		AlphaTested,
 		AlphaTestedTreeSprites,
 		Patch,
+		Sky,
 
 		Count
+	};
+
+	enum class PsoType : int
+	{
+		Solid = 0,
+		WireFrame,
 	};
 
 	class GraphicEngine

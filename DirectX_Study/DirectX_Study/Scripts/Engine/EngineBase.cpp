@@ -15,13 +15,17 @@ void DK::EngineBase::Init()
 	CreateMesh();
 	LoadTextures();
 	CreateMaterial();
+
+	BuildDescriptorHeap();
+
 	CreateGameObject();
 	CreateRenderObjectInfo();
 
-	BuildDescriptorHeap();
 	BuildFrameResource();
+
 	BuildRootSignature();
 	BuildInputLayoutAndShader();
+
 	BuildPSO();
 }
 
@@ -79,13 +83,20 @@ bool DK::EngineBase::Render()
 
 		m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
 
-		auto matBuffer = m_curFrameResource->MaterialBuffer->GetBuffer();
-		m_commandList->SetGraphicsRootShaderResourceView(0, matBuffer->GetGPUVirtualAddress());
-
+		// root parameter[0]에 연결하는 cbPass
 		auto passCB = m_curFrameResource->RenderPassCB->GetBuffer();
-		m_commandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
+		m_commandList->SetGraphicsRootConstantBufferView(0, passCB->GetGPUVirtualAddress());
 
-		m_commandList->SetGraphicsRootDescriptorTable(3, m_heapCbvSrvUav->GetGPUDescriptorHandleForHeapStart());
+		auto matBuffer = m_curFrameResource->MaterialBuffer->GetBuffer();
+		m_commandList->SetGraphicsRootShaderResourceView(2, matBuffer->GetGPUVirtualAddress());
+
+		CD3DX12_GPU_DESCRIPTOR_HANDLE skyTexDescriptor(m_heapCbvSrvUav->GetGPUDescriptorHandleForHeapStart());
+		Texture* texture = GetTexture("grasscube1024");
+		if (texture != nullptr)
+			skyTexDescriptor.Offset(texture->SrvHeapIndex, m_uCbvSrvUavDescriptorSize);
+		m_commandList->SetGraphicsRootDescriptorTable(3, skyTexDescriptor);
+
+		m_commandList->SetGraphicsRootDescriptorTable(4, m_heapCbvSrvUav->GetGPUDescriptorHandleForHeapStart());
 
 		Render(m_commandList.Get());
 	}
@@ -173,15 +184,15 @@ void DK::EngineBase::BuildDescriptorHeap()
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
 	ZeroMemory(&srvDesc, sizeof(D3D12_SHADER_RESOURCE_VIEW_DESC));
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 
 	for (auto iter = m_textures.begin(); iter != m_textures.end(); ++iter)
 	{
 		Texture* pTexture = iter->second.get();
 
+		srvDesc.ViewDimension = pTexture->Dimension;
 		srvDesc.Format = pTexture->Resource->GetDesc().Format;
 		srvDesc.Texture2D.MostDetailedMip = 0;
-		srvDesc.Texture2D.MipLevels = -1;
+		srvDesc.Texture2D.MipLevels = pTexture->Resource->GetDesc().MipLevels;
 		srvDesc.Texture2D.PlaneSlice = 0;
 		srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 
@@ -233,58 +244,49 @@ void DK::EngineBase::BuildRootSignature()
 
 void DK::EngineBase::BuildInputLayoutAndShader()
 {
-	const D3D_SHADER_MACRO defines[] =
-	{
-		"1",
-		NULL, NULL
-	};
-
-	const D3D_SHADER_MACRO alphaTestDefines[] =
-	{
-		"1",
-		"ALPHA_TEST", "1",
-		NULL, NULL
-	};
-
 	m_shaders["standardVS"] = D3DUtils::CompileShader(L"Shaders\\Default.hlsl", nullptr, "VS", "vs_5_1");
-	m_shaders["opaquePS"] = D3DUtils::CompileShader(L"Shaders\\Default.hlsl", defines, "PS", "ps_5_1");
-	m_shaders["alphaTestedPS"] = D3DUtils::CompileShader(L"Shaders\\Default.hlsl", alphaTestDefines, "PS", "ps_5_1");
+	m_shaders["opaquePS"] = D3DUtils::CompileShader(L"Shaders\\Default.hlsl", nullptr, "PS", "ps_5_1");
+
+	m_shaders["skyVS"] = D3DUtils::CompileShader(L"Shaders\\Sky.hlsl", nullptr, "SkyVS", "vs_5_1");
+	m_shaders["skyPS"] = D3DUtils::CompileShader(L"Shaders\\Sky.hlsl", nullptr, "SkyPS", "ps_5_1");
 
 	m_inputLayouts = Vertex::GetInputLayout();
 }
 
 void DK::EngineBase::BuildPSO()
 {
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesOpaque;
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
+	ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 
-	// PSO for opaque objects.
-	ZeroMemory(&psoDesOpaque, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-	psoDesOpaque.InputLayout = { m_inputLayouts.data(), (UINT)m_inputLayouts.size() };
-	psoDesOpaque.pRootSignature = m_rootSignature.Get();
-	psoDesOpaque.VS =
+	// opaque pso
+	psoDesc.pRootSignature = m_rootSignature.Get();
+	psoDesc.VS =
 	{
 		reinterpret_cast<BYTE*>(m_shaders["standardVS"]->GetBufferPointer()),
 		m_shaders["standardVS"]->GetBufferSize()
 	};
-	psoDesOpaque.PS =
+	psoDesc.PS =
 	{
 		reinterpret_cast<BYTE*>(m_shaders["opaquePS"]->GetBufferPointer()),
 		m_shaders["opaquePS"]->GetBufferSize()
 	};
-	psoDesOpaque.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	psoDesOpaque.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	psoDesOpaque.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-	psoDesOpaque.SampleMask = UINT_MAX;
-	psoDesOpaque.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	psoDesOpaque.NumRenderTargets = 1;
-	psoDesOpaque.RTVFormats[0] = m_eBackBufferFormat;
-	psoDesOpaque.SampleDesc.Count = m_b4xMsaaState ? 4 : 1;
-	psoDesOpaque.SampleDesc.Quality = m_b4xMsaaState ? (m_u4xMsaaQuality - 1) : 0;
-	psoDesOpaque.DSVFormat = m_eDepthStencilFormat;
-	THROW_IF_FAILED(m_d3dDevice->CreateGraphicsPipelineState(&psoDesOpaque, IID_PPV_ARGS(&m_psos[(int)RenderLayer::Opaque])));
+	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	psoDesc.SampleMask = UINT_MAX;
+	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	psoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	psoDesc.InputLayout = { m_inputLayouts.data(), (UINT)m_inputLayouts.size() };
+	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	psoDesc.NumRenderTargets = 1;
+	psoDesc.RTVFormats[0] = m_eBackBufferFormat;
+	psoDesc.DSVFormat = m_eDepthStencilFormat;
+	psoDesc.SampleDesc.Count = m_b4xMsaaState ? 4 : 1;
+	psoDesc.SampleDesc.Quality = m_b4xMsaaState ? (m_u4xMsaaQuality - 1) : 0;
+	
+	THROW_IF_FAILED(m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_psos[(int)RenderLayer::Opaque])));
 
 	// PSO for transparent objects
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesctransparent = psoDesOpaque;
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesctransparent = psoDesc;
 
 	D3D12_RENDER_TARGET_BLEND_DESC transparencyBlendDesc;
 	transparencyBlendDesc.BlendEnable = true;
@@ -302,7 +304,7 @@ void DK::EngineBase::BuildPSO()
 	THROW_IF_FAILED(m_d3dDevice->CreateGraphicsPipelineState(&psoDesctransparent, IID_PPV_ARGS(&m_psos[(int)RenderLayer::Transparent])));
 
 	// PSO for alpha tested objects
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC alphaTestedPsoDesc = psoDesOpaque;
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC alphaTestedPsoDesc = psoDesc;
 	alphaTestedPsoDesc.PS =
 	{
 		reinterpret_cast<BYTE*>(m_shaders["alphaTestedPS"]->GetBufferPointer()),
@@ -319,8 +321,6 @@ void DK::EngineBase::UpdateObjectCBs()
 
 	auto objectConstBuffer = m_curFrameResource->ObjectCB.get();
 
-	DirectX::XMMATRIX invView = m_camera.GetInvViewMatrix();
-
 	for (int i = 0; i < m_renderObjectInfos.size(); ++i)
 	{
 		RenderObjectInfo* objectInfo = m_renderObjectInfos[i].get();
@@ -328,27 +328,15 @@ void DK::EngineBase::UpdateObjectCBs()
 		XMMATRIX world = XMLoadFloat4x4(&objectInfo->World);
 		XMMATRIX texTransform = XMLoadFloat4x4(&objectInfo->TexTransform);
 
-		XMVECTOR determin = XMMatrixDeterminant(world);
-		XMMATRIX invWorld = XMMatrixInverse(&determin, world);
-
-		XMMATRIX viewToLocal = XMMatrixMultiply(invView, invWorld);
-
-		DirectX::BoundingFrustum localSpaceFrustum;
-		m_camFrustum.Transform(localSpaceFrustum, viewToLocal);
-
 		objectInfo->ObjBufferIndex = i;
-		objectInfo->ignoreRender = true;
 
-		if (localSpaceFrustum.Contains(objectInfo->BoundBox) != DirectX::DISJOINT)
-		{
-			ObjectConstants data;
-			XMStoreFloat4x4(&data.World, XMMatrixTranspose(world));
-			XMStoreFloat4x4(&data.TexTransform, XMMatrixTranspose(texTransform));
-			data.MaterialIndex = objectInfo->MaterialIndex;
-			objectInfo->ignoreRender = false;
+		ObjectConstants data;
+		XMStoreFloat4x4(&data.World, XMMatrixTranspose(world));
+		XMStoreFloat4x4(&data.TexTransform, XMMatrixTranspose(texTransform));
+		data.MaterialIndex = objectInfo->MaterialIndex;
+		objectInfo->ignoreRender = false;
 
-			objectConstBuffer->CopyData(i, data);
-		}
+		objectConstBuffer->CopyData(i, data);
 	}
 }
 
@@ -453,7 +441,7 @@ void DK::EngineBase::RenderRenderItems(ID3D12GraphicsCommandList* cmdList, std::
 		auto objCBAddr = m_curFrameResource->ObjectCB->GetBuffer()->GetGPUVirtualAddress();
 
 		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objCBAddr + (objCBByteSize * renderInfo->ObjBufferIndex);
-		cmdList->SetGraphicsRootConstantBufferView(2, objCBAddress);
+		cmdList->SetGraphicsRootConstantBufferView(1, objCBAddress);
 
 		cmdList->DrawIndexedInstanced(meshSection.IndexCount, 1, meshSection.StartIndexLocation, meshSection.BaseVertexLocation, 0);
 	}
@@ -474,8 +462,23 @@ void DK::EngineBase::LoadTexture(std::wstring path)
 
 	HRESULT hr = DirectX::CreateDDSTextureFromFile12(m_d3dDevice.Get(),
 		m_commandList.Get(), path.c_str(),
-		spTexture->Resource, spTexture->UploadHeap);
+		spTexture->Resource, spTexture->UploadHeap, spTexture->Dimension);
 
 	if (SUCCEEDED(hr))
+	{
 		m_textures[WStringToAnsi(fileName)] = std::move(spTexture);
+	}
+	else
+	{
+		OutputDebugString(fileName.c_str());
+		OutputDebugString(L"Texture 파일을 Load할 수 없습니다.");
+	}
+}
+
+Texture* DK::EngineBase::GetTexture(string textureName)
+{
+	if (m_textures.find(textureName) == m_textures.end())
+		return nullptr;
+
+	return m_textures[textureName].get();
 }

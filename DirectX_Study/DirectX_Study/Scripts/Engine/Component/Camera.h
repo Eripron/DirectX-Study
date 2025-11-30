@@ -35,12 +35,13 @@ namespace DK
 		void Move(DirectX::XMFLOAT3 move);
 		void Rotate(DirectX::XMFLOAT3 rotate);
 
+		Transform m_transform;
+
 	private:
 		void UpdateViewMatrix();
 		void UpdateProjMatrix();
 
 	private:
-		Transform m_transform;
 
 		XMFLOAT4X4 m_viewMatrix;
 		XMFLOAT4X4 m_projMatrix;

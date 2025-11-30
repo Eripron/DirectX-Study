@@ -194,7 +194,7 @@ void DK::ExBlur::CreateFrameResource()
 
 void DK::ExBlur::LoadTexture(std::wstring path)
 {
-	size_t firstIdx = path.rfind(L'/') + 1;
+	/*size_t firstIdx = path.rfind(L'/') + 1;
 	size_t lastIdx = path.rfind(L'.');
 	std::string textureName = WStringToAnsi(path.substr(firstIdx, lastIdx - firstIdx));
 
@@ -210,7 +210,7 @@ void DK::ExBlur::LoadTexture(std::wstring path)
 		spTexture->Resource, spTexture->UploadHeap);
 
 	if(SUCCEEDED(hr))
-		m_mapTextures[textureName] = std::move(spTexture);
+		m_mapTextures[textureName] = std::move(spTexture);*/
 }
 
 void DK::ExBlur::BuildDescriptorHeap()

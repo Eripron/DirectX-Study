@@ -1686,7 +1686,8 @@ static HRESULT CreateTextureFromDDS12(
 	_In_ size_t maxsize,
 	_In_ bool forceSRGB,
 	ComPtr<ID3D12Resource>& texture,
-	ComPtr<ID3D12Resource>& textureUploadHeap)
+	ComPtr<ID3D12Resource>& textureUploadHeap,
+    D3D12_SRV_DIMENSION& dimension)
 {
 	HRESULT hr = S_OK;
 
@@ -1876,6 +1877,16 @@ static HRESULT CreateTextureFromDDS12(
 			initData.get(),
 			texture, 
 			textureUploadHeap);
+
+        if (SUCCEEDED(hr))
+        {
+            if (isCubeMap)
+                dimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+            else if (arraySize > 1)
+                dimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+            else
+                dimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+        }
 	}
 
 	return hr;
@@ -1978,6 +1989,7 @@ HRESULT DirectX::CreateDDSTextureFromMemory12(
 		+ sizeof(DDS_HEADER)
 		+ (bDXT10Header ? sizeof(DDS_HEADER_DXT10) : 0);
 
+    D3D12_SRV_DIMENSION dimension;
 	HRESULT hr = CreateTextureFromDDS12(
 		device,
 		cmdList,
@@ -1987,8 +1999,8 @@ HRESULT DirectX::CreateDDSTextureFromMemory12(
 		maxsize,
 		false,
 		texture,
-		textureUploadHeap
-		);
+		textureUploadHeap,
+        dimension);
 
 	if (SUCCEEDED(hr))
 	{
@@ -2147,6 +2159,7 @@ HRESULT DirectX::CreateDDSTextureFromFile12(_In_ ID3D12Device* device,
 	_In_z_ const wchar_t* szFileName,
 	_Out_ ComPtr<ID3D12Resource>& texture,
 	_Out_ ComPtr<ID3D12Resource>& textureUploadHeap,
+    _Out_ D3D12_SRV_DIMENSION& dimension,
 	_In_ size_t maxsize,
 	_Out_opt_ DDS_ALPHA_MODE* alphaMode)
 {
@@ -2180,7 +2193,7 @@ HRESULT DirectX::CreateDDSTextureFromFile12(_In_ ID3D12Device* device,
 	}
 
 	hr = CreateTextureFromDDS12(device, cmdList, header,
-		bitData, bitSize, maxsize, false, texture, textureUploadHeap);
+		bitData, bitSize, maxsize, false, texture, textureUploadHeap, dimension);
 
 	if (SUCCEEDED(hr))
 	{

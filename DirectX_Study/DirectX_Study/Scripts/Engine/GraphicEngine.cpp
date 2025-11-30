@@ -63,6 +63,25 @@ void GraphicEngine::Run()
 
 bool GraphicEngine::InitDirect3D()
 {
+	//IDWriteFactory* dWriteFactory;
+	//HRESULT hr;
+
+	//hr = DWriteCreateFactory(DWRITE_FACTORY_TYPE::DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&dWriteFactory));
+	//if (SUCCEEDED(hr))
+	//{
+	//	IDWriteTextFormat* pTextFormat;
+
+	//	hr = dWriteFactory->CreateTextFormat(
+	//		L"Gabriola",				// Font family name.
+	//		NULL,                       // Font collection (NULL sets it to use the system font collection).
+	//		DWRITE_FONT_WEIGHT_REGULAR,
+	//		DWRITE_FONT_STYLE_NORMAL,
+	//		DWRITE_FONT_STRETCH_NORMAL,
+	//		72.0f,
+	//		L"en-us",
+	//		&pTextFormat);
+	//}
+
 	// TODO: D3D12GetDebugInterface함수의 목적 & 디버깅 관리 방법
 #if defined(_DEBUG)
 	Microsoft::WRL::ComPtr<ID3D12Debug> debugController;

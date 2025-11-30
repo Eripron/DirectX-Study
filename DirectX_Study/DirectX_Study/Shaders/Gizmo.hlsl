@@ -44,3 +44,13 @@ float4 PS(VertexOut pin) : SV_Target
 {
     return pin.Color;
 }
+
+VertexOut GizmoVS(VertexIn vin)
+{
+    VertexOut vout = (VertexOut) 0.0f;
+	
+    vout.PosH = mul(float4(vin.PosL, 1.0f), gViewProj); // ºä, Åõ¿µ º¯È¯
+    vout.Color = vin.Color;
+    
+    return vout;
+}

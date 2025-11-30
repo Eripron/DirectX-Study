@@ -115,20 +115,20 @@ void DK::ExTexture::LoadTexture()
 
 void DK::ExTexture::LoadTexture(std::wstring path, int texCBIndex)
 {
-	size_t firstIdx = path.rfind(L'/') + 1;
-	size_t lastIdx = path.rfind(L'.');
-	std::string name = WStringToAnsi(path.substr(firstIdx, lastIdx - firstIdx));
+	//size_t firstIdx = path.rfind(L'/') + 1;
+	//size_t lastIdx = path.rfind(L'.');
+	//std::string name = WStringToAnsi(path.substr(firstIdx, lastIdx - firstIdx));
 
-	std::unique_ptr<Texture> spTexture = std::make_unique<Texture>();
+	//std::unique_ptr<Texture> spTexture = std::make_unique<Texture>();
 
-	spTexture->FileName = path;
-	spTexture->SrvHeapIndex = texCBIndex;
+	//spTexture->FileName = path;
+	//spTexture->SrvHeapIndex = texCBIndex;
 
-	DirectX::CreateDDSTextureFromFile12(m_d3dDevice.Get(),
-		m_commandList.Get(), spTexture->FileName.c_str(),
-		spTexture->Resource, spTexture->UploadHeap);
+	//DirectX::CreateDDSTextureFromFile12(m_d3dDevice.Get(),
+	//	m_commandList.Get(), spTexture->FileName.c_str(),
+	//	spTexture->Resource, spTexture->UploadHeap);
 
-	m_mapTextures[name] = std::move(spTexture);
+	//m_mapTextures[name] = std::move(spTexture);
 }
 
 void DK::ExTexture::CreateMaterial()

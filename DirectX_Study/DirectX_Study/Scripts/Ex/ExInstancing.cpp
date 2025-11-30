@@ -15,34 +15,99 @@ bool DK::ExInstancing::Update()
 	if (!EngineBase::Update())
 		return false;
 
-	DirectX::XMFLOAT3 rotate(0, m_gameTimer.DeltaTime() * 0.1, 0);
-	m_cameraCullingTest.Rotate(rotate);
-
-	auto objectConstBuffer = m_curFrameResource->ObjectCB.get();
-
-	DirectX::XMMATRIX invView = m_cameraCullingTest.GetInvViewMatrix();
-
-	for (int i = 0; i < m_renderObjectInfos.size(); ++i)
+	if(false)
 	{
-		RenderObjectInfo* objectInfo = m_renderObjectInfos[i].get();
+		// 테스트 절두체 컬링 체크
+		DirectX::XMFLOAT3 rotate(0, m_gameTimer.DeltaTime() * 0.3, 0);
+		m_cameraCullingTest.Rotate(rotate);
 
-		XMMATRIX world = XMLoadFloat4x4(&objectInfo->World);
-		XMMATRIX texTransform = XMLoadFloat4x4(&objectInfo->TexTransform);
+		auto objectConstBuffer = m_curFrameResource->ObjectCB.get();
 
-		XMVECTOR determin = XMMatrixDeterminant(world);
-		XMMATRIX invWorld = XMMatrixInverse(&determin, world);
+		DirectX::XMMATRIX invView = m_cameraCullingTest.GetInvViewMatrix();
 
-		XMMATRIX viewToLocal = XMMatrixMultiply(invView, invWorld);
+		for (int i = 0; i < m_renderObjectInfos.size(); ++i)
+		{
+			RenderObjectInfo* objectInfo = m_renderObjectInfos[i].get();
 
-		DirectX::BoundingFrustum localSpaceFrustum;
-		m_frustomCulTest.Transform(localSpaceFrustum, viewToLocal);
+			XMMATRIX world = XMLoadFloat4x4(&objectInfo->World);
+			XMMATRIX texTransform = XMLoadFloat4x4(&objectInfo->TexTransform);
 
-		objectInfo->ObjBufferIndex = i;
-		objectInfo->ignoreRender = true;
+			XMVECTOR determin = XMMatrixDeterminant(world);
+			XMMATRIX invWorld = XMMatrixInverse(&determin, world);
 
-		if (localSpaceFrustum.Contains(objectInfo->BoundBox) != DirectX::DISJOINT)
-			objectInfo->ignoreRender = false;
+			XMMATRIX viewToLocal = XMMatrixMultiply(invView, invWorld);
+
+			DirectX::BoundingFrustum localSpaceFrustum;
+			m_frustomCulTest.Transform(localSpaceFrustum, viewToLocal);
+
+			objectInfo->ObjBufferIndex = i;
+			objectInfo->ignoreRender = true;
+
+			if (localSpaceFrustum.Contains(objectInfo->BoundBox) != DirectX::DISJOINT)
+				objectInfo->ignoreRender = false;
+		}
 	}
+
+	POINT mouse;
+	GetCursorPos(&mouse);
+	ScreenToClient(m_hWnd, &mouse);
+	Raycast(mouse.x, mouse.y);
+	//Raycast(m_nClientWidth / 2, m_nClientHeight / 2);
+
+	//m_gizmo.SetGizmoColor(DirectX::XMFLOAT4(DirectX::Colors::Orange));
+
+	//XMFLOAT3 o = m_cameraCullingTest.m_transform.GetPosition();
+	//XMVECTOR pos = XMLoadFloat3(&o);
+
+	//XMFLOAT3 frontf = m_cameraCullingTest.m_transform.Front();
+	//XMFLOAT3 rightf = m_cameraCullingTest.m_transform.Right();
+	//XMFLOAT3 upf = m_cameraCullingTest.m_transform.Up();
+
+	//XMVECTOR front = XMLoadFloat3(&frontf);
+	//XMVECTOR right = XMLoadFloat3(&rightf);
+	//XMVECTOR up = XMLoadFloat3(&upf);
+
+	//// FOV (Y)
+	//float fovY = XMConvertToRadians(60.0f);
+	//float halfHeight = tanf(fovY * 0.5f) * 20;   // near distance = 10
+	//float halfWidth = halfHeight * AspectRatio();
+
+	//// near plane center = pos + front * 10
+	//front *= 10;
+	//pos += front;
+
+	//// 코너 4개
+	//XMVECTOR upH = XMVectorScale(up, halfHeight);
+	//XMVECTOR upN = XMVectorScale(up, -halfHeight);
+	//XMVECTOR rightW = XMVectorScale(right, halfWidth);
+	//XMVECTOR rightN = XMVectorScale(right, -halfWidth);
+
+	//XMVECTOR ntl = XMVectorAdd(pos, XMVectorAdd(upH, rightN));
+	//XMVECTOR ntr = XMVectorAdd(pos, XMVectorAdd(upH, rightW));
+	//XMVECTOR nbl = XMVectorAdd(pos, XMVectorAdd(upN, rightN));
+	//XMVECTOR nbr = XMVectorAdd(pos, XMVectorAdd(upN, rightW));
+
+	//// Draw lines
+	//XMFLOAT3 leftUp;
+	//XMStoreFloat3(&leftUp, ntl);
+	//m_gizmo.OnDrawLine(o, leftUp);
+
+	//XMFLOAT3 rightUp;
+	//XMStoreFloat3(&rightUp, ntr);
+	//m_gizmo.OnDrawLine(o, rightUp);
+
+	//XMFLOAT3 leftBottom;
+	//XMStoreFloat3(&leftBottom, nbl);
+	//m_gizmo.OnDrawLine(o, leftBottom);
+
+	//XMFLOAT3 rightBottom;
+	//XMStoreFloat3(&rightBottom, nbr);
+	//m_gizmo.OnDrawLine(o, rightBottom);
+
+	//m_gizmo.OnDrawLine(leftUp, rightUp);
+	//m_gizmo.OnDrawLine(leftUp, leftBottom);
+	//m_gizmo.OnDrawLine(leftBottom, rightBottom);
+	//m_gizmo.OnDrawLine(rightBottom, rightUp);
 
 	return true;
 }
@@ -54,7 +119,10 @@ void DK::ExInstancing::Render(ID3D12GraphicsCommandList* cmdList)
 	std::vector<RenderObjectInfo*> renderItems;
 
 	for (int i = 0; i < m_renderObjectInfos.size(); ++i)
-		renderItems.push_back(m_renderObjectInfos[i].get());
+	{
+		if(m_renderObjectInfos[i]->ignoreRender == false)
+			renderItems.push_back(m_renderObjectInfos[i].get());
+	}
 
 	RenderRenderItems(cmdList, renderItems);
 }
@@ -242,4 +310,46 @@ DirectX::XMFLOAT3 DK::ExInstancing::GetPositionByIndex(int x, int y, int z, floa
 	float yGap = height / (y - 1);
 
 	return DirectX::XMFLOAT3(-width / 2 + xGap * col, -height / 2 + yGap * h, depth / 2 - zGap * row);
+}
+
+void DK::ExInstancing::Raycast(int screenX, int screenY)
+{
+	DirectX::XMFLOAT4X4 projMatrixf4 = m_camera.GetProjMatrixf4();
+	
+	float viewX = (2.0f * screenX / m_nClientWidth - 1.0f) / projMatrixf4(0, 0);
+	float viewY = (1.0f - 2.0f * screenY / m_nClientHeight) / projMatrixf4(1, 1);
+
+	DirectX::XMVECTOR rayOrg = DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+	DirectX::XMVECTOR rayDir = DirectX::XMVectorSet(viewX, viewY, 1.0f, 0.0f);
+	
+	DirectX::XMMATRIX invView = m_camera.GetInvViewMatrix();
+
+	bool col = false;
+	for (int i = 0; i < m_renderObjectInfos.size(); ++i)
+	{
+		RenderObjectInfo* objectInfo = m_renderObjectInfos[i].get();
+
+		XMMATRIX world = XMLoadFloat4x4(&objectInfo->World);
+		XMVECTOR determin = XMMatrixDeterminant(world);
+		XMMATRIX invWorld = XMMatrixInverse(&determin, world);
+
+		XMMATRIX viewToLocal = XMMatrixMultiply(invView, invWorld);
+
+		DirectX::XMVECTOR localWorldRay = XMVector3TransformCoord(rayOrg, invView);
+
+		DirectX::XMVECTOR localRay = XMVector3TransformCoord(rayOrg, viewToLocal);
+		DirectX::XMVECTOR localRayDir = XMVector3TransformNormal(rayDir, viewToLocal);
+		localRayDir = XMVector3Normalize(localRayDir);
+
+		float dist = 0.0f;
+		if (!col && m_renderObjectInfos[i]->BoundBox.Intersects(localRay, localRayDir, dist))
+		{
+			col = true;
+			objectInfo->MaterialIndex = 1;
+		}
+		else
+		{
+			objectInfo->MaterialIndex = 0;
+		}
+	}
 }
