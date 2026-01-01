@@ -20,8 +20,8 @@ void DK::Testing::Render(ID3D12GraphicsCommandList* cmdList)
 {
 	cmdList->SetPipelineState(m_psos[(int)RenderLayer::Opaque].Get());
 
-	/*if (m_renderList[(int)RenderLayer::Opaque].size() > 0)
-		RenderRenderItems(cmdList, m_renderList[(int)RenderLayer::Opaque]);*/
+	if (m_renderList[(int)RenderLayer::Opaque].size() > 0)
+		RenderRenderItems(cmdList, m_renderList[(int)RenderLayer::Opaque]);
 
 	cmdList->SetPipelineState(m_psos[(int)RenderLayer::Sky].Get());
 	if (m_renderList[(int)RenderLayer::Sky].size() > 0)
@@ -39,112 +39,72 @@ bool DK::Testing::OnResize(int width, int height, bool force)
 void DK::Testing::LoadTextures()
 {
 	LoadTexture(L"Textures/bricks2.dds");
+	LoadTexture(L"Textures/bricks2_nmap.dds");
+
 	LoadTexture(L"Textures/tile.dds");
-	LoadTexture(L"Textures/white1x1.dds");
-	LoadTexture(L"Textures/stone.dds");
+	LoadTexture(L"Textures/tile_nmap.dds");
+
 	LoadTexture(L"Textures/grasscube1024.dds");
-
-	/*std::wstring pathFolder = L"Textures/*.dds";
-	WIN32_FIND_DATAW findData;
-	HANDLE hFind = FindFirstFileW(pathFolder.c_str(), &findData);
-
-	if (hFind == INVALID_HANDLE_VALUE)
-		return;
-
-	do
-	{
-		std::wstring fileName = findData.cFileName;
-		std::wstring path = L"Textures/" + fileName;
-
-		if (fileName.length() > 0)
-			LoadTexture(path);
-
-	} while (FindNextFileW(hFind, &findData) != 0);*/
 }
 
 void DK::Testing::CreateMesh()
 {
 	GeometryGenerator geoGen;
 
-	MeshData<Vertex> ground = geoGen.CreateGrid(100, 100, 10, 10);
-	MeshManager::GetInstance()->AddMeshData("ground", ground);
-
 	MeshData<Vertex> box = geoGen.CreateBox(1, 1, 1);
 	MeshManager::GetInstance()->AddMeshData("box", box);
-
-	MeshData<Vertex> sphere = geoGen.CreateSphere(100, 100, 100);
-	MeshManager::GetInstance()->AddMeshData("sphere", box);
 
 	MeshManager::GetInstance()->CreateMeshBuffer(m_d3dDevice.Get(), m_commandList.Get());
 }
 
 void DK::Testing::CreateMaterial()
 {
-	Texture* texture = GetTexture("stone");
+	Texture* texture = nullptr;
+	Texture* normalTex = nullptr;
 
-	auto bricks0 = std::make_unique<Material>();
-	bricks0->Name = "stone";
-	bricks0->SrvHeapIndex = 0;
-	bricks0->DiffuseSrvHeapIndex = texture == nullptr ? -1 :  texture->SrvHeapIndex;
-	bricks0->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	bricks0->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
-	bricks0->Roughness = 0.3f;
+	texture = GetTexture("bricks2");
+	normalTex = GetTexture("bricks2_nmap");
 
-	texture = GetTexture("tile");
-	auto tile0 = std::make_unique<Material>();
-	tile0->Name = "tile";
-	tile0->SrvHeapIndex = 1;
-	tile0->DiffuseSrvHeapIndex = texture == nullptr ? -1 : texture->SrvHeapIndex;
-	tile0->DiffuseAlbedo = XMFLOAT4(0.9f, 0.9f, 0.9f, 1.0f);
-	tile0->FresnelR0 = XMFLOAT3(0.2f, 0.2f, 0.2f);
-	tile0->Roughness = 0.1f;
+	auto brick = std::make_unique<Material>();
+	brick->Name = "bricks2";
+	brick->SrvIndex = 0;
+	brick->BaseColorTextureIndex = texture == nullptr ? -1 : texture->SrvHeapIndex;
+	brick->NormalTextureIndex = normalTex == nullptr ? -1 : normalTex->SrvHeapIndex;
+	brick->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	brick->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
+	brick->Roughness = 0.3f;
 	
-	texture = GetTexture("white1x1");
-	auto mirror0 = std::make_unique<Material>();
-	mirror0->Name = "mirror";
-	mirror0->SrvHeapIndex = 2;
-	mirror0->DiffuseSrvHeapIndex = texture == nullptr ? -1 : texture->SrvHeapIndex;
-	mirror0->DiffuseAlbedo = XMFLOAT4(0.0f, 0.0f, 0.1f, 1.0f);
-	mirror0->FresnelR0 = XMFLOAT3(0.98f, 0.97f, 0.95f);
-	mirror0->Roughness = 0.1f;
-
-	auto skullMat = std::make_unique<Material>();
-	skullMat->Name = "skullMat";
-	skullMat->SrvHeapIndex = 3;
-	skullMat->DiffuseSrvHeapIndex = texture == nullptr ? -1 : texture->SrvHeapIndex;
-	skullMat->DiffuseAlbedo = XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
-	skullMat->FresnelR0 = XMFLOAT3(0.2f, 0.2f, 0.2f);
-	skullMat->Roughness = 0.2f;
-
 	texture = GetTexture("grasscube1024");
+	normalTex = nullptr;
+
 	auto sky = std::make_unique<Material>();
 	sky->Name = "sky";
-	sky->SrvHeapIndex = 4;
-	sky->DiffuseSrvHeapIndex = texture == nullptr ? -1 : texture->SrvHeapIndex;
+	sky->SrvIndex = 1;
+	sky->BaseColorTextureIndex = texture == nullptr ? -1 : texture->SrvHeapIndex;
+	sky->NormalTextureIndex = normalTex == nullptr ? -1 : normalTex->SrvHeapIndex;
 	sky->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	sky->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
 	sky->Roughness = 1.0f;
 
-	m_materials[bricks0->Name] = std::move(bricks0);
-	m_materials[tile0->Name] = std::move(tile0);
-	m_materials[mirror0->Name] = std::move(mirror0);
-	m_materials[skullMat->Name] = std::move(skullMat);
+	m_materials[brick->Name] = std::move(brick);
 	m_materials[sky->Name] = std::move(sky);
 }
 
 void DK::Testing::CreateGameObject()
 {
-	GameObject* ground = new GameObject();
+	GameObject* box = new GameObject();
+	box->AddComponent(new MeshFilter("box"));
+	box->SetMaterial(m_materials["bricks2"].get());
+	box->GetComponent<Transform>()->SetPosition(0, 5, 0);
+	box->GetComponent<Transform>()->SetScale(4, 4, 4);
 
-	ground->AddComponent(new MeshFilter("ground"));
-	ground->SetMaterial(m_materials["stone"].get());
-
-	m_gameObjects[(int)RenderLayer::Opaque].push_back(ground);
+	m_gameObjects[(int)RenderLayer::Opaque].push_back(box);
 
 	GameObject* sky = new GameObject();
-	sky->AddComponent(new MeshFilter("sphere"));
+	sky->AddComponent(new MeshFilter("box"));
+	sky->SetMaterial(m_materials["sky"].get());
 	Transform* trans = sky->GetComponent<Transform>();
-	trans->SetScale(30, 30, 30);
+	trans->SetScale(1000, 1000, 1000);
 
 	m_gameObjects[(int)RenderLayer::Sky].push_back(sky);
 }
@@ -169,7 +129,7 @@ void DK::Testing::CreateRenderObjectInfo()
 			renderInfo->World = transform->GetWorldMatrix();
 
 			Material* mat = object->GetMaterial();
-			if (mat != nullptr) renderInfo->MaterialIndex = mat->SrvHeapIndex;
+			if (mat != nullptr) renderInfo->MaterialIndex = mat->SrvIndex;
 
 			renderInfo->meshInfo = mesh;
 
@@ -270,7 +230,7 @@ void DK::Testing::BuildPSO()
 	// PSO for sky.
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC skyPsoDesc = psoDesc;
 
-	// The camera is inside the sky sphere, so just turn off culling.
+	// The camera is inside the sky sphere, so just turn  culling.
 	skyPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 
 	// Make sure the depth function is LESS_EQUAL and not just LESS.  
@@ -289,4 +249,20 @@ void DK::Testing::BuildPSO()
 		m_shaders["skyPS"]->GetBufferSize()
 	};
 	THROW_IF_FAILED(m_d3dDevice->CreateGraphicsPipelineState(&skyPsoDesc, IID_PPV_ARGS(&m_psos[(int)RenderLayer::Sky])));
+}
+
+void DK::Testing::RenderCubeMap(ID3D12GraphicsCommandList* cmdList, int i)
+{
+	UINT passCBByteSize = D3DUtils::CalcConstBufferByteSize(sizeof(RenderPassConstants));
+
+	auto passCB = m_curFrameResource->RenderPassCB->GetBuffer();
+	D3D12_GPU_VIRTUAL_ADDRESS passCBAddress = passCB->GetGPUVirtualAddress() + (1 + i) * passCBByteSize;
+	cmdList->SetGraphicsRootConstantBufferView(1, passCBAddress);
+
+	RenderRenderItems(cmdList, m_renderList[(int)RenderLayer::Opaque]);
+
+	cmdList->SetPipelineState(m_psos[(int)RenderLayer::Sky].Get());
+	RenderRenderItems(cmdList, m_renderList[(int)RenderLayer::Sky]);
+
+	cmdList->SetPipelineState(m_psos[(int)RenderLayer::Opaque].Get());
 }

@@ -10,6 +10,9 @@
 #include "../Utils/D3DUtils.h"
 #include "../Utils/MathUtils.h"
 
+using namespace std;
+using namespace DirectX;
+
 namespace DK
 {
 	struct Vertex
@@ -204,20 +207,21 @@ namespace DK
 
 	struct Material
 	{
-		std::string Name;
+		string Name;
 
-		int SrvHeapIndex = -1;			// Material 리소스를 SRV Heap에 위치시킨 index 정보
-		int DiffuseSrvHeapIndex = -1;	// mat view index
-		int MaskSrvHeapIndex = -1;		// mask view index
-		int NormalSrvHeapIndex = -1;	// normal map view index
+		int SrvIndex = -1;				// SRV Heap에 위치시킨 index 정보
+		int BaseColorTextureIndex = -1;	// 텍스처 인덱스(SRV Heap index)
+		int NormalTextureIndex = -1;	// 노멀 텍스처 인덱스(SRV Heap index)
+
+		XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };	// md: 반사율
+		XMFLOAT3 FresnelR0 = { 0.01f, 0.01f, 0.01f };			// Rf(0): 매질, 0(비금속) ~ 1(금속)
+		float Roughness = 0.0f;									// m: 거칠기
 
 		int DirtyCount = 3;
 
-		// Material constant buffer data used for shading.
-		DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };	// md: 반사율
-		DirectX::XMFLOAT3 FresnelR0 = { 0.01f, 0.01f, 0.01f };			// Rf(0): 매질
-		float Roughness = 0.0f;											// m: 거칠기
-		DirectX::XMFLOAT4X4 MatTransform = MathUtils::Identity4x4();	// texture uv 변환
+		// :: 데이터는 있지만 현재는 사용 안함
+		int MaskSrvHeapIndex = -1;		// mask view index
+		XMFLOAT4X4 MatTransform = MathUtils::Identity4x4();		// texture uv 변환
 	};
 
 #pragma endregion
@@ -333,21 +337,28 @@ namespace DK
 
 #pragma endregion
 
+
+#pragma region Shader Data
+
+	// shader에 넘기는 구조체 데이터
 	struct ObjectConstants
 	{
-		DirectX::XMFLOAT4X4 World = MathUtils::Identity4x4();
-		DirectX::XMFLOAT4X4 TexTransform = MathUtils::Identity4x4();
+		XMFLOAT4X4 World = MathUtils::Identity4x4();
+		XMFLOAT4X4 TexTransform = MathUtils::Identity4x4();
 		UINT MaterialIndex;
 	};
 
 	struct MaterialData
 	{
-		DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
-		DirectX::XMFLOAT3 FresnelR0 = { 0.01f, 0.01f, 0.01f };
+		XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
+		XMFLOAT3 FresnelR0 = { 0.01f, 0.01f, 0.01f };
 		float Roughness = 64.0f;
-		DirectX::XMFLOAT4X4 MatTransform = MathUtils::Identity4x4();
+		XMFLOAT4X4 MatTransform = MathUtils::Identity4x4();
 
-		UINT DiffuseSrvHeapIndex = -1;
+		UINT BaseColorTextureIndex = UINT_MAX;
+		UINT NormalTextureIndex = UINT_MAX;
 	};
+
+#pragma endregion
 
 }

@@ -63,25 +63,6 @@ void GraphicEngine::Run()
 
 bool GraphicEngine::InitDirect3D()
 {
-	//IDWriteFactory* dWriteFactory;
-	//HRESULT hr;
-
-	//hr = DWriteCreateFactory(DWRITE_FACTORY_TYPE::DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&dWriteFactory));
-	//if (SUCCEEDED(hr))
-	//{
-	//	IDWriteTextFormat* pTextFormat;
-
-	//	hr = dWriteFactory->CreateTextFormat(
-	//		L"Gabriola",				// Font family name.
-	//		NULL,                       // Font collection (NULL sets it to use the system font collection).
-	//		DWRITE_FONT_WEIGHT_REGULAR,
-	//		DWRITE_FONT_STYLE_NORMAL,
-	//		DWRITE_FONT_STRETCH_NORMAL,
-	//		72.0f,
-	//		L"en-us",
-	//		&pTextFormat);
-	//}
-
 	// TODO: D3D12GetDebugInterface함수의 목적 & 디버깅 관리 방법
 #if defined(_DEBUG)
 	Microsoft::WRL::ComPtr<ID3D12Debug> debugController;
@@ -195,7 +176,7 @@ void GraphicEngine::CreateRtvAndDsvDescriptorHeaps()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
 	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;		// Render Target View로 사용한다.
-	rtvHeapDesc.NumDescriptors = SWAP_CHAIN_BUFFER_COUNT;	// 뷰를 2개 생성
+	rtvHeapDesc.NumDescriptors = SWAP_CHAIN_BUFFER_COUNT;
 	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	rtvHeapDesc.NodeMask = 0;
 	THROW_IF_FAILED(m_d3dDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvHeap)));

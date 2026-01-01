@@ -28,15 +28,13 @@ namespace DK
 		void SetScale(float x, float y, float z);
 
 		void RotationQuaternion(DirectX::XMFLOAT3 radian);
+		void RotateQuaternionAxis(XMFLOAT3 axis, float radian);
 
 	private:
 		void UpdatePosition();
 		void UpdateRotation();
 		void UpdateScale();
 		void UpdateWorldMatrix();
-
-		void RotateQuaternionAxis(XMFLOAT3 axis, float radian);
-
 
 	private:
 		DirectX::XMFLOAT3 m_position = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);

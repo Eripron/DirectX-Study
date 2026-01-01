@@ -79,7 +79,6 @@ namespace DK
 		virtual void LoadTextures();
 		void LoadTexture(std::wstring path);
 		Texture* GetTexture(string textureName);
-		
 
 	protected:
 		ComPtr<ID3D12RootSignature> m_rootSignature;

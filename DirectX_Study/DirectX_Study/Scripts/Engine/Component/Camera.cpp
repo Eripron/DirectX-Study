@@ -111,6 +111,21 @@ void DK::Camera::Rotate(DirectX::XMFLOAT3 rotRadian)
 	m_transform.RotationQuaternion(rotRadian);
 }
 
+void DK::Camera::SetLens(float fovY, float aspect, float zn, float zf)
+{
+	// cache properties
+	m_fFovAngle = fovY;
+	m_fAspect = aspect;
+	m_fNear = zn;
+	m_fFar = zf;
+
+	float mNearWindowHeight = 2.0f * m_fNear * tanf(0.5f * m_fFovAngle);
+	float mFarWindowHeight = 2.0f * m_fFar * tanf(0.5f * m_fFovAngle);
+
+	XMMATRIX P = XMMatrixPerspectiveFovLH(m_fFovAngle, m_fAspect, m_fNear, m_fFar);
+	XMStoreFloat4x4(&m_projMatrix, P);
+}
+
 void DK::Camera::UpdateViewMatrix()
 {
 	DirectX::XMFLOAT3 cameraPosition = m_transform.GetPosition();

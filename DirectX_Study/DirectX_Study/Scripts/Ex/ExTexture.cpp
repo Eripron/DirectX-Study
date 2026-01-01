@@ -135,8 +135,8 @@ void DK::ExTexture::CreateMaterial()
 {
 	auto treeSprites = std::make_unique<Material>();
 	treeSprites->Name = "tree";
-	treeSprites->SrvHeapIndex = 0;
-	treeSprites->DiffuseSrvHeapIndex = m_mapTextures["treeArray2"]->SrvHeapIndex;
+	treeSprites->SrvIndex = 0;
+	treeSprites->BaseColorTextureIndex = m_mapTextures["treeArray2"]->SrvHeapIndex;
 	treeSprites->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	treeSprites->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
 	treeSprites->Roughness = 0.125f;
@@ -144,8 +144,8 @@ void DK::ExTexture::CreateMaterial()
 
 	auto matBox = std::make_unique<Material>();
 	matBox->Name = "box";
-	matBox->SrvHeapIndex = 1;
-	matBox->DiffuseSrvHeapIndex = m_mapTextures["WoodCrate02"]->SrvHeapIndex;
+	matBox->SrvIndex = 1;
+	matBox->BaseColorTextureIndex = m_mapTextures["WoodCrate02"]->SrvHeapIndex;
 	matBox->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	matBox->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
 	matBox->Roughness = 0.125f;

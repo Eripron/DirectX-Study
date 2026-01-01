@@ -8,6 +8,7 @@
 #include "Resource/FrameResource.h"
 #include <dwrite.h>
 #include <d2d1.h>
+#include "Resource/CubeRenderTarget.h"
 
 #pragma comment(lib, "dwrite.lib")
 #pragma comment(lib, "d2d1.lib")
@@ -27,6 +28,7 @@ namespace DK
 		AlphaTestedTreeSprites,
 		Patch,
 		Sky,
+		Reflection,
 
 		Count
 	};

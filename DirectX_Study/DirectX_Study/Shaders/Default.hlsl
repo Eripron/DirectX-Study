@@ -19,24 +19,22 @@
 
 // Include structures and functions for lighting.
 #include "Common.hlsl"
-//#include "LightUtils.hlsl"
 
 struct VertexIn
 {
-	float3 PosL    : POSITION;
-    float3 NormalL : NORMAL;
-    float2 TexC    : TEXCOORD;
+	float3 PosL     : POSITION;
+    float3 NormalL  : NORMAL;
+    float2 TexC     : TEXCOORD;
     float3 TangentU : TANGENT;
 };
 
 struct VertexOut
 {
-	float4 PosH    : SV_POSITION;
-    float3 PosW    : POSITION;
-    float3 NormalW : NORMAL;
-    float2 TexC : TEXCOORD;
-    
-	nointerpolation uint MatIndex  : MATINDEX;
+	float4 PosH     : SV_POSITION;
+    float3 PosW     : POSITION;
+    float3 NormalW  : NORMAL;
+    float3 TangentW : TANGENT;
+    float2 TexC     : TEXCOORD;
 };
 
 float3x3 cofactor(float3x3 m)
@@ -74,29 +72,24 @@ float3x3 inverse(float3x3 m)
 VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
 {
 	VertexOut vout = (VertexOut)0.0f;
-	
-    // Fetch the instance data.
-    float4x4 world = World;
-    float4x4 texTransform = TexTransform;
-    uint matIndex = MaterialIndex;
+    MaterialData matData = gMaterialData[MaterialIndex];
     
-    vout.MatIndex = matIndex;
-    
-    MaterialData matData = gMaterialData[matIndex];
-    
-    // * 월드 변환
-    float4 posW = mul(float4(vin.PosL, 1.0f), world);
+    // world 좌표로 변환
+    float4 posW = mul(float4(vin.PosL, 1.0f), World);
     vout.PosW = posW.xyz;
 
-    // * 뷰, 투영 변환
+    // view, projection 좌표로 변환
     vout.PosH = mul(posW, gViewProj);
     
-    // * normal vector 변환
-    float3x3 invTrans = transpose(inverse((float3x3) world));
+    // normal vector (local) -> (world)
+    float3x3 invTrans = transpose(inverse((float3x3) World));
     vout.NormalW = normalize(mul(vin.NormalL, invTrans));
-
+    
+    // tangent vector (local) -> (world)
+    vout.TangentW = mul(vin.TangentU, (float3x3) World);
+    
     // Output vertex attributes for interpolation across triangle.
-    float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), texTransform);
+    float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), TexTransform);
     vout.TexC = mul(texC, matData.MatTransform).xy;
     
     return vout;
@@ -104,13 +97,20 @@ VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
 
 float4 PS(VertexOut pin) : SV_Target
 {
-    // Fetch the material data.
-    MaterialData matData = gMaterialData[pin.MatIndex];
+    // material data
+    MaterialData matData = gMaterialData[MaterialIndex];
     float4 diffuseAlbedo = matData.DiffuseAlbedo;
     float3 fresnelR0 = matData.FresnelR0;
     float roughness = matData.Roughness;
     uint diffuseTexIndex = matData.DiffuseMapIndex;
+    uint normalMapIndex = matData.NormalMapIndex;
     
+    // normal sample 가져오기 및 world space로 변환
+    pin.NormalW = normalize(pin.NormalW);
+    float4 normalMapSample = gDiffuseMap[normalMapIndex].Sample(gsamAnisotropicWrap, pin.TexC);
+    float3 bumpedNormalW = NormalSampleToWorldSpace(normalMapSample.rgb, pin.NormalW, pin.TangentW);
+    
+    // texture sampling
     diffuseAlbedo *= gDiffuseMap[diffuseTexIndex].Sample(gsamLinearWrap, pin.TexC);
     
     // Vector from point being lit to eye. 
@@ -121,16 +121,16 @@ float4 PS(VertexOut pin) : SV_Target
 	//  ambient 계산 = 간접광의 양 * 반사율
     float4 ambient = gAmbientLight * diffuseAlbedo;
 
-    const float shininess = 1.0f - roughness;
+    const float shininess = (1.0f - roughness) * normalMapSample.a;
     Material mat = { diffuseAlbedo, fresnelR0, shininess };
     float3 shadowFactor = 1.0f;
-    float4 directLight = ComputeLighting(gLights, mat, pin.PosW, pin.NormalW, toEyeW, shadowFactor);
+    float4 directLight = ComputeLighting(gLights, mat, pin.PosW, bumpedNormalW, toEyeW, shadowFactor);
 
     float4 litColor = ambient + directLight;
     
-    float3 r = reflect(-toEyeW, pin.NormalW);
+    float3 r = reflect(-toEyeW, bumpedNormalW);
     float4 reflectionColor = gCubeMap.Sample(gsamLinearWrap, r);
-    float3 fresnelFactor = SchlickFresnel(fresnelR0, pin.NormalW, r);
+    float3 fresnelFactor = SchlickFresnel(fresnelR0, bumpedNormalW, r);
     litColor.rgb += shininess * fresnelFactor * reflectionColor.rgb;
     
     litColor.a = diffuseAlbedo.a;

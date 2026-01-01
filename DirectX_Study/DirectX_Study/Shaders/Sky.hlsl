@@ -21,8 +21,9 @@ VertexOut SkyVS(VertexIn vin)
     vout.PosL = vin.PosL;
     
     float4 posW = mul(float4(vin.PosL, 1.0f), World);
-    //posW.xyz += gEyePosW;
+    posW.xyz += gEyePosW;
     
+    // * ºä, Åõ¿µ º¯È¯
     vout.PosH = mul(posW, gViewProj).xyzw;
     
     return vout;

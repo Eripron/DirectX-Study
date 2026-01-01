@@ -150,8 +150,8 @@ void DK::ExBlur::CreateMaterial()
 	std::unique_ptr<Material> boxMat = std::make_unique<Material>();
 
 	boxMat->Name = "box";
-	boxMat->SrvHeapIndex = 0;
-	boxMat->DiffuseSrvHeapIndex = m_mapTextures["bricks"]->SrvHeapIndex;
+	boxMat->SrvIndex = 0;
+	boxMat->BaseColorTextureIndex = m_mapTextures["bricks"]->SrvHeapIndex;
 	boxMat->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	boxMat->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
 	boxMat->Roughness = 0.125f;

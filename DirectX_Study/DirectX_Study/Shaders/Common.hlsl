@@ -20,7 +20,7 @@ struct MaterialData
     float Roughness;
     float4x4 MatTransform;
     uint DiffuseMapIndex;
-    uint MatPad0;
+    uint NormalMapIndex;
     uint MatPad1;
     uint MatPad2;
 };
@@ -69,3 +69,21 @@ cbuffer ObjectConstBuffer : register(b1)
     float4x4 TexTransform;
     uint MaterialIndex;
 };
+
+float3 NormalSampleToWorldSpace(float3 normalMapSample, float3 normalWorld, float3 tangentWorld)
+{
+	// normal map sample을 -1 ~ 1 범위로 수정
+    float3 normalT = 2.0f * normalMapSample - 1.0f;
+
+	// TBN 기저 벡터 구하기
+    float3 N = normalWorld;
+    float3 T = normalize(tangentWorld - dot(tangentWorld, N) * N);
+    float3 B = cross(N, T);
+
+    float3x3 TBN = float3x3(T, B, N);
+
+	// tangent space -> world space로 벡터 변환
+    float3 bumpedNormalW = mul(normalT, TBN);
+     
+    return bumpedNormalW;
+}

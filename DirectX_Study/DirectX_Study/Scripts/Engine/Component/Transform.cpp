@@ -60,16 +60,6 @@ void Transform::SetPosition(float x, float y, float z)
 	UpdateWorldMatrix();
 }
 
-//void Transform::SetRotation(float x, float y, float z)
-//{
-//	m_rotation.x = x;
-//	m_rotation.y = y;
-//	m_rotation.z = z;
-//
-//	UpdateRotation();
-//	UpdateWorldMatrix();
-//}
-
 void DK::Transform::SetQuaternion(DirectX::XMFLOAT4 quaternion)
 {
 	m_quaternion = quaternion;

@@ -46,8 +46,8 @@ void DK::ExTesselation::CreateMaterial()
 	std::unique_ptr<Material> mat = std::make_unique<Material>();
 
 	mat->Name = "grid";
-	mat->SrvHeapIndex = 0;
-	mat->DiffuseSrvHeapIndex = 0;
+	mat->SrvIndex = 0;
+	mat->BaseColorTextureIndex = 0;
 	mat->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	mat->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
 	mat->Roughness = 0.5f;

@@ -160,9 +160,7 @@ void DK::EngineBase::BuildFrameResource()
 		objectCount += m_gameObjects[i].size();
 
 	for (int i = 0; i < FrameResourceCount; ++i)
-	{
 		m_frameResources.push_back(std::make_unique<FrameResource>(m_d3dDevice.Get(), 1, objectCount, m_materials.size()));
-	}
 }
 
 void DK::EngineBase::BuildDescriptorHeap()
@@ -363,9 +361,10 @@ void DK::EngineBase::UpdateMaterialCBs()
 		metData.Roughness = mat->Roughness;
 		DirectX::XMStoreFloat4x4(&metData.MatTransform, XMMatrixTranspose(matTransform));
 
-		metData.DiffuseSrvHeapIndex = mat->DiffuseSrvHeapIndex;
+		metData.BaseColorTextureIndex = mat->BaseColorTextureIndex;
+		metData.NormalTextureIndex = mat->NormalTextureIndex;
 
-		matBuffer->CopyData(mat->SrvHeapIndex, metData);
+		matBuffer->CopyData(mat->SrvIndex, metData);
 
 		mat->DirtyCount -= 1;
 	}

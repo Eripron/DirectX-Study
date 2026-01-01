@@ -2,7 +2,6 @@
 
 #include "../Engine/EngineBase.h"
 
-
 namespace DK
 {
 	class Testing : public EngineBase
@@ -26,7 +25,8 @@ namespace DK
 		virtual void BuildRootSignature() override;
 		virtual void BuildPSO() override;
 
-	private:
+	protected:
+		void RenderCubeMap(ID3D12GraphicsCommandList* cmdList, int i);
 
 	};
 

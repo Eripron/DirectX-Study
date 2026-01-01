@@ -35,6 +35,8 @@ namespace DK
 		void Move(DirectX::XMFLOAT3 move);
 		void Rotate(DirectX::XMFLOAT3 rotate);
 
+		void SetLens(float fovY, float aspect, float zn, float zf);
+
 		Transform m_transform;
 
 	private:

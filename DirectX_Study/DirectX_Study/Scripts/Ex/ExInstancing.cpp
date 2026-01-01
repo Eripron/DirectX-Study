@@ -166,8 +166,8 @@ void DK::ExInstancing::CreateMaterial()
 	std::unique_ptr<Material> mat = std::make_unique<Material>();
 
 	mat->Name = "bricks";
-	mat->SrvHeapIndex = 0;
-	mat->DiffuseSrvHeapIndex = m_textures["bricks"].get()->SrvHeapIndex;
+	mat->SrvIndex = 0;
+	mat->BaseColorTextureIndex = m_textures["bricks"].get()->SrvHeapIndex;
 	mat->FresnelR0 = XMFLOAT3(0.03f, 0.03f, 0.03f);
 	mat->Roughness = 0.85f;
 	mat->DirtyCount = FrameResourceCount;
@@ -175,8 +175,8 @@ void DK::ExInstancing::CreateMaterial()
 
 	mat = std::make_unique<Material>();
 	mat->Name = "checkboard";
-	mat->SrvHeapIndex = 1;
-	mat->DiffuseSrvHeapIndex = m_textures["checkboard"].get()->SrvHeapIndex;
+	mat->SrvIndex = 1;
+	mat->BaseColorTextureIndex = m_textures["checkboard"].get()->SrvHeapIndex;
 	mat->FresnelR0 = XMFLOAT3(0.04f, 0.04f, 0.04f);
 	mat->Roughness = 0.4f;
 	mat->DirtyCount = FrameResourceCount;
@@ -184,8 +184,8 @@ void DK::ExInstancing::CreateMaterial()
 
 	mat = std::make_unique<Material>();
 	mat->Name = "ice";
-	mat->SrvHeapIndex = 2;
-	mat->DiffuseSrvHeapIndex = m_textures["ice"].get()->SrvHeapIndex;
+	mat->SrvIndex = 2;
+	mat->BaseColorTextureIndex = m_textures["ice"].get()->SrvHeapIndex;
 	mat->FresnelR0 = XMFLOAT3(0.02f, 0.02f, 0.02f);   // 낮은 반사율
 	mat->Roughness = 0.15f;                           // 매우 매끄럽고 반사 강함
 	mat->DirtyCount = FrameResourceCount;
@@ -193,8 +193,8 @@ void DK::ExInstancing::CreateMaterial()
 
 	mat = std::make_unique<Material>();
 	mat->Name = "white1x1";
-	mat->SrvHeapIndex = 3;
-	mat->DiffuseSrvHeapIndex = m_textures["white1x1"].get()->SrvHeapIndex;
+	mat->SrvIndex = 3;
+	mat->BaseColorTextureIndex = m_textures["white1x1"].get()->SrvHeapIndex;
 	mat->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
 	mat->Roughness = 0.5f;                            // 중간 정도
 	mat->DirtyCount = FrameResourceCount;
@@ -202,8 +202,8 @@ void DK::ExInstancing::CreateMaterial()
 
 	mat = std::make_unique<Material>();
 	mat->Name = "water1";
-	mat->SrvHeapIndex = 4;
-	mat->DiffuseSrvHeapIndex = m_textures["water1"].get()->SrvHeapIndex;
+	mat->SrvIndex = 4;
+	mat->BaseColorTextureIndex = m_textures["water1"].get()->SrvHeapIndex;
 	mat->FresnelR0 = XMFLOAT3(0.02f, 0.02f, 0.02f);   // 낮은 반사율
 	mat->Roughness = 0.05f;                           // 매우 매끄럽고 반사 강함
 	mat->DirtyCount = FrameResourceCount;
@@ -211,8 +211,8 @@ void DK::ExInstancing::CreateMaterial()
 
 	mat = std::make_unique<Material>();
 	mat->Name = "stone";
-	mat->SrvHeapIndex = 5;
-	mat->DiffuseSrvHeapIndex = m_textures["stone"].get()->SrvHeapIndex;
+	mat->SrvIndex = 5;
+	mat->BaseColorTextureIndex = m_textures["stone"].get()->SrvHeapIndex;
 	mat->FresnelR0 = XMFLOAT3(0.04f, 0.04f, 0.04f);
 	mat->Roughness = 0.8f;                            // 거칠고 반사 적음
 	mat->DirtyCount = FrameResourceCount;
@@ -220,8 +220,8 @@ void DK::ExInstancing::CreateMaterial()
 
 	mat = std::make_unique<Material>();
 	mat->Name = "grass";
-	mat->SrvHeapIndex = 6;
-	mat->DiffuseSrvHeapIndex = m_textures["grass"].get()->SrvHeapIndex;
+	mat->SrvIndex = 6;
+	mat->BaseColorTextureIndex = m_textures["grass"].get()->SrvHeapIndex;
 	mat->FresnelR0 = XMFLOAT3(0.03f, 0.03f, 0.03f);
 	mat->Roughness = 0.7f;                            // 거칠고 반사 적음
 	mat->DirtyCount = FrameResourceCount;
@@ -267,7 +267,7 @@ void DK::ExInstancing::CreateRenderObjectInfo()
 
 			renderInfo->ObjBufferIndex = i + j;
 			if (transform != nullptr) renderInfo->World = transform->GetWorldMatrix();
-			if (mat != nullptr) renderInfo->MaterialIndex = mat->SrvHeapIndex;
+			if (mat != nullptr) renderInfo->MaterialIndex = mat->SrvIndex;
 			renderInfo->meshInfo = object->GetComponent<MeshFilter>();
 
 			std::vector<Vertex> boxVertex(MeshManager::GetInstance()->GetVertexInfo("box"));
