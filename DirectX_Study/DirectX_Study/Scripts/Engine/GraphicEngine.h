@@ -9,6 +9,7 @@
 #include <dwrite.h>
 #include <d2d1.h>
 #include "Resource/CubeRenderTarget.h"
+#include "..\Engine\Common\ShadowMap.h"
 
 #pragma comment(lib, "dwrite.lib")
 #pragma comment(lib, "d2d1.lib")
@@ -29,6 +30,7 @@ namespace DK
 		Patch,
 		Sky,
 		Reflection,
+		Shadow,
 
 		Count
 	};
@@ -137,6 +139,10 @@ namespace DK
 		Camera	m_camera;
 		bool	m_bRButtonClicked = false;
 		POINT	m_preCursorPos;
+
+		// shadow map
+		std::unique_ptr<ShadowMap> _shadowMap;
+		int dsvHeapIndexShadowMap = 1;
 
 		// gizmo
 		Gizmo	m_gizmo;

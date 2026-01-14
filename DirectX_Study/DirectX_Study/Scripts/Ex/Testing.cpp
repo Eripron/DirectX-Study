@@ -38,6 +38,9 @@ bool DK::Testing::OnResize(int width, int height, bool force)
 
 void DK::Testing::LoadTextures()
 {
+	LoadTexture(L"Textures/bricks.dds");
+	LoadTexture(L"Textures/bricks_nmap.dds");
+
 	LoadTexture(L"Textures/bricks2.dds");
 	LoadTexture(L"Textures/bricks2_nmap.dds");
 
@@ -141,8 +144,6 @@ void DK::Testing::CreateRenderObjectInfo()
 
 void DK::Testing::BuildRootSignature()
 {
-	//EngineBase::BuildRootSignature();
-
 	/*
 	root parameter에 연결할 수 있는 타입
 	1. Constants(셰이더 상수)
@@ -155,11 +156,11 @@ void DK::Testing::BuildRootSignature()
 	*/
 
 	CD3DX12_DESCRIPTOR_RANGE texTable0;
-	texTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0);
+	texTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0, 0);
 
-	int textureCount = m_textures.size();
+	int textureCount = m_textures.size() - 1;
 	CD3DX12_DESCRIPTOR_RANGE texTable1;
-	texTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, textureCount, 1, 0);
+	texTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, textureCount, 2, 0);
 
 	// 5개의 리소스 사용
 	CD3DX12_ROOT_PARAMETER rootParameter[5];
@@ -174,7 +175,7 @@ void DK::Testing::BuildRootSignature()
 	rootParameter[3].InitAsDescriptorTable(1, &texTable0, D3D12_SHADER_VISIBILITY_PIXEL);
 	rootParameter[4].InitAsDescriptorTable(1, &texTable1, D3D12_SHADER_VISIBILITY_PIXEL);
 
-	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> sampler = Texture::GetStaticSamplers();
+	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 7> sampler = Texture::GetStaticSamplers();
 
 	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(5, rootParameter, 
 		(UINT)sampler.size(), sampler.data(), 
@@ -227,7 +228,23 @@ void DK::Testing::BuildPSO()
 
 	THROW_IF_FAILED(m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_psos[(int)RenderLayer::Opaque])));
 
-	// PSO for sky.
+	// pso for shadow
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC shadowPsoDesc = psoDesc;
+	shadowPsoDesc.VS =
+	{
+		   reinterpret_cast<BYTE*>(m_shaders["shadowVS"]->GetBufferPointer()),
+			m_shaders["shadowVS"]->GetBufferSize()
+	};
+	shadowPsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["shadowOpaquePS"]->GetBufferPointer()),
+		m_shaders["shadowOpaquePS"]->GetBufferSize()
+	};
+	shadowPsoDesc.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
+	shadowPsoDesc.NumRenderTargets = 0;
+	THROW_IF_FAILED(m_d3dDevice->CreateGraphicsPipelineState(&shadowPsoDesc, IID_PPV_ARGS(&m_psos[(int)RenderLayer::Shadow])));
+
+	// pso for sky.
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC skyPsoDesc = psoDesc;
 
 	// The camera is inside the sky sphere, so just turn  culling.

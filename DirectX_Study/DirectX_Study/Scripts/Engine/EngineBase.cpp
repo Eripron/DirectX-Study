@@ -12,6 +12,9 @@ DK::EngineBase::~EngineBase()
 
 void DK::EngineBase::Init()
 {
+	_sceneBounds.Center = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
+	_sceneBounds.Radius = 100.0f;
+
 	CreateMesh();
 	LoadTextures();
 	CreateMaterial();
@@ -45,9 +48,21 @@ bool DK::EngineBase::Update()
 		CloseHandle(eventHandle);
 	}
 
+	_lightRotationAngle += 0.1f * m_gameTimer.DeltaTime();
+
+	XMMATRIX R = XMMatrixRotationY(_lightRotationAngle);
+	for (int i = 0; i < 3; ++i)
+	{
+		XMVECTOR lightDir = XMLoadFloat3(&_baseLightDirections[i]);
+		lightDir = XMVector3TransformNormal(lightDir, R);
+		XMStoreFloat3(&_lightDir[i], lightDir);
+	}
+
+	UpdateShadowTransform();
 	UpdateObjectCBs();
 	UpdateMaterialCBs();
 	UpdateMainPassCB();
+	UpdateShadowPassCB();
 
 	return true;
 }
@@ -58,6 +73,21 @@ bool DK::EngineBase::Render()
 
 	cmdListAlloc->Reset();
 	m_commandList->Reset(cmdListAlloc.Get(), nullptr);
+
+	ID3D12DescriptorHeap* descriptorHeaps[] = { m_heapCbvSrvUav.Get() };
+	m_commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+
+	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
+
+	// 2번 루트 파라미터에 연결하는 SRV (쉐이더 리소스 뷰) : Material
+	auto matBuffer = m_curFrameResource->MaterialBuffer->GetBuffer();
+	m_commandList->SetGraphicsRootShaderResourceView(2, matBuffer->GetGPUVirtualAddress());
+
+	m_commandList->SetGraphicsRootDescriptorTable(3, srvGpuNull);
+
+	m_commandList->SetGraphicsRootDescriptorTable(4, m_heapCbvSrvUav->GetGPUDescriptorHandleForHeapStart());
+
+	RenderShadowMap();
 
 	m_commandList->RSSetViewports(1, &m_viewPortScreen);
 	m_commandList->RSSetScissorRects(1, &m_rectScissor);
@@ -77,29 +107,17 @@ bool DK::EngineBase::Render()
 	m_gizmo.PreRender(m_commandList.Get());
 #endif
 
-	{
-		ID3D12DescriptorHeap* descriptorHeaps[] = { m_heapCbvSrvUav.Get() };
-		m_commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+	// root parameter[0]에 연결하는 cbPass
+	auto passCB = m_curFrameResource->RenderPassCB->GetBuffer();
+	m_commandList->SetGraphicsRootConstantBufferView(0, passCB->GetGPUVirtualAddress());
 
-		m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
+	CD3DX12_GPU_DESCRIPTOR_HANDLE skyTexDescriptor(m_heapCbvSrvUav->GetGPUDescriptorHandleForHeapStart());
+	Texture* texture = GetTexture("grasscube1024");
+	if (texture != nullptr)
+		skyTexDescriptor.Offset(texture->SrvHeapIndex, m_uCbvSrvUavDescriptorSize);
+	m_commandList->SetGraphicsRootDescriptorTable(3, skyTexDescriptor);
 
-		// root parameter[0]에 연결하는 cbPass
-		auto passCB = m_curFrameResource->RenderPassCB->GetBuffer();
-		m_commandList->SetGraphicsRootConstantBufferView(0, passCB->GetGPUVirtualAddress());
-
-		auto matBuffer = m_curFrameResource->MaterialBuffer->GetBuffer();
-		m_commandList->SetGraphicsRootShaderResourceView(2, matBuffer->GetGPUVirtualAddress());
-
-		CD3DX12_GPU_DESCRIPTOR_HANDLE skyTexDescriptor(m_heapCbvSrvUav->GetGPUDescriptorHandleForHeapStart());
-		Texture* texture = GetTexture("grasscube1024");
-		if (texture != nullptr)
-			skyTexDescriptor.Offset(texture->SrvHeapIndex, m_uCbvSrvUavDescriptorSize);
-		m_commandList->SetGraphicsRootDescriptorTable(3, skyTexDescriptor);
-
-		m_commandList->SetGraphicsRootDescriptorTable(4, m_heapCbvSrvUav->GetGPUDescriptorHandleForHeapStart());
-
-		Render(m_commandList.Get());
-	}
+	Render(m_commandList.Get());
 
 	CD3DX12_RESOURCE_BARRIER present = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	m_commandList->ResourceBarrier(1, &present);
@@ -159,8 +177,12 @@ void DK::EngineBase::BuildFrameResource()
 	for (int i = 0; i < (int)RenderLayer::Count; ++i)
 		objectCount += m_gameObjects[i].size();
 
+	int renderPassCount = 1;
+	int shadowPassCount = 1;
+	int totalPassCount = renderPassCount + shadowPassCount;
+
 	for (int i = 0; i < FrameResourceCount; ++i)
-		m_frameResources.push_back(std::make_unique<FrameResource>(m_d3dDevice.Get(), 1, objectCount, m_materials.size()));
+		m_frameResources.push_back(std::make_unique<FrameResource>(m_d3dDevice.Get(), totalPassCount, objectCount, m_materials.size()));
 }
 
 void DK::EngineBase::BuildDescriptorHeap()
@@ -168,10 +190,12 @@ void DK::EngineBase::BuildDescriptorHeap()
 	if (m_textures.size() <= 0)
 		return;
 
+	int shadowTextureCount = 1;
+
 	// Create Descriptor
 	D3D12_DESCRIPTOR_HEAP_DESC heapDesc;
 	ZeroMemory(&heapDesc, sizeof(D3D12_DESCRIPTOR_HEAP_DESC));
-	heapDesc.NumDescriptors = m_textures.size();
+	heapDesc.NumDescriptors = m_textures.size() + shadowTextureCount + 2;
 	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	heapDesc.NodeMask = 0;
@@ -199,54 +223,55 @@ void DK::EngineBase::BuildDescriptorHeap()
 
 		m_d3dDevice->CreateShaderResourceView(pTexture->Resource.Get(), &srvDesc, heapHandle);
 	}
+
+	auto srvCpuStart = m_heapCbvSrvUav->GetCPUDescriptorHandleForHeapStart();
+	auto srvGpuStart = m_heapCbvSrvUav->GetGPUDescriptorHandleForHeapStart();
+	auto dsvCpuStart = m_dsvHeap->GetCPUDescriptorHandleForHeapStart();
+
+	int shadowSrvIndex = m_textures.size();
+	int nullSrvIndex = shadowSrvIndex + 1;
+
+	auto nullSrv = CD3DX12_CPU_DESCRIPTOR_HANDLE(srvCpuStart, nullSrvIndex, m_uCbvSrvUavDescriptorSize);
+	srvGpuNull = CD3DX12_GPU_DESCRIPTOR_HANDLE(srvGpuStart, nullSrvIndex, m_uCbvSrvUavDescriptorSize);
+
+	m_d3dDevice->CreateShaderResourceView(nullptr, &srvDesc, nullSrv);
+	nullSrv.Offset(1, m_uCbvSrvUavDescriptorSize);
+
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+	srvDesc.Texture2D.MipLevels = 1;
+	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+	m_d3dDevice->CreateShaderResourceView(nullptr, &srvDesc, nullSrv);
+
+	_shadowMap->BuildDescriptor(
+		CD3DX12_CPU_DESCRIPTOR_HANDLE(srvCpuStart, shadowSrvIndex, m_uCbvSrvUavDescriptorSize),
+		CD3DX12_GPU_DESCRIPTOR_HANDLE(srvGpuStart, shadowSrvIndex, m_uCbvSrvUavDescriptorSize),
+		CD3DX12_CPU_DESCRIPTOR_HANDLE(dsvCpuStart, 1, m_uDsvDescriptorSize));
 }
 
 void DK::EngineBase::BuildRootSignature()
 {
-	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
-	ZeroMemory(slotRootParameter, sizeof(CD3DX12_ROOT_PARAMETER) * 4);
-
-	slotRootParameter[0].InitAsShaderResourceView(0, 1);	// material 바인딩
-	slotRootParameter[1].InitAsConstantBufferView(0);		// render pass 바인딩
-	slotRootParameter[2].InitAsConstantBufferView(1);		// object 버퍼 바인딩
-
-	// PS에서 사용할 table 1개 설정
-	CD3DX12_DESCRIPTOR_RANGE textureTable;
-	textureTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, m_textures.size(), 0);
-	slotRootParameter[3].InitAsDescriptorTable(1, &textureTable, D3D12_SHADER_VISIBILITY_PIXEL);
-
-	auto staticSamplers = Texture::GetStaticSamplers();
-
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(4, slotRootParameter,
-		(UINT)staticSamplers.size(), staticSamplers.data(),
-		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-	// create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
-	ComPtr<ID3DBlob> serializedRootSig = nullptr;
-	ComPtr<ID3DBlob> errorBlob = nullptr;
-	HRESULT hr = D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1,
-		serializedRootSig.GetAddressOf(), errorBlob.GetAddressOf());
-
-	if (errorBlob != nullptr)
-	{
-		::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
-	}
-	THROW_IF_FAILED(hr);
-
-	m_d3dDevice->CreateRootSignature(
-		0,
-		serializedRootSig->GetBufferPointer(),
-		serializedRootSig->GetBufferSize(),
-		IID_PPV_ARGS(&m_rootSignature));
+	
 }
 
 void DK::EngineBase::BuildInputLayoutAndShader()
 {
+	const D3D_SHADER_MACRO alphaTestDefines[] =
+	{
+		"ALPHA_TEST", "1",
+		NULL, NULL
+	};
+
 	m_shaders["standardVS"] = D3DUtils::CompileShader(L"Shaders\\Default.hlsl", nullptr, "VS", "vs_5_1");
 	m_shaders["opaquePS"] = D3DUtils::CompileShader(L"Shaders\\Default.hlsl", nullptr, "PS", "ps_5_1");
 
 	m_shaders["skyVS"] = D3DUtils::CompileShader(L"Shaders\\Sky.hlsl", nullptr, "SkyVS", "vs_5_1");
 	m_shaders["skyPS"] = D3DUtils::CompileShader(L"Shaders\\Sky.hlsl", nullptr, "SkyPS", "ps_5_1");
+
+	m_shaders["shadowVS"] = D3DUtils::CompileShader(L"Shaders\\Shadow.hlsl", nullptr, "VS", "vs_5_1");
+	m_shaders["shadowOpaquePS"] = D3DUtils::CompileShader(L"Shaders\\Shadow.hlsl", nullptr, "PS", "ps_5_1");
+	m_shaders["shadowAlphaTestedPS"] = D3DUtils::CompileShader(L"Shaders\\Shadow.hlsl", alphaTestDefines, "PS", "ps_5_1");
 
 	m_inputLayouts = Vertex::GetInputLayout();
 }
@@ -383,6 +408,8 @@ void DK::EngineBase::UpdateMainPassCB()
 	DirectX::XMVECTOR viewprojDetermin = XMMatrixDeterminant(viewProj);
 	DirectX::XMMATRIX invViewProj = XMMatrixInverse(&viewprojDetermin, viewProj);
 
+	CXMMATRIX shadowTransform = XMLoadFloat4x4(&_shadowTransform);
+
 	DirectX::XMStoreFloat4x4(&m_renderPassCB.View, XMMatrixTranspose(view));
 	DirectX::XMStoreFloat4x4(&m_renderPassCB.InvView, XMMatrixTranspose(invView));
 
@@ -391,6 +418,8 @@ void DK::EngineBase::UpdateMainPassCB()
 
 	DirectX::XMStoreFloat4x4(&m_renderPassCB.ViewProj, XMMatrixTranspose(viewProj));
 	DirectX::XMStoreFloat4x4(&m_renderPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
+
+	XMStoreFloat4x4(&m_renderPassCB.ShadowTransform, XMMatrixTranspose(shadowTransform));
 
 	m_renderPassCB.EyePosW = m_camera.GetTransform().GetPosition();
 	m_renderPassCB.RenderTargetSize = DirectX::XMFLOAT2((float)m_nClientWidth, (float)m_nClientHeight);
@@ -402,17 +431,93 @@ void DK::EngineBase::UpdateMainPassCB()
 
 	m_renderPassCB.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
 
-	m_renderPassCB.Lights[0].Direction = { 0.57735f, -0.57735f, 0.57735f };
+	m_renderPassCB.Lights[0].Direction = _lightDir[0];
 	m_renderPassCB.Lights[0].Strength = { 0.6f, 0.6f, 0.6f };
 
-	m_renderPassCB.Lights[1].Direction = { -0.57735f, -0.57735f, 0.57735f };
+	m_renderPassCB.Lights[1].Direction = _lightDir[1];
 	m_renderPassCB.Lights[1].Strength = { 0.3f, 0.3f, 0.3f };
 
-	m_renderPassCB.Lights[2].Direction = { 0.0f, -0.707f, -0.707f };
+	m_renderPassCB.Lights[2].Direction = _lightDir[2];
 	m_renderPassCB.Lights[2].Strength = { 0.15f, 0.15f, 0.15f };
 
 	auto currPassCB = m_curFrameResource->RenderPassCB.get();
 	currPassCB->CopyData(0, m_renderPassCB);
+}
+
+void DK::EngineBase::UpdateShadowTransform()
+{
+	// 빛 시점의 뷰-투영 행렬 정보가 필요하다.
+	XMVECTOR lightDir = XMLoadFloat3(&_lightDir[0]);
+	XMVECTOR lightPos = DirectX::XMVectorScale(lightDir, -2.0f * _sceneBounds.Radius);
+	XMVECTOR targetPos = XMLoadFloat3(&_sceneBounds.Center);
+	XMVECTOR lightUp = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	XMMATRIX lightView = XMMatrixLookAtLH(lightPos, targetPos, lightUp);
+
+	XMStoreFloat3(&_lightPos, lightPos);
+
+	// Transform bounding sphere to light space.
+	XMFLOAT3 sphereCenterLS;
+	XMStoreFloat3(&sphereCenterLS, XMVector3TransformCoord(targetPos, lightView));
+
+	// Ortho frustum in light space encloses scene.
+	float l = sphereCenterLS.x - _sceneBounds.Radius;
+	float b = sphereCenterLS.y - _sceneBounds.Radius;
+	float n = sphereCenterLS.z - _sceneBounds.Radius;
+	float r = sphereCenterLS.x + _sceneBounds.Radius;
+	float t = sphereCenterLS.y + _sceneBounds.Radius;
+	float f = sphereCenterLS.z + _sceneBounds.Radius;
+
+	_lightNearZ = n;
+	_lightFarZ = f;
+
+	XMMATRIX lightProj = XMMatrixOrthographicOffCenterLH(l, r, b, t, n, f);
+
+	// Transform NDC space [-1,+1]^2 to texture space [0,1]^2
+	XMMATRIX T(
+		0.5f, 0.0f, 0.0f, 0.0f,
+		0.0f, -0.5f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.5f, 0.5f, 0.0f, 1.0f);
+
+	XMMATRIX S = lightView * lightProj * T;
+	XMStoreFloat4x4(&_lightView, lightView);
+	XMStoreFloat4x4(&_lightProj, lightProj);
+	XMStoreFloat4x4(&_shadowTransform, S);
+}
+
+void DK::EngineBase::UpdateShadowPassCB()
+{
+	XMMATRIX view = XMLoadFloat4x4(&_lightView);
+	XMVECTOR viewDerminant = XMMatrixDeterminant(view);
+	XMMATRIX invView = XMMatrixInverse(&viewDerminant, view);
+
+	XMMATRIX proj = XMLoadFloat4x4(&_lightProj);
+	XMVECTOR projDerminant = XMMatrixDeterminant(proj);
+	XMMATRIX invProj = XMMatrixInverse(&projDerminant, proj);
+
+	XMMATRIX viewProj = XMMatrixMultiply(view, proj);
+	XMVECTOR viewprojDeterminant = XMMatrixDeterminant(viewProj);
+
+	XMMATRIX invViewProj = XMMatrixInverse(&viewprojDeterminant, viewProj);
+
+	UINT w = _shadowMap->Width();
+	UINT h = _shadowMap->Height();
+
+	XMStoreFloat4x4(&_shadowPassCB.View, XMMatrixTranspose(view));
+	XMStoreFloat4x4(&_shadowPassCB.InvView, XMMatrixTranspose(invView));
+	XMStoreFloat4x4(&_shadowPassCB.Proj, XMMatrixTranspose(proj));
+	XMStoreFloat4x4(&_shadowPassCB.InvProj, XMMatrixTranspose(invProj));
+	XMStoreFloat4x4(&_shadowPassCB.ViewProj, XMMatrixTranspose(viewProj));
+	XMStoreFloat4x4(&_shadowPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
+
+	_shadowPassCB.EyePosW = _lightPos;
+	_shadowPassCB.RenderTargetSize = XMFLOAT2((float)w, (float)h);
+	_shadowPassCB.InvRenderTargetSize = XMFLOAT2(1.0f / w, 1.0f / h);
+	_shadowPassCB.NearZ = _lightNearZ;
+	_shadowPassCB.FarZ = _lightFarZ;
+
+	auto currPassCB = m_curFrameResource->RenderPassCB.get();
+	currPassCB->CopyData(1, _shadowPassCB);
 }
 
 void DK::EngineBase::RenderRenderItems(ID3D12GraphicsCommandList* cmdList, std::vector<RenderObjectInfo*> renderInfos)
@@ -444,6 +549,42 @@ void DK::EngineBase::RenderRenderItems(ID3D12GraphicsCommandList* cmdList, std::
 
 		cmdList->DrawIndexedInstanced(meshSection.IndexCount, 1, meshSection.StartIndexLocation, meshSection.BaseVertexLocation, 0);
 	}
+}
+
+void DK::EngineBase::RenderShadowMap()
+{
+	// viewport, scissor rect 설정
+	auto viewport = _shadowMap->Viewport();
+	auto rect = _shadowMap->ScissorRect();
+	m_commandList->RSSetViewports(1, &viewport);
+	m_commandList->RSSetScissorRects(1, &rect);
+
+	// shadow map을 그리기 위해 depth write 상태로 변경
+	auto changeWrite = CD3DX12_RESOURCE_BARRIER::Transition(_shadowMap->Resource(),
+		D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+	m_commandList->ResourceBarrier(1, &changeWrite);
+
+	// shadow map 지우기
+	m_commandList->ClearDepthStencilView(_shadowMap->Dsv(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+
+	// depth 버퍼만 출력하고 render target 출력 과정을 생략하기 위해서 nullptr로 지정
+	auto dsv = _shadowMap->Dsv();
+	m_commandList->OMSetRenderTargets(0, nullptr, false, &dsv);
+
+	// shadow const pass를 설정
+	UINT passCBByteSize = D3DUtils::CalcConstBufferByteSize(sizeof(RenderPassConstants));
+	auto passCB = m_curFrameResource->RenderPassCB->GetBuffer();
+	D3D12_GPU_VIRTUAL_ADDRESS passCBAddress = passCB->GetGPUVirtualAddress() + 1 * passCBByteSize;
+	m_commandList->SetGraphicsRootConstantBufferView(0, passCBAddress);
+
+	m_commandList->SetPipelineState(m_psos[(int)RenderLayer::Shadow].Get());
+
+	RenderRenderItems(m_commandList.Get(), m_renderList[(int)RenderLayer::Opaque]);
+
+	// Change back to GENERIC_READ so we can read the texture in a shader.
+	auto changeRead = CD3DX12_RESOURCE_BARRIER::Transition(_shadowMap->Resource(),
+		D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_GENERIC_READ);
+	m_commandList->ResourceBarrier(1, &changeRead);
 }
 
 void DK::EngineBase::LoadTexture(std::wstring path)

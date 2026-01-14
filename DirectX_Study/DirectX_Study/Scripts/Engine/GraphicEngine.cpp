@@ -34,6 +34,8 @@ bool DK::GraphicEngine::Initialize()
 	m_gizmo.Init(m_d3dDevice.Get(), m_commandList.Get(), 3, m_eBackBufferFormat, m_eDepthStencilFormat);
 #endif
 
+	_shadowMap = std::make_unique<ShadowMap>(m_d3dDevice.Get(), 2048, 2048);
+
 	Init();
 
 	THROW_IF_FAILED(m_commandList->Close());
@@ -181,9 +183,10 @@ void GraphicEngine::CreateRtvAndDsvDescriptorHeaps()
 	rtvHeapDesc.NodeMask = 0;
 	THROW_IF_FAILED(m_d3dDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvHeap)));
 
+	int shadowDsvCount = 1;
 	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc;
 	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;		// Depth-Stencil View로 사용한다.
-	dsvHeapDesc.NumDescriptors = 1;
+	dsvHeapDesc.NumDescriptors = 1 + shadowDsvCount;
 	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	dsvHeapDesc.NodeMask = 0;
 	THROW_IF_FAILED(m_d3dDevice->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&m_dsvHeap)));

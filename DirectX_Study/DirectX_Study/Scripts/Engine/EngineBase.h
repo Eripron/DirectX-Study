@@ -19,6 +19,7 @@
 
 using namespace std;
 using namespace Microsoft::WRL;
+using namespace DirectX;
 
 namespace DK
 {
@@ -71,9 +72,12 @@ namespace DK
 		void UpdateObjectCBs();
 		void UpdateMaterialCBs();
 		void UpdateMainPassCB();
+		void UpdateShadowTransform();
+		void UpdateShadowPassCB();
 
 		// render
 		void RenderRenderItems(ID3D12GraphicsCommandList* cmdList, std::vector<RenderObjectInfo*> renderItems);
+		void RenderShadowMap();
 
 	protected:
 		virtual void LoadTextures();
@@ -109,6 +113,25 @@ namespace DK
 		RenderPassConstants m_renderPassCB;
 
 		DirectX::BoundingFrustum m_camFrustum;
+
+		// shadow map
+		DirectX::BoundingSphere _sceneBounds;
+		XMFLOAT3 _lightPos;
+		XMFLOAT4X4 _lightView;
+		XMFLOAT4X4 _lightProj;
+		XMFLOAT4X4 _shadowTransform;
+		float _lightNearZ = 1.0f;
+		float _lightFarZ = 1000.0f;
+		RenderPassConstants _shadowPassCB;
+		CD3DX12_GPU_DESCRIPTOR_HANDLE srvGpuNull;
+
+		float _lightRotationAngle = 0.0f;
+		XMFLOAT3 _baseLightDirections[3] = {
+		 XMFLOAT3(0.57735f, -0.57735f, 0.57735f),
+		XMFLOAT3(-0.57735f, -0.57735f, 0.57735f),
+		XMFLOAT3(0.0f, -0.707f, -0.707f)
+		};
+		XMFLOAT3 _lightDir[3];
 	};
 
 }

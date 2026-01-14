@@ -57,9 +57,6 @@ void DK::Gizmo::PreRender(ID3D12GraphicsCommandList* pCmdList)
 	pCmdList->IASetIndexBuffer(&ibView);
 	pCmdList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_LINELIST);
 
-	/*ID3D12Resource* constBuffer = m_vecGizmoConstant[m_nCurIndexUploadBuffer]->GetBuffer();
-	pCmdList->SetGraphicsRootConstantBufferView(0, constBuffer->GetGPUVirtualAddress());*/
-
 	pCmdList->DrawIndexedInstanced(m_gizmoIndexs.size(), 1, 0, 0, 0);
 }
 

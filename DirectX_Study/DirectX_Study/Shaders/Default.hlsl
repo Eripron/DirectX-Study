@@ -4,7 +4,6 @@
 // Default shader, currently supports lighting.
 //***************************************************************************************
 
-// Defaults for number of lights.
 #ifndef NUM_DIR_LIGHTS
     #define NUM_DIR_LIGHTS 3
 #endif
@@ -17,7 +16,6 @@
     #define NUM_SPOT_LIGHTS 0
 #endif
 
-// Include structures and functions for lighting.
 #include "Common.hlsl"
 
 struct VertexIn
@@ -31,12 +29,14 @@ struct VertexIn
 struct VertexOut
 {
 	float4 PosH     : SV_POSITION;
-    float3 PosW     : POSITION;
+    float4 ShadowPosH : POSITION0;
+    float3 PosW     : POSITION1;
     float3 NormalW  : NORMAL;
     float3 TangentW : TANGENT;
     float2 TexC     : TEXCOORD;
 };
 
+/// 여인수 행렬 계산 함수
 float3x3 cofactor(float3x3 m)
 {
     float3x3 c;
@@ -56,9 +56,10 @@ float3x3 cofactor(float3x3 m)
     return c;
 }
 
+/// 역행렬 계산 함수
 float3x3 inverse(float3x3 m)
 {
-    float det = determinant(m);
+    float det = determinant(m); // 행렬식 계산
     
     // 부동소수점 오차를 방지하기 위해서 절충값 1e-5 사용
     if(det < 1e-5) 
@@ -72,6 +73,7 @@ float3x3 inverse(float3x3 m)
 VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
 {
 	VertexOut vout = (VertexOut)0.0f;
+    
     MaterialData matData = gMaterialData[MaterialIndex];
     
     // world 좌표로 변환
@@ -92,6 +94,8 @@ VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
     float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), TexTransform);
     vout.TexC = mul(texC, matData.MatTransform).xy;
     
+    vout.ShadowPosH = mul(posW, gShadowTransform);
+    
     return vout;
 }
 
@@ -99,19 +103,20 @@ float4 PS(VertexOut pin) : SV_Target
 {
     // material data
     MaterialData matData = gMaterialData[MaterialIndex];
+    
     float4 diffuseAlbedo = matData.DiffuseAlbedo;
     float3 fresnelR0 = matData.FresnelR0;
     float roughness = matData.Roughness;
     uint diffuseTexIndex = matData.DiffuseMapIndex;
     uint normalMapIndex = matData.NormalMapIndex;
     
-    // normal sample 가져오기 및 world space로 변환
+    // texture sampling
+    diffuseAlbedo *= gDiffuseMap[diffuseTexIndex].Sample(gsamAnisotropicWrap, pin.TexC);
+    
+    // normal sampling
     pin.NormalW = normalize(pin.NormalW);
     float4 normalMapSample = gDiffuseMap[normalMapIndex].Sample(gsamAnisotropicWrap, pin.TexC);
     float3 bumpedNormalW = NormalSampleToWorldSpace(normalMapSample.rgb, pin.NormalW, pin.TangentW);
-    
-    // texture sampling
-    diffuseAlbedo *= gDiffuseMap[diffuseTexIndex].Sample(gsamLinearWrap, pin.TexC);
     
     // Vector from point being lit to eye. 
     float3 toEyeW = gEyePosW - pin.PosW;
@@ -121,9 +126,12 @@ float4 PS(VertexOut pin) : SV_Target
 	//  ambient 계산 = 간접광의 양 * 반사율
     float4 ambient = gAmbientLight * diffuseAlbedo;
 
+    float3 shadowFactor = float3(1.0f, 1.0f, 1.0f);
+    shadowFactor[0] = CalcShadowFactor(pin.ShadowPosH);
+    
     const float shininess = (1.0f - roughness) * normalMapSample.a;
     Material mat = { diffuseAlbedo, fresnelR0, shininess };
-    float3 shadowFactor = 1.0f;
+    
     float4 directLight = ComputeLighting(gLights, mat, pin.PosW, bumpedNormalW, toEyeW, shadowFactor);
 
     float4 litColor = ambient + directLight;
