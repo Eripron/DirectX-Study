@@ -10,6 +10,7 @@
 #include <d2d1.h>
 #include "Resource/CubeRenderTarget.h"
 #include "..\Engine\Common\ShadowMap.h"
+#include "..\Engine\Common\SsaoMap.h"
 
 #pragma comment(lib, "dwrite.lib")
 #pragma comment(lib, "d2d1.lib")
@@ -31,6 +32,9 @@ namespace DK
 		Sky,
 		Reflection,
 		Shadow,
+
+		DrawNormals,
+		Ssao,
 
 		Count
 	};
@@ -142,7 +146,19 @@ namespace DK
 
 		// shadow map
 		std::unique_ptr<ShadowMap> _shadowMap;
-		int dsvHeapIndexShadowMap = 1;
+		int _shadowSrvIndex = -1;
+		int dsvHeapIndexShadowMap = -1;
+
+		// ssao map 
+		std::unique_ptr<SsaoMap> _ssaoMap;
+		ComPtr<ID3D12RootSignature> _ssaoRootSignature;
+		int _ssaoSrvIndex = -1;
+		int _ssaoAmbientSrvIndex = -1;
+
+		// null srv
+		int _nullCubeSrvIndex = -1;
+		int _nullTexSrvIndex = -1;
+		int _nullTexSrvIndex1 = -1;
 
 		// gizmo
 		Gizmo	m_gizmo;

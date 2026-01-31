@@ -14,6 +14,7 @@
 #include <comdef.h>
 #include <synchapi.h>
 #include <d3dcompiler.h>
+#include <fstream>
 
 #include "../../Header/d3dx12.h"
 #include "../Component/Camera.h"

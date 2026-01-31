@@ -24,6 +24,8 @@ namespace DK
 
 		std::unique_ptr<UploadBuffer<RenderPassConstants>> RenderPassCB = nullptr;
 		std::unique_ptr<UploadBuffer<ObjectConstants>> ObjectCB = nullptr;
+		std::unique_ptr<UploadBuffer<SsaoConstants>> SsaoCB = nullptr;
+
 		std::unique_ptr<UploadBuffer<MaterialData>> MaterialBuffer = nullptr;
 
 		UINT64 Fence = 0;

@@ -348,6 +348,25 @@ namespace DK
 		DirectX::XMFLOAT4X4 MatTransform = MathUtils::Identity4x4();
 	};
 
+	struct SsaoConstants
+	{
+		XMFLOAT4X4 Proj;
+		XMFLOAT4X4 InvProj;
+		XMFLOAT4X4 ProjTex;
+		XMFLOAT4 OffsetVectors[14];
+
+		// For SsaoBlur.hlsl
+		XMFLOAT4 BlurWeights[3];
+
+		XMFLOAT2 InvRenderTargetSize = { 0.0f, 0.0f };
+
+		// Coordinates given in view space.
+		float OcclusionRadius = 0.5f;
+		float OcclusionFadeStart = 0.2f;
+		float OcclusionFadeEnd = 2.0f;
+		float SurfaceEpsilon = 0.05f;
+	};
+
 #pragma endregion
 
 

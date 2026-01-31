@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -128,6 +128,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Scripts\Engine\Common\GameTimer.cpp" />
+    <ClCompile Include="Scripts\Engine\Common\ShadowMap.cpp" />
+    <ClCompile Include="Scripts\Engine\Common\SsaoMap.cpp" />
     <ClCompile Include="Scripts\Engine\Common\Wave.cpp" />
     <ClCompile Include="Scripts\Engine\Component\Camera.cpp" />
     <ClCompile Include="Scripts\Engine\Component\Component.cpp" />
@@ -137,6 +139,7 @@
     <ClCompile Include="Scripts\Engine\EngineBase.cpp" />
     <ClCompile Include="Scripts\Engine\GraphicEngine.cpp" />
     <ClCompile Include="Scripts\Engine\Manager\MeshManager.cpp" />
+    <ClCompile Include="Scripts\Engine\Resource\CubeRenderTarget.cpp" />
     <ClCompile Include="Scripts\Engine\Resource\FrameResource.cpp" />
     <ClCompile Include="Scripts\Engine\Utils\D3DUtils.cpp" />
     <ClCompile Include="Scripts\Engine\Utils\DDSTextureLoader.cpp" />
@@ -159,7 +162,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Scripts\Engine\Common\GameTimer.h" />
+    <ClInclude Include="Scripts\Engine\Common\ShadowMap.h" />
     <ClInclude Include="Scripts\Engine\Common\Singleton.h" />
+    <ClInclude Include="Scripts\Engine\Common\SsaoMap.h" />
     <ClInclude Include="Scripts\Engine\Common\Wave.h" />
     <ClInclude Include="Scripts\Engine\Component\Camera.h" />
     <ClInclude Include="Scripts\Engine\Component\Component.h" />
@@ -170,6 +175,7 @@
     <ClInclude Include="Scripts\Engine\EngineBase.h" />
     <ClInclude Include="Scripts\Engine\GraphicEngine.h" />
     <ClInclude Include="Scripts\Engine\Manager\MeshManager.h" />
+    <ClInclude Include="Scripts\Engine\Resource\CubeRenderTarget.h" />
     <ClInclude Include="Scripts\Engine\Resource\FrameResource.h" />
     <ClInclude Include="Scripts\Engine\Resource\UploadBuffer.h" />
     <ClInclude Include="Scripts\Engine\Utils\D3DUtils.h" />

@@ -8,6 +8,11 @@ DK::Testing::~Testing()
 {
 }
 
+void DK::Testing::Init()
+{
+	EngineBase::Init();
+}
+
 bool DK::Testing::Update()
 {
 	if (!EngineBase::Update())
@@ -38,6 +43,9 @@ bool DK::Testing::OnResize(int width, int height, bool force)
 
 void DK::Testing::LoadTextures()
 {
+	LoadTexture(L"Textures/white1x1.dds");
+	LoadTexture(L"Textures/default_nmap.dds");
+
 	LoadTexture(L"Textures/bricks.dds");
 	LoadTexture(L"Textures/bricks_nmap.dds");
 
@@ -55,9 +63,94 @@ void DK::Testing::CreateMesh()
 	GeometryGenerator geoGen;
 
 	MeshData<Vertex> box = geoGen.CreateBox(1, 1, 1);
+	MeshData<Vertex> grid = geoGen.CreateGrid(40, 40, 20, 20);
+
+	MeshData<Vertex> skull = LoadMeshData(L"Models/skull.txt");
+	MeshData<Vertex> car = LoadMeshData(L"Models/car.txt");
+
 	MeshManager::GetInstance()->AddMeshData("box", box);
+	MeshManager::GetInstance()->AddMeshData("grid", grid);
+	MeshManager::GetInstance()->AddMeshData("skull", skull);
+	MeshManager::GetInstance()->AddMeshData("car", car);
 
 	MeshManager::GetInstance()->CreateMeshBuffer(m_d3dDevice.Get(), m_commandList.Get());
+}
+
+DK::MeshData<DK::Vertex> DK::Testing::LoadMeshData(const std::wstring& fileName)
+{
+	std::ifstream fin(fileName);
+
+	if (!fin)
+	{
+		wstring errorMsg = fileName + L" 파일을 찾을 수 없습니다.";
+		MessageBox(0, errorMsg.c_str(), 0, 0);
+		return MeshData<Vertex>();
+	}
+
+	UINT vcount = 0;
+	UINT tcount = 0;
+	std::string ignore;
+
+	fin >> ignore >> vcount;
+	fin >> ignore >> tcount;
+	fin >> ignore >> ignore >> ignore >> ignore;
+
+	XMFLOAT3 vMinf3(FLT_MAX, FLT_MAX, FLT_MAX);
+	XMFLOAT3 vMaxf3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+
+	XMVECTOR vMin = XMLoadFloat3(&vMinf3);
+	XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
+
+	MeshData<Vertex> meshData;
+	meshData.Vertices.resize(vcount);
+
+	for (UINT i = 0; i < vcount; ++i)
+	{
+		fin >> meshData.Vertices[i].Position.x >> meshData.Vertices[i].Position.y >> meshData.Vertices[i].Position.z;
+		fin >> meshData.Vertices[i].Normal.x >> meshData.Vertices[i].Normal.y >> meshData.Vertices[i].Normal.z;
+
+		meshData.Vertices[i].TexC = { 0.0f, 0.0f };
+
+		XMVECTOR P = XMLoadFloat3(&meshData.Vertices[i].Position);
+		XMVECTOR N = XMLoadFloat3(&meshData.Vertices[i].Normal);
+
+		// Generate a tangent vector so normal mapping works.  We aren't applying
+		// a texture map to the skull, so we just need any tangent vector so that
+		// the math works out to give us the original interpolated vertex normal.
+		XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+		if (fabsf(XMVectorGetX(XMVector3Dot(N, up))) < 1.0f - 0.001f)
+		{
+			XMVECTOR T = XMVector3Normalize(XMVector3Cross(up, N));
+			XMStoreFloat3(&meshData.Vertices[i].TangentU, T);
+		}
+		else
+		{
+			up = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
+			XMVECTOR T = XMVector3Normalize(XMVector3Cross(N, up));
+			XMStoreFloat3(&meshData.Vertices[i].TangentU, T);
+		}
+
+		vMin = XMVectorMin(vMin, P);
+		vMax = XMVectorMax(vMax, P);
+	}
+
+	BoundingBox bounds;
+	XMStoreFloat3(&bounds.Center, XMVectorScale(XMVectorAdd(vMin, vMax), 0.5f));
+	XMStoreFloat3(&bounds.Extents, XMVectorScale(XMVectorSubtract(vMax, vMin), 0.5f));
+
+	fin >> ignore;
+	fin >> ignore;
+	fin >> ignore;
+
+	meshData.Indices32.resize(3 * tcount);
+	for (UINT i = 0; i < tcount; ++i)
+	{
+		fin >> meshData.Indices32[i * 3 + 0] >> meshData.Indices32[i * 3 + 1] >> meshData.Indices32[i * 3 + 2];
+	}
+
+	fin.close();
+
+	return meshData;
 }
 
 void DK::Testing::CreateMaterial()
@@ -65,31 +158,62 @@ void DK::Testing::CreateMaterial()
 	Texture* texture = nullptr;
 	Texture* normalTex = nullptr;
 
+	// brick material
+	texture = GetTexture("tile");
+	normalTex = GetTexture("tile_nmap");
+
+	auto tile = std::make_unique<Material>();
+	tile->Name = "tile";
+	tile->SrvIndex = 0;
+	tile->BaseColorTextureIndex = texture == nullptr ? -1 : texture->SrvHeapIndex;
+	tile->NormalTextureIndex = normalTex == nullptr ? -1 : normalTex->SrvHeapIndex;
+	tile->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	tile->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
+	tile->Roughness = 0.3f;
+	DirectX::XMStoreFloat4x4(&tile->MatTransform, XMMatrixScaling(5.0f, 5.0f, 1.0f));
+
+	// bricks material
+	texture = GetTexture("bricks");
+	normalTex = GetTexture("bricks_nmap");
+
+	auto bricks = std::make_unique<Material>();
+	bricks->Name = "bricks";
+	bricks->SrvIndex = 1;
+	bricks->BaseColorTextureIndex = texture == nullptr ? -1 : texture->SrvHeapIndex;
+	bricks->NormalTextureIndex = normalTex == nullptr ? -1 : normalTex->SrvHeapIndex;
+	bricks->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	bricks->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
+	bricks->Roughness = 0.3f;
+
+	// tile material
 	texture = GetTexture("bricks2");
 	normalTex = GetTexture("bricks2_nmap");
 
-	auto brick = std::make_unique<Material>();
-	brick->Name = "bricks2";
-	brick->SrvIndex = 0;
-	brick->BaseColorTextureIndex = texture == nullptr ? -1 : texture->SrvHeapIndex;
-	brick->NormalTextureIndex = normalTex == nullptr ? -1 : normalTex->SrvHeapIndex;
-	brick->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	brick->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
-	brick->Roughness = 0.3f;
-	
+	auto bricks2 = std::make_unique<Material>();
+	bricks2->Name = "bricks2";
+	bricks2->SrvIndex = 2;
+	bricks2->BaseColorTextureIndex = texture == nullptr ? -1 : texture->SrvHeapIndex;
+	bricks2->NormalTextureIndex = normalTex == nullptr ? -1 : normalTex->SrvHeapIndex;
+	bricks2->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	bricks2->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
+	bricks2->Roughness = 0.3f;
+
+	// sky material
 	texture = GetTexture("grasscube1024");
 	normalTex = nullptr;
 
 	auto sky = std::make_unique<Material>();
 	sky->Name = "sky";
-	sky->SrvIndex = 1;
+	sky->SrvIndex = 3;
 	sky->BaseColorTextureIndex = texture == nullptr ? -1 : texture->SrvHeapIndex;
 	sky->NormalTextureIndex = normalTex == nullptr ? -1 : normalTex->SrvHeapIndex;
 	sky->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	sky->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
 	sky->Roughness = 1.0f;
 
-	m_materials[brick->Name] = std::move(brick);
+	m_materials[tile->Name] = std::move(tile);
+	m_materials[bricks->Name] = std::move(bricks);
+	m_materials[bricks2->Name] = std::move(bricks2);
 	m_materials[sky->Name] = std::move(sky);
 }
 
@@ -99,9 +223,15 @@ void DK::Testing::CreateGameObject()
 	box->AddComponent(new MeshFilter("box"));
 	box->SetMaterial(m_materials["bricks2"].get());
 	box->GetComponent<Transform>()->SetPosition(0, 5, 0);
-	box->GetComponent<Transform>()->SetScale(4, 4, 4);
+	box->GetComponent<Transform>()->SetScale(5, 5, 5);
 
 	m_gameObjects[(int)RenderLayer::Opaque].push_back(box);
+
+	GameObject* grid = new GameObject();
+	grid->AddComponent(new MeshFilter("grid"));
+	grid->SetMaterial(m_materials["tile"].get());
+	grid->GetComponent<Transform>()->SetScale(5, 1, 5);
+	m_gameObjects[(int)RenderLayer::Opaque].push_back(grid);
 
 	GameObject* sky = new GameObject();
 	sky->AddComponent(new MeshFilter("box"));
@@ -156,9 +286,9 @@ void DK::Testing::BuildRootSignature()
 	*/
 
 	CD3DX12_DESCRIPTOR_RANGE texTable0;
-	texTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 2, 0, 0);
+	texTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3, 0, 0);
 
-	int textureCount = m_textures.size() - 1;
+	int textureCount = m_textures.size() - 1;	// 큐브맵 제외
 	CD3DX12_DESCRIPTOR_RANGE texTable1;
 	texTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, textureCount, 2, 0);
 
@@ -230,10 +360,14 @@ void DK::Testing::BuildPSO()
 
 	// pso for shadow
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC shadowPsoDesc = psoDesc;
+	shadowPsoDesc.pRootSignature = m_rootSignature.Get();
+	shadowPsoDesc.RasterizerState.DepthBias = 100000;
+	shadowPsoDesc.RasterizerState.DepthBiasClamp = 0.0f;
+	shadowPsoDesc.RasterizerState.SlopeScaledDepthBias = 1.0f;
 	shadowPsoDesc.VS =
 	{
-		   reinterpret_cast<BYTE*>(m_shaders["shadowVS"]->GetBufferPointer()),
-			m_shaders["shadowVS"]->GetBufferSize()
+		reinterpret_cast<BYTE*>(m_shaders["shadowVS"]->GetBufferPointer()),
+		m_shaders["shadowVS"]->GetBufferSize()
 	};
 	shadowPsoDesc.PS =
 	{
@@ -266,6 +400,43 @@ void DK::Testing::BuildPSO()
 		m_shaders["skyPS"]->GetBufferSize()
 	};
 	THROW_IF_FAILED(m_d3dDevice->CreateGraphicsPipelineState(&skyPsoDesc, IID_PPV_ARGS(&m_psos[(int)RenderLayer::Sky])));
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC drawNormalsPsoDesc = psoDesc;
+	drawNormalsPsoDesc.VS = 
+	{
+		reinterpret_cast<BYTE*>(m_shaders["drawNormalsVS"]->GetBufferPointer()),
+		m_shaders["drawNormalsVS"]->GetBufferSize()
+	};
+	drawNormalsPsoDesc.PS = 
+	{
+		reinterpret_cast<BYTE*>(m_shaders["drawNormalsPS"]->GetBufferPointer()),
+		m_shaders["drawNormalsPS"]->GetBufferSize()
+	};
+	drawNormalsPsoDesc.RTVFormats[0] = SsaoMap::NormalMapFormat;
+	drawNormalsPsoDesc.SampleDesc.Count = 1;
+	drawNormalsPsoDesc.SampleDesc.Quality = 0;
+	drawNormalsPsoDesc.DSVFormat = m_eDepthStencilFormat;
+	THROW_IF_FAILED(m_d3dDevice->CreateGraphicsPipelineState(&drawNormalsPsoDesc, IID_PPV_ARGS(&m_psos[(int)RenderLayer::DrawNormals])));
+
+	// TODO: 아래의 PSO 분석 필요
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC ssaoPsoDesc = psoDesc;
+	ssaoPsoDesc.VS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["ssaoVS"]->GetBufferPointer()),
+		m_shaders["ssaoVS"]->GetBufferSize()
+	};
+	ssaoPsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["ssaoPS"]->GetBufferPointer()),
+		m_shaders["ssaoPS"]->GetBufferSize()
+	};
+	ssaoPsoDesc.DepthStencilState.DepthEnable = false;
+	ssaoPsoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	ssaoPsoDesc.RTVFormats[0] = SsaoMap::AmbientMapFormat;
+	ssaoPsoDesc.SampleDesc.Count = 1;
+	ssaoPsoDesc.SampleDesc.Quality = 0;
+	ssaoPsoDesc.DSVFormat = DXGI_FORMAT_UNKNOWN;
+	THROW_IF_FAILED(m_d3dDevice->CreateGraphicsPipelineState(&ssaoPsoDesc, IID_PPV_ARGS(&m_psos[(int)RenderLayer::Ssao])));
 }
 
 void DK::Testing::RenderCubeMap(ID3D12GraphicsCommandList* cmdList, int i)

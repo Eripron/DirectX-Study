@@ -11,12 +11,15 @@ namespace DK
 		~Testing();
 
 	protected:
+		virtual void Init() override;
 		virtual bool Update() override;
 		virtual void Render(ID3D12GraphicsCommandList* cmdList) override;
 
 		virtual bool OnResize(int width, int height, bool force) override;
 
 		virtual void CreateMesh() override;
+		MeshData<Vertex> LoadMeshData(const std::wstring& fileName);
+
 		virtual void LoadTextures() override;
 		virtual void CreateMaterial() override;
 		virtual void CreateGameObject() override;

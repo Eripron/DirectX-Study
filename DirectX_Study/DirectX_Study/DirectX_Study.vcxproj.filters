@@ -156,6 +156,15 @@
     <ClCompile Include="Scripts\Ex\Testing.cpp">
       <Filter>소스 파일\Ex</Filter>
     </ClCompile>
+    <ClCompile Include="Scripts\Engine\Resource\CubeRenderTarget.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Scripts\Engine\Common\ShadowMap.cpp">
+      <Filter>소스 파일\Engine\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Scripts\Engine\Common\SsaoMap.cpp">
+      <Filter>소스 파일\Engine\Common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Scripts\Window\MainWindow.h">
@@ -256,6 +265,15 @@
     </ClInclude>
     <ClInclude Include="Scripts\Ex\Testing.h">
       <Filter>헤더 파일\Ex</Filter>
+    </ClInclude>
+    <ClInclude Include="Scripts\Engine\Resource\CubeRenderTarget.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Scripts\Engine\Common\ShadowMap.h">
+      <Filter>헤더 파일\Engine\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Scripts\Engine\Common\SsaoMap.h">
+      <Filter>헤더 파일\Engine\Common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

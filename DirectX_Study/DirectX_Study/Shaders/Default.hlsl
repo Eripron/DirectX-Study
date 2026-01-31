@@ -30,45 +30,12 @@ struct VertexOut
 {
 	float4 PosH     : SV_POSITION;
     float4 ShadowPosH : POSITION0;
+    float4 SsaoPosH : POSITIONT1;
     float3 PosW     : POSITION1;
     float3 NormalW  : NORMAL;
     float3 TangentW : TANGENT;
     float2 TexC     : TEXCOORD;
 };
-
-/// 여인수 행렬 계산 함수
-float3x3 cofactor(float3x3 m)
-{
-    float3x3 c;
-
-    c[0][0] = (m[1][1] * m[2][2] - m[1][2] * m[2][1]);  // +C00
-    c[0][1] = -(m[1][0] * m[2][2] - m[1][2] * m[2][0]); // -C01
-    c[0][2] = (m[1][0] * m[2][1] - m[1][1] * m[2][0]);  // +C02
-
-    c[1][0] = -(m[0][1] * m[2][2] - m[0][2] * m[2][1]); // -C10
-    c[1][1] = (m[0][0] * m[2][2] - m[0][2] * m[2][0]);  // +C11
-    c[1][2] = -(m[0][0] * m[2][1] - m[0][1] * m[2][0]); // -C12
-
-    c[2][0] = (m[0][1] * m[1][2] - m[0][2] * m[1][1]);  // +C20
-    c[2][1] = -(m[0][0] * m[1][2] - m[0][2] * m[1][0]); // -C21
-    c[2][2] = (m[0][0] * m[1][1] - m[0][1] * m[1][0]);  // +C22
-
-    return c;
-}
-
-/// 역행렬 계산 함수
-float3x3 inverse(float3x3 m)
-{
-    float det = determinant(m); // 행렬식 계산
-    
-    // 부동소수점 오차를 방지하기 위해서 절충값 1e-5 사용
-    if(det < 1e-5) 
-        return float3x3(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    
-    float3x3 adj = transpose(cofactor(m));
-    
-    return adj / det;
-}
 
 VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
 {
@@ -82,6 +49,8 @@ VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
 
     // view, projection 좌표로 변환
     vout.PosH = mul(posW, gViewProj);
+    
+    vout.SsaoPosH = mul(posW, gViewProjTex);
     
     // normal vector (local) -> (world)
     float3x3 invTrans = transpose(inverse((float3x3) World));
@@ -123,11 +92,15 @@ float4 PS(VertexOut pin) : SV_Target
     float distToEye = length(toEyeW);
 	toEyeW /= distToEye; // normalize
     
-	//  ambient 계산 = 간접광의 양 * 반사율
-    float4 ambient = gAmbientLight * diffuseAlbedo;
+    pin.SsaoPosH /= pin.SsaoPosH.w;
+    float ambientAccess = gSsaoMap.Sample(gsamLinearClamp, pin.SsaoPosH.xy, 0.0f).r;
+    
+	//  ambient 계산 = 간접광의 양 * 반사율 * Occlusion 값
+    float4 ambient = ambientAccess * gAmbientLight * diffuseAlbedo;
 
     float3 shadowFactor = float3(1.0f, 1.0f, 1.0f);
     shadowFactor[0] = CalcShadowFactor(pin.ShadowPosH);
+    //shadowFactor[0] = 0.0f;
     
     const float shininess = (1.0f - roughness) * normalMapSample.a;
     Material mat = { diffuseAlbedo, fresnelR0, shininess };

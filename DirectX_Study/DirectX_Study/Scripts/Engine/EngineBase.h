@@ -65,6 +65,7 @@ namespace DK
 		virtual void BuildFrameResource();
 		virtual void BuildDescriptorHeap();
 		virtual void BuildRootSignature();
+		void BuildRootSignatureSSAO();
 		virtual void BuildInputLayoutAndShader();
 		virtual void BuildPSO();
 
@@ -74,10 +75,18 @@ namespace DK
 		void UpdateMainPassCB();
 		void UpdateShadowTransform();
 		void UpdateShadowPassCB();
+		void UpdateSsaoCB();
 
 		// render
 		void RenderRenderItems(ID3D12GraphicsCommandList* cmdList, std::vector<RenderObjectInfo*> renderItems);
 		void RenderShadowMap();
+		void RenderNormalAndDepth();
+
+		CD3DX12_CPU_DESCRIPTOR_HANDLE GetRtvCpuHandle(int index);
+		CD3DX12_CPU_DESCRIPTOR_HANDLE GetDsvCpuHandle(int index);
+		CD3DX12_CPU_DESCRIPTOR_HANDLE GetSrvCpuHandle(int index);
+		CD3DX12_GPU_DESCRIPTOR_HANDLE GetSrvGpuHandle(int index);
+
 
 	protected:
 		virtual void LoadTextures();
@@ -116,10 +125,12 @@ namespace DK
 
 		// shadow map
 		DirectX::BoundingSphere _sceneBounds;
+
 		XMFLOAT3 _lightPos;
 		XMFLOAT4X4 _lightView;
 		XMFLOAT4X4 _lightProj;
 		XMFLOAT4X4 _shadowTransform;
+
 		float _lightNearZ = 1.0f;
 		float _lightFarZ = 1000.0f;
 		RenderPassConstants _shadowPassCB;

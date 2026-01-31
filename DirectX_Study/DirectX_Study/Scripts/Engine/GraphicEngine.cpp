@@ -35,6 +35,7 @@ bool DK::GraphicEngine::Initialize()
 #endif
 
 	_shadowMap = std::make_unique<ShadowMap>(m_d3dDevice.Get(), 2048, 2048);
+	_ssaoMap = std::make_unique<SsaoMap>(m_d3dDevice.Get(), m_commandList.Get(), m_nClientWidth, m_nClientHeight);
 
 	Init();
 
@@ -178,7 +179,7 @@ void GraphicEngine::CreateRtvAndDsvDescriptorHeaps()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc;
 	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;		// Render Target View로 사용한다.
-	rtvHeapDesc.NumDescriptors = SWAP_CHAIN_BUFFER_COUNT;
+	rtvHeapDesc.NumDescriptors = SWAP_CHAIN_BUFFER_COUNT + 3;
 	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	rtvHeapDesc.NodeMask = 0;
 	THROW_IF_FAILED(m_d3dDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvHeap)));
