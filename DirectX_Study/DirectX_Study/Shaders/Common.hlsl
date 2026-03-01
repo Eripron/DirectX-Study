@@ -21,8 +21,6 @@ struct MaterialData
     float4x4 MatTransform;
     uint DiffuseMapIndex;
     uint NormalMapIndex;
-    uint MatPad1;
-    uint MatPad2;
 };
 
 SamplerState gsamPointWrap : register(s0);
@@ -35,7 +33,7 @@ SamplerState gsamAnisotropicClamp : register(s5);
 TextureCube gCubeMap : register(t0);
 StructuredBuffer<MaterialData> gMaterialData : register(t0, space1); // material
 
-Texture2D gDiffuseMap[4] : register(t1); // texture
+Texture2D gDiffuseMap[20] : register(t1); // texture
 
 // Constant data that varies per material.
 cbuffer cbPass : register(b0)

@@ -29,6 +29,8 @@ namespace DK
 		RenderObjectInfo(const RenderObjectInfo& rhs) = delete;
 
 		int ObjBufferIndex = -1;
+		
+		DirectX::XMFLOAT4X4 BaseWorld = MathUtils::Identity4x4();
 
 		DirectX::XMFLOAT4X4 World = MathUtils::Identity4x4();
 		DirectX::XMFLOAT4X4 TexTransform = MathUtils::Identity4x4();

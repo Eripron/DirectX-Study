@@ -127,6 +127,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Scripts\Engine\Common\AnimationHelper.cpp" />
     <ClCompile Include="Scripts\Engine\Common\GameTimer.cpp" />
     <ClCompile Include="Scripts\Engine\Common\Wave.cpp" />
     <ClCompile Include="Scripts\Engine\Component\Camera.cpp" />
@@ -158,6 +159,7 @@
     <ClCompile Include="Scripts\Window\WindowsUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Scripts\Engine\Common\AnimationHelper.h" />
     <ClInclude Include="Scripts\Engine\Common\GameTimer.h" />
     <ClInclude Include="Scripts\Engine\Common\Singleton.h" />
     <ClInclude Include="Scripts\Engine\Common\Wave.h" />

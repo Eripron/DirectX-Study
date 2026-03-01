@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Engine/EngineBase.h"
+#include "../Engine/Common/AnimationHelper.h"
 
 namespace DK
 {
@@ -28,6 +29,22 @@ namespace DK
 	protected:
 		void RenderCubeMap(ID3D12GraphicsCommandList* cmdList, int i);
 
+	private:
+		float _accumTime = 0.0f;
+
+		vector<int> _boneIndexing;
+		vector<float> _planetRadius;
+		vector<float> _orbitSpeed;
+		vector<RenderObjectInfo*> _boneObjects;
+		vector<XMMATRIX> _parentWorlds;
+		unordered_map<int, vector<BoneAnimation>> _boneAnimations;
+
+		void DefineAnimationKeyFrames();
+		void UpdateAnimation(BoneAnimation animation, float deltaTime, XMFLOAT4X4& M);
+
+		BoneAnimation CreateOrbitAnimation(float time, float radius);
+		BoneAnimation CreateTiltAnimation(XMVECTOR axis, float angle);
+		BoneAnimation CreateSpinAnimation(float time, int spinDir = 1);
 	};
 
 }
