@@ -88,15 +88,15 @@ bool DK::EngineBase::Render()
 		m_commandList->SetGraphicsRootConstantBufferView(0, passCB->GetGPUVirtualAddress());
 
 		auto matBuffer = m_curFrameResource->MaterialBuffer->GetBuffer();
-		m_commandList->SetGraphicsRootShaderResourceView(2, matBuffer->GetGPUVirtualAddress());
+		m_commandList->SetGraphicsRootShaderResourceView(3, matBuffer->GetGPUVirtualAddress());
 
 		CD3DX12_GPU_DESCRIPTOR_HANDLE skyTexDescriptor(m_heapCbvSrvUav->GetGPUDescriptorHandleForHeapStart());
 		Texture* texture = GetTexture("grasscube1024");
 		if (texture != nullptr)
 			skyTexDescriptor.Offset(texture->SrvHeapIndex, m_uCbvSrvUavDescriptorSize);
-		m_commandList->SetGraphicsRootDescriptorTable(3, skyTexDescriptor);
+		m_commandList->SetGraphicsRootDescriptorTable(4, skyTexDescriptor);
 
-		m_commandList->SetGraphicsRootDescriptorTable(4, m_heapCbvSrvUav->GetGPUDescriptorHandleForHeapStart());
+		m_commandList->SetGraphicsRootDescriptorTable(5, m_heapCbvSrvUav->GetGPUDescriptorHandleForHeapStart());
 
 		Render(m_commandList.Get());
 	}
@@ -423,15 +423,15 @@ void DK::EngineBase::RenderRenderItems(ID3D12GraphicsCommandList* cmdList, std::
 	{
 		RenderObjectInfo* renderInfo = renderInfos[i];
 
-		if (renderInfo->ignoreRender || renderInfo->meshInfo == nullptr) 
+		if (renderInfo->ignoreRender) 
 			continue;
 
-		D3D12_VERTEX_BUFFER_VIEW vbView;
-		D3D12_INDEX_BUFFER_VIEW ibView;
-		MeshSection meshSection;
+		D3D12_VERTEX_BUFFER_VIEW vbView = renderInfo->vbView;
+		D3D12_INDEX_BUFFER_VIEW ibView = renderInfo->ibView;
+		MeshSection meshSection = renderInfo->meshSection;
 
-		if (renderInfo->meshInfo->GetMeshInfo(vbView, ibView, meshSection) == false)
-			continue;
+		/*if (renderInfo->meshInfo->GetMeshInfo(vbView, ibView, meshSection) == false)
+			continue;*/
 
 		cmdList->IASetVertexBuffers(0, 1, &vbView);		// vertex buffer 바인딩
 		cmdList->IASetIndexBuffer(&ibView);				// index buffer 바인딩
@@ -465,6 +465,13 @@ void DK::EngineBase::LoadTexture(std::wstring path)
 
 	if (SUCCEEDED(hr))
 	{
+		if (m_textures.find(WStringToAnsi(fileName)) != m_textures.end())
+		{
+			OutputDebugString(fileName.c_str());
+			OutputDebugString(L"Texture 파일이 이미 존재합니다.");
+			return;
+		}
+
 		m_textures[WStringToAnsi(fileName)] = std::move(spTexture);
 	}
 	else

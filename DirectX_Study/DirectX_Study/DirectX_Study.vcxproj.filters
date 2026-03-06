@@ -159,6 +159,9 @@
     <ClCompile Include="Scripts\Engine\Common\AnimationHelper.cpp">
       <Filter>소스 파일\Engine\Common</Filter>
     </ClCompile>
+    <ClCompile Include="Scripts\Engine\Utils\LoadM3d.cpp">
+      <Filter>소스 파일\Engine\Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Scripts\Window\MainWindow.h">
@@ -262,6 +265,9 @@
     </ClInclude>
     <ClInclude Include="Scripts\Engine\Common\AnimationHelper.h">
       <Filter>헤더 파일\Engine\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Scripts\Engine\Utils\LoadM3d.h">
+      <Filter>헤더 파일\Engine\Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

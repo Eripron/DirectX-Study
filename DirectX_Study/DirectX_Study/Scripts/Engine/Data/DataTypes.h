@@ -145,6 +145,25 @@ namespace DK
 			Indices.insert(Indices.end(), indices.begin(), indices.end());
 		}
 
+		void AddMeshData(const std::vector<VERTEX>& vertices, const std::vector<std::uint16_t>& indices)
+		{
+			Vertices.insert(Vertices.end(), vertices.begin(), vertices.end());
+			Indices.insert(Indices.end(), indices.begin(), indices.end());
+		}
+
+		void AddMeshSection(std::string name, int indexCount, int startIndexLocation, int baseVertexLocation)
+		{
+			if (MeshSections.find(name) != MeshSections.end())
+				return;
+
+			MeshSection meshSection;
+			meshSection.IndexCount = indexCount;
+			meshSection.StartIndexLocation = startIndexLocation;
+			meshSection.BaseVertexLocation = baseVertexLocation;
+
+			MeshSections[name] = meshSection;
+		}
+
 		void CreateMeshBuffer(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList)
 		{
 			VertexByteStride = sizeof(VERTEX);

@@ -36,7 +36,10 @@ namespace DK
 		DirectX::XMFLOAT4X4 TexTransform = MathUtils::Identity4x4();
 		int MaterialIndex = -1;
 
-		MeshFilter* meshInfo = nullptr;
+		//MeshFilter<Vertex>* meshInfo = nullptr;
+		D3D12_VERTEX_BUFFER_VIEW vbView;
+		D3D12_INDEX_BUFFER_VIEW ibView;
+		MeshSection meshSection;
 		D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		DirectX::BoundingBox BoundBox;
 

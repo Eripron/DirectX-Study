@@ -11,6 +11,13 @@ DK::Testing::~Testing()
 {
 }
 
+void DK::Testing::Init()
+{
+	LoadModelData();
+
+	EngineBase::Init();
+}
+
 bool DK::Testing::Update()
 {
 	_accumTime += m_gameTimer.DeltaTime();
@@ -88,6 +95,10 @@ void DK::Testing::Render(ID3D12GraphicsCommandList* cmdList)
 	if (m_renderList[(int)RenderLayer::Opaque].size() > 0)
 		RenderRenderItems(cmdList, m_renderList[(int)RenderLayer::Opaque]);
 
+	cmdList->SetPipelineState(m_psos[(int)RenderLayer::SkinnedOpaque].Get());
+	if (m_renderList[(int)RenderLayer::SkinnedOpaque].size() > 0)
+		RenderRenderItems(cmdList, m_renderList[(int)RenderLayer::SkinnedOpaque]);
+
 	cmdList->SetPipelineState(m_psos[(int)RenderLayer::Sky].Get());
 	if (m_renderList[(int)RenderLayer::Sky].size() > 0)
 		RenderRenderItems(cmdList, m_renderList[(int)RenderLayer::Sky]);
@@ -105,7 +116,6 @@ void DK::Testing::LoadTextures()
 {
 	LoadTexture(L"Textures/bricks2.dds");
 	LoadTexture(L"Textures/bricks2_nmap.dds");
-
 	LoadTexture(L"Textures/tile.dds");
 	LoadTexture(L"Textures/tile_nmap.dds");
 
@@ -119,8 +129,22 @@ void DK::Testing::LoadTextures()
 	LoadTexture(L"Textures/universe/uranus.dds");
 	LoadTexture(L"Textures/universe/moon.dds");
 
-	LoadTexture(L"Textures/default_nmap.dds");
+	// model에 사용된 texture 로드
+	int matCount = _skinnedMats.size();
+	for (int i = 0; i < matCount - 1; ++i)
+	{
+		std::string diffuseName = _skinnedMats[i].DiffuseMapName;
+		std::string normalName = _skinnedMats[i].NormalMapName;
 
+		std::wstring diffuseFilename = L"Textures/" + AnsiToWString(diffuseName);
+		std::wstring normalFilename = L"Textures/" + AnsiToWString(normalName);
+
+		LoadTexture(diffuseFilename);
+		LoadTexture(normalFilename);
+	}
+
+	LoadTexture(L"Textures/white1x1.dds");
+	LoadTexture(L"Textures/default_nmap.dds");
 	LoadTexture(L"Textures/grasscube1024.dds");
 }
 
@@ -261,6 +285,22 @@ void DK::Testing::CreateMaterial()
 	moon->FresnelR0 = XMFLOAT3(0.04f, 0.04f, 0.04f);
 	moon->Roughness = 0.9f;
 
+	for (int i = 0; i < _skinnedMats.size(); ++i)
+	{
+		texture = GetTexture(_skinnedMats[i].GetDiffuseMap());
+		normalTex = GetTexture(_skinnedMats[i].GetNormalMap());
+
+		auto newMat = std::make_unique<Material>();
+		newMat->Name = _skinnedMats[i].Name;
+		newMat->SrvIndex = matIndex++;
+		newMat->BaseColorTextureIndex = texture == nullptr ? -1 : texture->SrvHeapIndex;
+		newMat->NormalTextureIndex = normalTex == nullptr ? -1 : normalTex->SrvHeapIndex;
+		newMat->DiffuseAlbedo = _skinnedMats[i].DiffuseAlbedo;
+		newMat->FresnelR0 = _skinnedMats[i].FresnelR0;
+		newMat->Roughness = _skinnedMats[i].Roughness;
+
+		m_materials[newMat->Name] = std::move(newMat);
+	}
 
 	texture = GetTexture("grasscube1024");
 	normalTex = nullptr;
@@ -291,7 +331,7 @@ void DK::Testing::CreateGameObject()
 {
 	// 태양
 	GameObject* sun = new GameObject();
-	sun->AddComponent(new MeshFilter("sphere"));
+	sun->AddComponent(new MeshFilter<Vertex>("sphere"));
 	sun->GetComponent<Transform>()->SetPosition(0, 3, 0);
 	sun->SetMaterial(m_materials["sun"].get());
 	sun->GetComponent<Transform>()->SetScale(1.0f, 1.0f, 1.0f);
@@ -299,7 +339,7 @@ void DK::Testing::CreateGameObject()
 
 	// 수성
 	GameObject* mercury = new GameObject();
-	mercury->AddComponent(new MeshFilter("sphere"));
+	mercury->AddComponent(new MeshFilter<Vertex>("sphere"));
 	mercury->GetComponent<Transform>()->SetPosition(0, 0, 0);
 	mercury->SetMaterial(m_materials["mercury"].get());
 	mercury->GetComponent<Transform>()->SetScale(0.15f, 0.15f, 0.15f);
@@ -307,7 +347,7 @@ void DK::Testing::CreateGameObject()
 
 	// 금성
 	GameObject* venus = new GameObject();
-	venus->AddComponent(new MeshFilter("sphere"));
+	venus->AddComponent(new MeshFilter<Vertex>("sphere"));
 	venus->GetComponent<Transform>()->SetPosition(0, 0, 0);
 	venus->SetMaterial(m_materials["venus"].get());
 	venus->GetComponent<Transform>()->SetScale(0.25f, 0.25f, 0.25f);
@@ -315,7 +355,7 @@ void DK::Testing::CreateGameObject()
 
 	// 지구
 	GameObject* earth = new GameObject();
-	earth->AddComponent(new MeshFilter("sphere"));
+	earth->AddComponent(new MeshFilter<Vertex>("sphere"));
 	earth->GetComponent<Transform>()->SetPosition(0, 0, 0);
 	earth->SetMaterial(m_materials["earth"].get());
 	earth->GetComponent<Transform>()->SetScale(0.4f, 0.4f, 0.4f);
@@ -323,7 +363,7 @@ void DK::Testing::CreateGameObject()
 
 	// 화성
 	GameObject* mars = new GameObject();
-	mars->AddComponent(new MeshFilter("sphere"));
+	mars->AddComponent(new MeshFilter<Vertex>("sphere"));
 	mars->GetComponent<Transform>()->SetPosition(0, 0, 0);
 	mars->SetMaterial(m_materials["mars"].get());
 	mars->GetComponent<Transform>()->SetScale(0.36f, 0.36f, 0.36f);
@@ -331,7 +371,7 @@ void DK::Testing::CreateGameObject()
 
 	// 목성
 	GameObject* jupiter = new GameObject();
-	jupiter->AddComponent(new MeshFilter("sphere"));
+	jupiter->AddComponent(new MeshFilter<Vertex>("sphere"));
 	jupiter->GetComponent<Transform>()->SetPosition(0, 0, 0);
 	jupiter->SetMaterial(m_materials["jupiter"].get());
 	jupiter->GetComponent<Transform>()->SetScale(0.8f, 0.8f, 0.8f);
@@ -339,7 +379,7 @@ void DK::Testing::CreateGameObject()
 
 	// 토성
 	GameObject* saturn = new GameObject();
-	saturn->AddComponent(new MeshFilter("sphere"));
+	saturn->AddComponent(new MeshFilter<Vertex>("sphere"));
 	saturn->GetComponent<Transform>()->SetPosition(0, 0, 0);
 	saturn->SetMaterial(m_materials["saturn"].get());
 	saturn->GetComponent<Transform>()->SetScale(0.7f, 0.7f, 0.7f);
@@ -347,7 +387,7 @@ void DK::Testing::CreateGameObject()
 
 	// 천왕성
 	GameObject* uranus = new GameObject();
-	uranus->AddComponent(new MeshFilter("sphere"));
+	uranus->AddComponent(new MeshFilter<Vertex>("sphere"));
 	uranus->GetComponent<Transform>()->SetPosition(0, 0, 0);
 	uranus->SetMaterial(m_materials["uranus"].get());
 	uranus->GetComponent<Transform>()->SetScale(0.6f, 0.6f, 0.6f);
@@ -355,14 +395,25 @@ void DK::Testing::CreateGameObject()
 
 	// 달
 	GameObject* moon = new GameObject();
-	moon->AddComponent(new MeshFilter("sphere"));
+	moon->AddComponent(new MeshFilter<Vertex>("sphere"));
 	moon->GetComponent<Transform>()->SetPosition(0, 0, 0);
 	moon->SetMaterial(m_materials["moon"].get());
 	moon->GetComponent<Transform>()->SetScale(0.1f, 0.1f, 0.1f);
 	m_gameObjects[(int)RenderLayer::Opaque].push_back(moon);
 
+	for (int i = 0; i < _skinnedMats.size(); ++i)
+	{
+		GameObject* newGO = new GameObject();
+		string meshName = "subset_" + to_string(i);
+		newGO->AddComponent(new MeshFilter<M3DLoader::SkinnedVertex>(meshName, &_modelMeshBuffer));
+		newGO->GetComponent<Transform>()->SetPosition(0, 10, 0);
+		newGO->GetComponent<Transform>()->SetScale(0.1f, 0.1f, -0.1f);
+		newGO->SetMaterial(m_materials[_skinnedMats[i].Name].get());
+		m_gameObjects[(int)RenderLayer::SkinnedOpaque].push_back(newGO);
+	}
+
 	GameObject* sky = new GameObject();
-	sky->AddComponent(new MeshFilter("box"));
+	sky->AddComponent(new MeshFilter<Vertex>("box"));
 	sky->SetMaterial(m_materials["sky"].get());
 	Transform* trans = sky->GetComponent<Transform>();
 	trans->SetScale(1000, 1000, 1000);
@@ -378,11 +429,20 @@ void DK::Testing::CreateRenderObjectInfo()
 		for (int j = 0; j < m_gameObjects[i].size(); ++j)
 		{
 			GameObject* object = m_gameObjects[i][j];
-
-			MeshFilter* mesh = object->GetComponent<MeshFilter>();
-			if (mesh == nullptr)continue;
-
 			auto renderInfo = std::make_unique<RenderObjectInfo>();
+
+			if (i == (int)RenderLayer::SkinnedOpaque)
+			{
+				MeshFilter<M3DLoader::SkinnedVertex>* mesh = object->GetComponent<MeshFilter<M3DLoader::SkinnedVertex>>();
+				if (mesh == nullptr)continue;
+				mesh->GetMeshInfo(renderInfo->vbView, renderInfo->ibView, renderInfo->meshSection);
+			}
+			else
+			{
+				MeshFilter<Vertex>* mesh = object->GetComponent<MeshFilter<Vertex>>();
+				if (mesh == nullptr)continue;
+				mesh->GetMeshInfo(renderInfo->vbView, renderInfo->ibView, renderInfo->meshSection);
+			}
 
 			renderInfo->ObjBufferIndex = objectIndex++;
 
@@ -392,8 +452,6 @@ void DK::Testing::CreateRenderObjectInfo()
 
 			Material* mat = object->GetMaterial();
 			if (mat != nullptr) renderInfo->MaterialIndex = mat->SrvIndex;
-
-			renderInfo->meshInfo = mesh;
 
 			m_renderList[i].push_back(renderInfo.get());
 			m_renderObjectInfos.push_back(std::move(renderInfo));
@@ -446,6 +504,29 @@ void DK::Testing::CreateRenderObjectInfo()
 	_parentWorlds.resize(_boneObjects.size());
 }
 
+void DK::Testing::BuildInputLayoutAndShader()
+{
+	EngineBase::BuildInputLayoutAndShader();
+
+	const D3D_SHADER_MACRO skinnedDefines[] =
+	{
+		"SKINNED", "1",
+		NULL, NULL
+	};
+
+	m_shaders["skinnedVS"] = D3DUtils::CompileShader(L"Shaders\\Default.hlsl", skinnedDefines, "VS", "vs_5_1");
+
+	_skinnedInputLayouts =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "WEIGHTS", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 44, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "BONEINDICES", 0, DXGI_FORMAT_R8G8B8A8_UINT, 0, 56, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+	};
+}
+
 void DK::Testing::BuildRootSignature()
 {
 	//EngineBase::BuildRootSignature();
@@ -464,26 +545,26 @@ void DK::Testing::BuildRootSignature()
 	CD3DX12_DESCRIPTOR_RANGE texTable0;
 	texTable0.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0);
 
-	int textureCount = m_textures.size();
 	CD3DX12_DESCRIPTOR_RANGE texTable1;
-	texTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 20, 1, 0);
+	texTable1.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 40, 1, 0);
 
 	// 5개의 리소스 사용
-	CD3DX12_ROOT_PARAMETER rootParameter[5];
+	CD3DX12_ROOT_PARAMETER rootParameter[6];
 	ZeroMemory(rootParameter, sizeof(CD3DX12_ROOT_PARAMETER) * 5);
 
 	// const buffer view 2개
 	rootParameter[0].InitAsConstantBufferView(0);
 	rootParameter[1].InitAsConstantBufferView(1);
+	rootParameter[2].InitAsConstantBufferView(2);
 	// shader resource view 1개
-	rootParameter[2].InitAsShaderResourceView(0, 1);
+	rootParameter[3].InitAsShaderResourceView(0, 1);
 	// descriptor table 2개
-	rootParameter[3].InitAsDescriptorTable(1, &texTable0, D3D12_SHADER_VISIBILITY_PIXEL);
-	rootParameter[4].InitAsDescriptorTable(1, &texTable1, D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameter[4].InitAsDescriptorTable(1, &texTable0, D3D12_SHADER_VISIBILITY_PIXEL);
+	rootParameter[5].InitAsDescriptorTable(1, &texTable1, D3D12_SHADER_VISIBILITY_PIXEL);
 
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> sampler = Texture::GetStaticSamplers();
 
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(5, rootParameter, 
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(6, rootParameter, 
 		(UINT)sampler.size(), sampler.data(), 
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
@@ -534,6 +615,22 @@ void DK::Testing::BuildPSO()
 
 	THROW_IF_FAILED(m_d3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&m_psos[(int)RenderLayer::Opaque])));
 
+	// skinned opaque pso
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC skinnedOpaquePsoDesc = psoDesc;
+	skinnedOpaquePsoDesc.InputLayout = { _skinnedInputLayouts.data(), (UINT)_skinnedInputLayouts.size() };
+	skinnedOpaquePsoDesc.VS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["skinnedVS"]->GetBufferPointer()),
+		m_shaders["skinnedVS"]->GetBufferSize()
+	};
+	skinnedOpaquePsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(m_shaders["opaquePS"]->GetBufferPointer()),
+		m_shaders["opaquePS"]->GetBufferSize()
+	};
+	THROW_IF_FAILED(m_d3dDevice->CreateGraphicsPipelineState(&skinnedOpaquePsoDesc, IID_PPV_ARGS(&m_psos[(int)RenderLayer::SkinnedOpaque])));
+
+
 	// PSO for sky.
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC skyPsoDesc = psoDesc;
 
@@ -574,6 +671,37 @@ void DK::Testing::RenderCubeMap(ID3D12GraphicsCommandList* cmdList, int i)
 	cmdList->SetPipelineState(m_psos[(int)RenderLayer::Opaque].Get());
 }
 
+void DK::Testing::LoadModelData()
+{
+	std::vector<M3DLoader::SkinnedVertex> vertices;
+	std::vector<std::uint16_t> indices;
+
+	// 모델 및 애니메이션 데이터 로드
+	M3DLoader loader;
+	loader.LoadM3d("Models\\soldier.m3d", vertices, indices, _skinnedSubsets, _skinnedMats, _skinnedInfo);
+
+	_modelMeshBuffer.AddMeshData(vertices, indices);
+
+	for (int i = 0; i < _skinnedSubsets.size(); ++i)
+	{
+		int indexCount = _skinnedSubsets[i].FaceCount * 3;
+		int startIndexLocation = _skinnedSubsets[i].FaceStart * 3;
+		int baseVertexLocation = 0;
+
+		string meshName = "subset_" + to_string(i);
+		_modelMeshBuffer.AddMeshSection(meshName, indexCount, startIndexLocation, baseVertexLocation);
+	}
+
+	_modelMeshBuffer.CreateMeshBuffer(m_d3dDevice.Get(), m_commandList.Get());
+
+	// todo: ?
+	_skinnedModelInst = std::make_unique<SkinnedModelInstance>();
+	_skinnedModelInst->SkinnedInfo = &_skinnedInfo;
+	_skinnedModelInst->FinalTransforms.resize(_skinnedInfo.BoneCount());
+	_skinnedModelInst->ClipName = "Take1";
+	_skinnedModelInst->TimePos = 0.0f;
+}
+
 void DK::Testing::DefineAnimationKeyFrames()
 {
 	// 태양
@@ -582,43 +710,34 @@ void DK::Testing::DefineAnimationKeyFrames()
 	// 수성
 	_boneAnimations[1].push_back(CreateSpinAnimation(20.0f));
 	_boneAnimations[1].push_back(CreateTiltAnimation(XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f), 0.03f));
-	//_boneAnimations[1].push_back(CreateOrbitAnimation(40.0f, 2.0f));
 
 	// 금성
 	_boneAnimations[2].push_back(CreateSpinAnimation(50.0f));
 	_boneAnimations[2].push_back(CreateTiltAnimation(XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f), 3.4f));
-	//_boneAnimations[2].push_back(CreateOrbitAnimation(70.0f, 4.0f));
 
 	// 지구
 	_boneAnimations[3].push_back(CreateSpinAnimation(30.0f));
 	_boneAnimations[3].push_back(CreateTiltAnimation(XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f), 23.4f));
-	//_boneAnimations[3].push_back(CreateOrbitAnimation(120.0f, 6.0f));
 
 	// 화성
 	_boneAnimations[4].push_back(CreateSpinAnimation(32.0f));
 	_boneAnimations[4].push_back(CreateTiltAnimation(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), 25.2f));	
-	//_boneAnimations[4].push_back(CreateOrbitAnimation(180.0f, 10.0f));
 
 	// 목성
 	_boneAnimations[5].push_back(CreateSpinAnimation(12.0f));
 	_boneAnimations[5].push_back(CreateTiltAnimation(XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f), 3.1f));
-	//_boneAnimations[5].push_back(CreateOrbitAnimation(300.0f, 13.0f));
 
 	// 토성
 	_boneAnimations[6].push_back(CreateSpinAnimation(14.0f));
 	_boneAnimations[6].push_back(CreateTiltAnimation(XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f), 26.7f));
-	//_boneAnimations[6].push_back(CreateOrbitAnimation(420.0f, 17.0f));
 
 	// 천왕성
 	_boneAnimations[7].push_back(CreateSpinAnimation(22.0f));
 	_boneAnimations[7].push_back(CreateTiltAnimation(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), 97.8f));	
-	//_boneAnimations[7].push_back(CreateOrbitAnimation(600.0f, 20.0f));
 
 	// 달
 	_boneAnimations[8].push_back(CreateSpinAnimation(30.0f));
 	_boneAnimations[8].push_back(CreateTiltAnimation(XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f), 6.7f));
-	//_boneAnimations[8].push_back(CreateOrbitAnimation(30.0f, 1.0f));
-
 }
 
 void DK::Testing::UpdateAnimation(BoneAnimation animation, float deltaTime, XMFLOAT4X4& M)

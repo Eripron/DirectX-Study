@@ -84,3 +84,60 @@ void BoneAnimation::Interpolate(float t, XMFLOAT4X4& M)const
 		}
 	}
 }
+
+float AnimationClip::GetClipStartTime() const
+{
+	float startTime = FLT_MAX;
+	for (int i = 0; i < BoneAnimations.size(); ++i)
+	{
+		float boneStartTime = BoneAnimations[i].GetStartTime();
+		if (boneStartTime < startTime)
+			startTime = boneStartTime;
+	}
+
+	return startTime;
+}
+
+float AnimationClip::GetClipEndTime() const
+{
+	float endTime = 0.0f;
+	for (int i = 0; i < BoneAnimations.size(); ++i)
+	{
+		float boneEndTime = BoneAnimations[i].GetEndTime();
+		if (boneEndTime > endTime)
+			endTime = boneEndTime;
+	}
+
+	return endTime;
+}
+
+void AnimationClip::Interpolate(float t, std::vector<DirectX::XMFLOAT4X4>& boneTransforms) const
+{
+	for (int i = 0; i < BoneAnimations.size(); ++i)
+	{
+		BoneAnimations[i].Interpolate(t, boneTransforms[i]);
+	}
+}
+
+UINT SkinnedData::BoneCount() const
+{
+	return 0;
+}
+
+float SkinnedData::GetClipStartTime(const std::string& clipName) const
+{
+	return 0.0f;
+}
+
+float SkinnedData::GetClipEndTime(const std::string& clipName) const
+{
+	return 0.0f;
+}
+
+void SkinnedData::Set(std::vector<int>& boneHierarchy, std::vector<DirectX::XMFLOAT4X4>& boneOffsets, std::unordered_map<std::string, AnimationClip>& animations)
+{
+}
+
+void SkinnedData::GetFinalTransforms(const std::string& clipName, float timePos, std::vector<DirectX::XMFLOAT4X4>& finalTransforms) const
+{
+}

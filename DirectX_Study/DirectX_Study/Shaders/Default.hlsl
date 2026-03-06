@@ -20,12 +20,17 @@
 // Include structures and functions for lighting.
 #include "Common.hlsl"
 
+
 struct VertexIn
 {
 	float3 PosL     : POSITION;
     float3 NormalL  : NORMAL;
     float2 TexC     : TEXCOORD;
     float3 TangentU : TANGENT;
+#ifdef SKINNED
+    float3 BoneWeights : WEIGHTS;
+    uint4 BoneIndices  : BONEINDICES;
+#endif
 };
 
 struct VertexOut
@@ -73,6 +78,31 @@ VertexOut VS(VertexIn vin, uint instanceID : SV_InstanceID)
 {
 	VertexOut vout = (VertexOut)0.0f;
     MaterialData matData = gMaterialData[MaterialIndex];
+    
+// #ifdef SKINNED
+//    float weights[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+//    weights[0] = vin.BoneWeights.x;
+//    weights[1] = vin.BoneWeights.y;
+//    weights[2] = vin.BoneWeights.z;
+//    weights[3] = 1.0f - weights[0] - weights[1] - weights[2];
+
+//    float3 posL = float3(0.0f, 0.0f, 0.0f);
+//    float3 normalL = float3(0.0f, 0.0f, 0.0f);
+//    float3 tangentL = float3(0.0f, 0.0f, 0.0f);
+//    for(int i = 0; i < 4; ++i)
+//    {
+//        // Assume no nonuniform scaling when transforming normals, so 
+//        // that we do not have to use the inverse-transpose.
+
+//        posL += weights[i] * mul(float4(vin.PosL, 1.0f), gBoneTransforms[vin.BoneIndices[i]]).xyz;
+//        normalL += weights[i] * mul(vin.NormalL, (float3x3)gBoneTransforms[vin.BoneIndices[i]]);
+//        tangentL += weights[i] * mul(vin.TangentU.xyz, (float3x3) gBoneTransforms[vin.BoneIndices[i]]);
+//    }
+
+//    vin.PosL = posL;
+//    vin.NormalL = normalL;
+//    vin.TangentU.xyz = tangentL;
+//#endif
     
     // world ÁÂÇ¥·Î º¯È¯
     float4 posW = mul(float4(vin.PosL, 1.0f), World);

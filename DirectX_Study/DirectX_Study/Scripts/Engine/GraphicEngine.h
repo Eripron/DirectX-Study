@@ -23,6 +23,7 @@ namespace DK
 	enum class RenderLayer : int
 	{
 		Opaque = 0,
+		SkinnedOpaque,
 		Transparent,
 		AlphaTested,
 		AlphaTestedTreeSprites,

@@ -237,7 +237,7 @@ void DK::ExInstancing::CreateGameObject()
 	{
 		GameObject* pNewGo = new GameObject();
 
-		pNewGo->AddComponent(new MeshFilter("box"));
+		pNewGo->AddComponent(new MeshFilter<Vertex>("box"));
 		pNewGo->SetMaterial(m_materials["bricks"].get());
 
 		Transform* transform = pNewGo->GetComponent<Transform>();
@@ -253,7 +253,7 @@ void DK::ExInstancing::CreateGameObject()
 
 void DK::ExInstancing::CreateRenderObjectInfo()
 {
-	for (int i = 0; i < (int)RenderLayer::Count; ++i)
+	/*for (int i = 0; i < (int)RenderLayer::Count; ++i)
 	{
 		for (int j = 0; j < m_gameObjects[i].size(); ++j)
 		{
@@ -268,7 +268,7 @@ void DK::ExInstancing::CreateRenderObjectInfo()
 			renderInfo->ObjBufferIndex = i + j;
 			if (transform != nullptr) renderInfo->World = transform->GetWorldMatrix();
 			if (mat != nullptr) renderInfo->MaterialIndex = mat->SrvIndex;
-			renderInfo->meshInfo = object->GetComponent<MeshFilter>();
+			renderInfo->meshInfo = object->GetComponent<MeshFilter<Vertex>>();
 
 			std::vector<Vertex> boxVertex(MeshManager::GetInstance()->GetVertexInfo("box"));
 
@@ -295,7 +295,7 @@ void DK::ExInstancing::CreateRenderObjectInfo()
 
 			m_renderObjectInfos.push_back(std::move(renderInfo));
 		}
-	}
+	}*/
 
 }
 

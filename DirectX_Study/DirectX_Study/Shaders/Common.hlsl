@@ -33,7 +33,7 @@ SamplerState gsamAnisotropicClamp : register(s5);
 TextureCube gCubeMap : register(t0);
 StructuredBuffer<MaterialData> gMaterialData : register(t0, space1); // material
 
-Texture2D gDiffuseMap[20] : register(t1); // texture
+Texture2D gDiffuseMap[40] : register(t1); // texture
 
 // Constant data that varies per material.
 cbuffer cbPass : register(b0)
@@ -66,6 +66,11 @@ cbuffer ObjectConstBuffer : register(b1)
     float4x4 World;
     float4x4 TexTransform;
     uint MaterialIndex;
+};
+
+cbuffer cbSkinned : register(b2)
+{
+    float4x4 gBoneTransforms[96];
 };
 
 float3 NormalSampleToWorldSpace(float3 normalMapSample, float3 normalWorld, float3 tangentWorld)
