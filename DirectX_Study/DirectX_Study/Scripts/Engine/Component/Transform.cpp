@@ -142,6 +142,9 @@ void DK::Transform::RotateQuaternionAxis(XMFLOAT3 axis, float radian)
 	DirectX::XMStoreFloat3(&m_front, XMVector3Rotate(front, q));
 	DirectX::XMStoreFloat3(&m_up, XMVector3Rotate(up, q));
 	DirectX::XMStoreFloat3(&m_right, XMVector3Rotate(right, q));
+
+	UpdateRotation();
+	UpdateWorldMatrix();
 }
 
 void DK::Transform::RotationQuaternion(DirectX::XMFLOAT3 radian)

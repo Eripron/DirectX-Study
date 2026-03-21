@@ -87,6 +87,9 @@ bool DK::EngineBase::Render()
 		auto passCB = m_curFrameResource->RenderPassCB->GetBuffer();
 		m_commandList->SetGraphicsRootConstantBufferView(0, passCB->GetGPUVirtualAddress());
 
+		auto skinnedCB = m_curFrameResource->SkinnedCB->GetBuffer();
+		m_commandList->SetGraphicsRootConstantBufferView(2, skinnedCB->GetGPUVirtualAddress());
+
 		auto matBuffer = m_curFrameResource->MaterialBuffer->GetBuffer();
 		m_commandList->SetGraphicsRootShaderResourceView(3, matBuffer->GetGPUVirtualAddress());
 
@@ -160,7 +163,7 @@ void DK::EngineBase::BuildFrameResource()
 		objectCount += m_gameObjects[i].size();
 
 	for (int i = 0; i < FrameResourceCount; ++i)
-		m_frameResources.push_back(std::make_unique<FrameResource>(m_d3dDevice.Get(), 1, objectCount, m_materials.size()));
+		m_frameResources.push_back(std::make_unique<FrameResource>(m_d3dDevice.Get(), 1, objectCount, m_materials.size(), 1));
 }
 
 void DK::EngineBase::BuildDescriptorHeap()
@@ -451,6 +454,13 @@ void DK::EngineBase::LoadTexture(std::wstring path)
 	size_t firstIdx = path.rfind(L'/') + 1;
 	size_t lastIdx = path.rfind(L'.');
 	std::wstring fileName = path.substr(firstIdx, lastIdx - firstIdx);
+
+	if (m_textures.find(WStringToAnsi(fileName)) != m_textures.end())
+	{
+		OutputDebugString(fileName.c_str());
+		OutputDebugString(L"Texture 파일이 이미 존재합니다.");
+		return;
+	}
 
 	std::unique_ptr<Texture> spTexture = std::make_unique<Texture>();
 

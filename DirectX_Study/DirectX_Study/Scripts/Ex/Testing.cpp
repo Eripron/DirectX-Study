@@ -22,6 +22,8 @@ bool DK::Testing::Update()
 {
 	_accumTime += m_gameTimer.DeltaTime();
 
+#pragma region <태양계>
+
 	int count = _boneObjects.size();
 	for (int i = 0; i < count; ++i)
 	{
@@ -57,7 +59,7 @@ bool DK::Testing::Update()
 
 			XMMATRIX Rm = XMMatrixRotationQuaternion(R);
 
-			XMMATRIX Orbit =  T * Rm;
+			XMMATRIX Orbit = T * Rm;
 
 			int parentIndex = _boneIndexing[i];
 			if (parentIndex >= 0)
@@ -82,10 +84,50 @@ bool DK::Testing::Update()
 		XMStoreFloat4x4(&objectInfo->World, localWorld);
 	}
 
-	if (!EngineBase::Update())
-		return false;
+#pragma endregion
 
-	return true;
+	float moveSpeed = 0.02f;
+	for (int i = 0; i < _playerTransform.size(); ++i)
+	{
+		Transform* transform = _playerTransform[i];
+		XMFLOAT3 pos = transform->GetPosition();
+
+		if (pos.z < -10 || pos.z > 10)
+		{
+			transform->RotateQuaternionAxis(XMFLOAT3(0, 1, 0), XMConvertToRadians(180));
+		}
+		XMFLOAT3 front = transform->Front();
+
+		XMFLOAT3 move = front * moveSpeed;
+		pos.x += move.x;
+		pos.y += move.y;
+		pos.z += move.z;
+		transform->SetPosition(pos.x, pos.y, pos.z);
+
+		_playerObjects[i]->World = transform->GetWorldMatrix();
+
+
+	}
+
+	if (EngineBase::Update())
+	{
+		// 모델의 animation 업데이트
+		auto curSkinnedCB = m_curFrameResource->SkinnedCB.get();
+
+		_skinnedModelInst->UpdateSkinnedAnimation(m_gameTimer.DeltaTimef());
+
+		SkinnedConstants skinnedConstants;
+		std::copy(
+			std::begin(_skinnedModelInst->FinalTransforms),
+			std::end(_skinnedModelInst->FinalTransforms),
+			&skinnedConstants.BoneTransforms[0]);
+
+		curSkinnedCB->CopyData(0, skinnedConstants);
+
+		return true;
+	}
+
+	return false;
 }
 
 void DK::Testing::Render(ID3D12GraphicsCommandList* cmdList)
@@ -131,16 +173,16 @@ void DK::Testing::LoadTextures()
 
 	// model에 사용된 texture 로드
 	int matCount = _skinnedMats.size();
-	for (int i = 0; i < matCount - 1; ++i)
+	for (int i = 0; i < matCount; ++i)
 	{
 		std::string diffuseName = _skinnedMats[i].DiffuseMapName;
 		std::string normalName = _skinnedMats[i].NormalMapName;
 
-		std::wstring diffuseFilename = L"Textures/" + AnsiToWString(diffuseName);
-		std::wstring normalFilename = L"Textures/" + AnsiToWString(normalName);
+		std::wstring diffusePath = L"Textures/" + AnsiToWString(diffuseName);
+		std::wstring normalPath = L"Textures/" + AnsiToWString(normalName);
 
-		LoadTexture(diffuseFilename);
-		LoadTexture(normalFilename);
+		LoadTexture(diffusePath);
+		LoadTexture(normalPath);
 	}
 
 	LoadTexture(L"Textures/white1x1.dds");
@@ -403,13 +445,19 @@ void DK::Testing::CreateGameObject()
 
 	for (int i = 0; i < _skinnedMats.size(); ++i)
 	{
-		GameObject* newGO = new GameObject();
 		string meshName = "subset_" + to_string(i);
-		newGO->AddComponent(new MeshFilter<M3DLoader::SkinnedVertex>(meshName, &_modelMeshBuffer));
-		newGO->GetComponent<Transform>()->SetPosition(0, 10, 0);
-		newGO->GetComponent<Transform>()->SetScale(0.1f, 0.1f, -0.1f);
-		newGO->SetMaterial(m_materials[_skinnedMats[i].Name].get());
-		m_gameObjects[(int)RenderLayer::SkinnedOpaque].push_back(newGO);
+		float skinScale = 0.1f;
+
+		GameObject* player = new GameObject();
+		player->AddComponent(new MeshFilter<M3DLoader::SkinnedVertex>(meshName, &_modelMeshBuffer));
+		Transform* transform = player->GetComponent<Transform>();
+		_playerTransform.push_back(transform);
+
+		transform->SetPosition(0, 10, 0);
+		transform->RotateQuaternionAxis(XMFLOAT3(0, 1, 0), XMConvertToRadians(180));
+		transform->SetScale(skinScale, skinScale, -skinScale);
+		player->SetMaterial(m_materials[_skinnedMats[i].Name].get());
+		m_gameObjects[(int)RenderLayer::SkinnedOpaque].push_back(player);
 	}
 
 	GameObject* sky = new GameObject();
@@ -436,6 +484,8 @@ void DK::Testing::CreateRenderObjectInfo()
 				MeshFilter<M3DLoader::SkinnedVertex>* mesh = object->GetComponent<MeshFilter<M3DLoader::SkinnedVertex>>();
 				if (mesh == nullptr)continue;
 				mesh->GetMeshInfo(renderInfo->vbView, renderInfo->ibView, renderInfo->meshSection);
+
+				_playerObjects.push_back(renderInfo.get());
 			}
 			else
 			{
@@ -630,7 +680,6 @@ void DK::Testing::BuildPSO()
 	};
 	THROW_IF_FAILED(m_d3dDevice->CreateGraphicsPipelineState(&skinnedOpaquePsoDesc, IID_PPV_ARGS(&m_psos[(int)RenderLayer::SkinnedOpaque])));
 
-
 	// PSO for sky.
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC skyPsoDesc = psoDesc;
 
@@ -693,8 +742,7 @@ void DK::Testing::LoadModelData()
 	}
 
 	_modelMeshBuffer.CreateMeshBuffer(m_d3dDevice.Get(), m_commandList.Get());
-
-	// todo: ?
+	
 	_skinnedModelInst = std::make_unique<SkinnedModelInstance>();
 	_skinnedModelInst->SkinnedInfo = &_skinnedInfo;
 	_skinnedModelInst->FinalTransforms.resize(_skinnedInfo.BoneCount());

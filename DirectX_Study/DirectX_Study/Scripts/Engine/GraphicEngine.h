@@ -67,6 +67,7 @@ namespace DK
 		virtual bool Render();
 
 		virtual void UpdateCamera();
+		float _accumMouseSpeed;
 
 		// get set
 		HWND GetHandleWindow() const;

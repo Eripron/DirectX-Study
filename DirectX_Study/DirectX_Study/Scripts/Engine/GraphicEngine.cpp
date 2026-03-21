@@ -452,10 +452,17 @@ void DK::GraphicEngine::UpdateCamera()
 			GetKeyDownValue('s', -1.0f, 'w', 1.0f)
 		};
 
-		float speed = 0.005f;
-		if (GetKeyDown(VK_SHIFT)) speed *= 2.5f;
+		if (GetKeyDown(VK_SHIFT))
+		{
+			if (_accumMouseSpeed < 0.1f)
+				_accumMouseSpeed += 0.01f;
+		}
+		else
+		{
+			_accumMouseSpeed = 0.01f;
+		}
 
-		m_camera.Move(dir * speed);
+		m_camera.Move(dir * _accumMouseSpeed);
 	}
 }
 

@@ -17,13 +17,14 @@ namespace DK
 		FrameResource& operator=(const FrameResource& rhs) = delete;
 
 	public:
-		FrameResource(ID3D12Device* device, UINT renderPassCount, UINT objectCount, UINT materialCount);
+		FrameResource(ID3D12Device* device, UINT renderPassCount, UINT objectCount, UINT materialCount, UINT skinnedObjectCount);
 		~FrameResource();
 
 		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> CmdListAlloc;
 
 		std::unique_ptr<UploadBuffer<RenderPassConstants>> RenderPassCB = nullptr;
 		std::unique_ptr<UploadBuffer<ObjectConstants>> ObjectCB = nullptr;
+		std::unique_ptr<UploadBuffer<SkinnedConstants>> SkinnedCB = nullptr;
 		std::unique_ptr<UploadBuffer<MaterialData>> MaterialBuffer = nullptr;
 
 		UINT64 Fence = 0;

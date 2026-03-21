@@ -378,6 +378,11 @@ namespace DK
 		UINT NormalTextureIndex = UINT_MAX;
 	};
 
+	struct SkinnedConstants
+	{
+		DirectX::XMFLOAT4X4 BoneTransforms[96];
+	};
+
 #pragma endregion
 
 }

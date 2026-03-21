@@ -60,13 +60,14 @@ namespace DK
 	private:
 
 		std::unique_ptr<SkinnedModelInstance> _skinnedModelInst;
+
 		SkinnedData _skinnedInfo;
 		std::vector<M3DLoader::Subset> _skinnedSubsets;		// subMesh 정보
 		std::vector<M3DLoader::M3dMaterial> _skinnedMats;	// material 정보
 		std::vector<std::string> _skinnedTextureNames;		// texture 정보
 		vector<D3D12_INPUT_ELEMENT_DESC> _skinnedInputLayouts;
 
-		MeshBuffer<M3DLoader::SkinnedVertex> _modelMeshBuffer;		// model mesh 데이터
+		MeshBuffer<M3DLoader::SkinnedVertex> _modelMeshBuffer;	// model mesh 데이터
 
 		void LoadModelData();
 
@@ -82,6 +83,10 @@ namespace DK
 		vector<RenderObjectInfo*> _boneObjects;
 		vector<XMMATRIX> _parentWorlds;
 		unordered_map<int, vector<BoneAnimation>> _boneAnimations;
+
+		vector<Transform*> _playerTransform;
+		vector<RenderObjectInfo*> _playerObjects;
+		float _playerRot = 0.0f;
 
 		void DefineAnimationKeyFrames();
 		void UpdateAnimation(BoneAnimation animation, float deltaTime, XMFLOAT4X4& M);

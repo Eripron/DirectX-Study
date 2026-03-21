@@ -18,7 +18,7 @@ namespace DK
 		static int Rand(int a, int b);
 		static float RandF();
 		static float RandF(float a, float b);
-
+		static float Clampf(float value, float min, float max);
 	};
 
 	/// operator ///
@@ -38,4 +38,5 @@ namespace DK
 	{
 		return XMFLOAT3(float3.x * value, float3.y * value, float3.z * value);
 	}
+
 }

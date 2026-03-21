@@ -74,7 +74,7 @@ void BoneAnimation::Interpolate(float t, XMFLOAT4X4& M)const
 
 				XMVECTOR S = XMVectorLerp(s0, s1, lerpPercent);
 				XMVECTOR P = XMVectorLerp(p0, p1, lerpPercent);
-				XMVECTOR Q = XMVectorLerp(q0, q1, lerpPercent);
+				XMVECTOR Q = XMQuaternionSlerp(q0, q1, lerpPercent);
 
 				XMVECTOR zero = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
 				XMStoreFloat4x4(&M, XMMatrixAffineTransformation(S, zero, Q, P));
@@ -121,23 +121,70 @@ void AnimationClip::Interpolate(float t, std::vector<DirectX::XMFLOAT4X4>& boneT
 
 UINT SkinnedData::BoneCount() const
 {
-	return 0;
+	return _boneHierarchy.size();
 }
 
 float SkinnedData::GetClipStartTime(const std::string& clipName) const
 {
+	if (_animations.find(clipName) != _animations.end())
+		return _animations.at(clipName).GetClipStartTime();
+
 	return 0.0f;
 }
 
 float SkinnedData::GetClipEndTime(const std::string& clipName) const
 {
+	if (_animations.find(clipName) != _animations.end())
+		return _animations.at(clipName).GetClipEndTime();
+
 	return 0.0f;
 }
 
 void SkinnedData::Set(std::vector<int>& boneHierarchy, std::vector<DirectX::XMFLOAT4X4>& boneOffsets, std::unordered_map<std::string, AnimationClip>& animations)
 {
+	_boneHierarchy.insert(_boneHierarchy.end(), boneHierarchy.begin(), boneHierarchy.end());
+	_boneOffsets.insert(_boneOffsets.end(), boneOffsets.begin(), boneOffsets.end());
+
+	for (auto iter = animations.begin(); iter != animations.end(); ++iter)
+	{
+		_animations[iter->first] = iter->second;
+	}
 }
 
 void SkinnedData::GetFinalTransforms(const std::string& clipName, float timePos, std::vector<DirectX::XMFLOAT4X4>& finalTransforms) const
 {
+	if (_animations.find(clipName) == _animations.end())
+		return;
+
+	AnimationClip aniClip = _animations.at(clipName);
+
+	int boneCount = BoneCount();
+	std::vector<DirectX::XMFLOAT4X4> boneTransforms(boneCount);
+
+	aniClip.Interpolate(timePos, boneTransforms);
+
+	std::vector<DirectX::XMFLOAT4X4> toRootTransforms(boneCount);
+
+	// 각 계산시 부모의 트랜스폼이 필요하므로, 부모에서 자식으로 내려가면서 계산한다.
+	toRootTransforms[0] = boneTransforms[0];
+	for (int i = 1; i < boneCount; ++i)
+	{
+		XMMATRIX parentTransform = XMLoadFloat4x4(&boneTransforms[i]);
+
+		int parentIndex = _boneHierarchy[i];
+		XMMATRIX parentToRoot = XMLoadFloat4x4(&toRootTransforms[parentIndex]);
+
+		XMMATRIX toRoot = XMMatrixMultiply(parentTransform, parentToRoot);
+
+		XMStoreFloat4x4(&toRootTransforms[i], toRoot);
+	}
+
+	// 각 본의 최종 트랜스폼은 본의 오프셋과 루트까지의 트랜스폼을 곱해서 구한다.
+	for (UINT i = 0; i < boneCount; ++i)
+	{
+		XMMATRIX offset = XMLoadFloat4x4(&_boneOffsets[i]);
+		XMMATRIX toRoot = XMLoadFloat4x4(&toRootTransforms[i]);
+		XMMATRIX finalTransform = XMMatrixMultiply(offset, toRoot);
+		XMStoreFloat4x4(&finalTransforms[i], XMMatrixTranspose(finalTransform));
+	}
 }

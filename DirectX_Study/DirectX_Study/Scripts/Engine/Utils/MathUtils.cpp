@@ -46,5 +46,14 @@ float MathUtils::RandF()
 float MathUtils::RandF(float a, float b)
 {
 	return a + RandF() * (b - a);
+}
 
+float DK::MathUtils::Clampf(float value, float min, float max)
+{
+	if (value < min)
+		return min;
+	else if (value > max)
+		return max;
+	else
+		return value;
 }
